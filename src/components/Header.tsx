@@ -21,17 +21,17 @@ const Header = () => {
             </li>
             <li>
               <a href="#" className="text-sm font-medium text-brand-light hover:text-brand-blue transition-colors">
-                Documentation
+                Search
               </a>
             </li>
             <li>
               <a href="#" className="text-sm font-medium text-brand-light hover:text-brand-blue transition-colors">
-                Reports
+                Help
               </a>
             </li>
             <li>
-              <button className="bg-brand-blue text-brand-light px-4 py-2 rounded-md text-sm font-medium h-12">
-                Get Started
+              <button className="bg-brand-blue text-brand-light px-4 py-2 rounded-md text-sm font-medium h-10">
+                Sign In
               </button>
             </li>
           </ul>
