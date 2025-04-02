@@ -1,10 +1,9 @@
-
 import React, { useState } from 'react';
 import { 
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
 } from '@/components/ui/table';
 import { 
-  ExternalLink, Image, FileText, Eye, Trash2, Star, Flag, Copy
+  ExternalLink, Image, FileText, Eye, Trash2, Star, Flag, Copy, ShoppingBag, Tag
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,6 +14,13 @@ interface WebPage {
   score: number;
   pageTitle: string;
   platform?: string;
+  pageType?: 'product' | 'category' | 'unknown';
+  matchingImages?: {
+    url: string;
+    score: number;
+    imageUrl?: string;
+    platform?: string;
+  }[];
 }
 
 interface PagesMatchTableProps {
@@ -69,9 +75,26 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({ pages }) => {
   };
   
   // Get thumbnail for a page
-  const getThumbnailForPage = (url: string): string => {
-    // Try to get favicon or use a placeholder
-    return `https://www.google.com/s2/favicons?domain=${url}&sz=128`;
+  const getThumbnailForPage = (page: WebPage): string => {
+    // If the page has matching images, use the first one as thumbnail
+    if (page.matchingImages && page.matchingImages.length > 0) {
+      return page.matchingImages[0].imageUrl || '';
+    }
+    
+    // Otherwise try to get favicon
+    return `https://www.google.com/s2/favicons?domain=${page.url}&sz=128`;
+  };
+
+  // Get page type icon
+  const getPageTypeIcon = (pageType?: string) => {
+    switch(pageType) {
+      case 'product':
+        return <ShoppingBag className="h-4 w-4 text-brand-blue" />;
+      case 'category':
+        return <Tag className="h-4 w-4 text-gray-500" />;
+      default:
+        return <FileText className="h-4 w-4 text-gray-500" />;
+    }
   };
 
   return (
@@ -92,26 +115,38 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({ pages }) => {
               <TableRow key={index} className="group hover:bg-gray-50">
                 <TableCell className="p-2">
                   <div className="w-10 h-10 bg-gray-100 rounded overflow-hidden flex items-center justify-center">
-                    <img 
-                      src={getThumbnailForPage(page.url)} 
-                      alt={getWebsiteName(page.url, page.platform)}
-                      className="w-6 h-6 object-contain"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).onerror = null;
-                        (e.target as HTMLImageElement).style.display = 'none';
-                        (e.target as HTMLImageElement).parentElement!.innerHTML = 
-                          `<div class="w-full h-full flex items-center justify-center bg-gray-200">
-                            <span class="text-xs font-medium">${getWebsiteName(page.url, page.platform).charAt(0)}</span>
-                          </div>`;
-                      }}
-                    />
+                    {page.matchingImages && page.matchingImages.length > 0 ? (
+                      <img 
+                        src={page.matchingImages[0].imageUrl} 
+                        alt={getWebsiteName(page.url, page.platform)}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).onerror = null;
+                          (e.target as HTMLImageElement).style.display = 'none';
+                          (e.target as HTMLImageElement).parentElement!.innerHTML = 
+                            `<div class="w-full h-full flex items-center justify-center bg-gray-200">
+                              ${getPageTypeIcon(page.pageType)}
+                            </div>`;
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                        {getPageTypeIcon(page.pageType)}
+                      </div>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell>
                   <div className="font-medium line-clamp-1" title={page.pageTitle || getWebsiteName(page.url, page.platform)}>
                     {page.pageTitle || getWebsiteName(page.url, page.platform)}
                   </div>
-                  <div className="text-xs text-muted-foreground">{getHostname(page.url)}</div>
+                  <div className="flex items-center text-xs text-muted-foreground">
+                    {getPageTypeIcon(page.pageType)}
+                    <span className="ml-1">
+                      {page.pageType === 'product' ? 'Product Page' : 
+                       page.pageType === 'category' ? 'Category Page' : 'Web Page'}
+                    </span>
+                  </div>
                 </TableCell>
                 <TableCell>
                   <div className="max-w-xs truncate text-sm text-brand-blue hover:underline">

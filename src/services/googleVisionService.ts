@@ -1,4 +1,3 @@
-
 interface WebEntity {
   entityId: string;
   score: number;
@@ -17,6 +16,7 @@ interface WebPage {
   score: number;
   pageTitle: string;
   platform?: string; 
+  pageType?: 'product' | 'category' | 'unknown';
   matchingImages?: WebImage[];
 }
 
@@ -31,7 +31,6 @@ export const analyzeImage = async (apiKey: string, imageData: string | File): Pr
     let base64Image = '';
     
     if (typeof imageData === 'string' && imageData.startsWith('http')) {
-      // If URL is provided, we'll use the imageUri field
       const requestBody = {
         requests: [
           {
@@ -67,14 +66,13 @@ export const analyzeImage = async (apiKey: string, imageData: string | File): Pr
       return processResponse(data);
       
     } else if (imageData instanceof File) {
-      // Convert File to base64
       base64Image = await fileToBase64(imageData);
       
       const requestBody = {
         requests: [
           {
             image: {
-              content: base64Image.split(',')[1] // Remove data URL prefix if present
+              content: base64Image.split(',')[1]
             },
             features: [
               {
@@ -137,89 +135,139 @@ const identifyPlatform = (url: string): string => {
   } else if (urlLower.includes('ikea')) {
     return 'IKEA';
   } else {
-    // Check for CDNs
     if (urlLower.includes('cloudfront.net') || 
         urlLower.includes('cdn.shopify') || 
         urlLower.includes('cloudinary') || 
         urlLower.includes('imgix') ||
         urlLower.includes('fastly') ||
         urlLower.includes('akamaized') ||
-        urlLower.includes('cdn.')) {
+        urlLower.includes('cdn.') ||
+        urlLower.includes('ibb.co') ||
+        urlLower.includes('imgur.com') ||
+        urlLower.includes('postimg.cc')) {
       return 'CDN Hosted';
     }
     return '';
   }
 };
 
+const determinePageType = (url: string, title: string): 'product' | 'category' | 'unknown' => {
+  const urlLower = url.toLowerCase();
+  const titleLower = title.toLowerCase();
+  
+  if (
+    urlLower.includes('/product/') || 
+    urlLower.includes('/item/') || 
+    urlLower.includes('/dp/') || 
+    urlLower.match(/\/p\/\d+/) ||
+    urlLower.includes('/products/') ||
+    titleLower.includes('buy') ||
+    titleLower.includes('product') ||
+    titleLower.includes(' - $') ||
+    titleLower.includes(' | $')
+  ) {
+    return 'product';
+  }
+  
+  else if (
+    urlLower.includes('/category/') ||
+    urlLower.includes('/collection/') ||
+    urlLower.includes('/collections/') ||
+    urlLower.includes('/shop/') ||
+    urlLower.includes('/catalog/') ||
+    titleLower.includes('collection') ||
+    titleLower.includes('category') ||
+    titleLower.includes('products')
+  ) {
+    return 'category';
+  }
+  
+  return 'unknown';
+};
+
 const processResponse = (data: any): MatchResult => {
   const webDetection = data.responses[0]?.webDetection || {};
-  console.log("Web Detection Data:", JSON.stringify(webDetection, null, 2)); // Log parsed web detection
+  console.log("Web Detection Data:", JSON.stringify(webDetection, null, 2));
 
-  // Process all types of matches from the API
-  
-  // Visually similar images - include all with a reasonable score
   const visuallySimilarImages = (webDetection.visuallySimilarImages || [])
     .map((image: any) => {
       const platform = identifyPlatform(image.url);
       return {
         url: image.url || '',
-        score: image.score || 0.7, // Default reasonable score if not provided
+        score: image.score || 0.7,
         imageUrl: image.url || '',
         platform
       };
-    });
+    })
+    .filter((img: WebImage) => img.score >= 0.8);
 
-  // Full matches - these are highest confidence
   const fullMatchingImages = (webDetection.fullMatchingImages || [])
     .map((image: any) => {
       const platform = identifyPlatform(image.url);
       return {
         url: image.url || '',
-        score: 0.95, // High confidence for full matches
+        score: 0.95,
         imageUrl: image.url || '',
         platform
       };
     });
 
-  // Partial matching images
   const partialMatchingImages = (webDetection.partialMatchingImages || [])
     .map((image: any) => {
       const platform = identifyPlatform(image.url);
       return {
         url: image.url || '',
-        score: 0.8, // Good confidence for partial matches
+        score: 0.8,
         imageUrl: image.url || '',
         platform
       };
-    });
+    })
+    .filter((img: WebImage) => img.score >= 0.8);
 
-  // Combine all image matches
   const allSimilarImages = [
     ...fullMatchingImages,
     ...partialMatchingImages,
     ...visuallySimilarImages
-  ];
+  ].filter((img: WebImage) => img.score >= 0.8);
 
-  // Process pages with matching images - don't filter these, show all
   const pagesWithMatchingImages = (webDetection.pagesWithMatchingImages || [])
     .map((page: any) => {
       const platform = identifyPlatform(page.url);
+      const pageTitle = page.pageTitle || '';
+      const pageType = determinePageType(page.url, pageTitle);
       
-      // Extract matching images from this page
-      const pageMatchingImages = (page.fullMatchingImages || []).map((img: any) => ({
-        url: img.url,
-        score: 0.95,
-        imageUrl: img.url,
-        platform: identifyPlatform(img.url)
-      }));
+      const pageMatchingImages = (page.fullMatchingImages || [])
+        .map((img: any) => ({
+          url: img.url,
+          score: 0.95,
+          imageUrl: img.url,
+          platform: identifyPlatform(img.url)
+        }))
+        .filter((img: WebImage) => img.score >= 0.8);
       
       return {
         url: page.url || '',
-        score: page.score || 0.7, // Default reasonable score
-        pageTitle: page.pageTitle || '',
+        score: page.score || 0.7,
+        pageTitle: pageTitle,
         platform,
+        pageType,
         matchingImages: pageMatchingImages.length > 0 ? pageMatchingImages : undefined
       };
+    })
+    .filter((page: WebPage) => {
+      const isCDN = 
+        page.url.includes('cloudfront.net') || 
+        page.url.includes('cdn.shopify') || 
+        page.url.includes('cloudinary') || 
+        page.url.includes('imgix') ||
+        page.url.includes('fastly') ||
+        page.url.includes('akamaized') ||
+        page.url.includes('cdn.') ||
+        page.url.includes('ibb.co') ||
+        page.url.includes('imgur.com') ||
+        page.url.includes('postimg.cc');
+      
+      return !isCDN && page.score >= 0.7;
     });
   
   return {
