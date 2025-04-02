@@ -4,8 +4,8 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
 } from '@/components/ui/table';
 import { 
-  ExternalLink, Image, FileText, Eye, Flag, Copy, ShoppingBag, Tag, AlertTriangle, 
-  ChevronDown, ChevronUp, Calendar, Shield, ShieldOff, Star
+  ExternalLink, Image, FileText, Eye, Copy, ShoppingBag, Tag, 
+  ChevronDown, ChevronUp, Calendar
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -36,7 +36,7 @@ interface WebPage {
 
 interface PagesMatchTableProps {
   pages: WebPage[];
-  sortBy?: 'confidence' | 'date' | 'domain';
+  sortBy?: 'confidence' | 'date' | 'domain' | 'count';
   compact?: boolean;
 }
 
@@ -91,6 +91,13 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({
           const domainA = getHostname(a.url);
           const domainB = getHostname(b.url);
           return domainA.localeCompare(domainB);
+        });
+      case 'count':
+        // Sort by number of matching images
+        return sorted.sort((a, b) => {
+          const countA = a.matchingImages?.length || 0;
+          const countB = b.matchingImages?.length || 0;
+          return countB - countA;
         });
       default:
         return sorted;
@@ -172,12 +179,6 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({
     toast.success("URL copied to clipboard");
   };
 
-  const handleReportClick = (url: string) => {
-    toast.info(`Reporting ${getHostname(url)}`, {
-      description: "This will guide you through filing a copyright claim"
-    });
-  };
-
   const toggleExpand = (site: string) => {
     setGroupedState(prev => ({
       ...prev,
@@ -188,14 +189,6 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({
   const handleImageClick = (image: WebImage) => {
     setSelectedImage(image);
     setModalOpen(true);
-  };
-
-  // Determine if a domain might be an authorized reseller
-  const isLikelyAuthorized = (url: string): boolean => {
-    const hostname = getHostname(url);
-    // This would normally be a check against a user-configured whitelist
-    const commonMarketplaces = ['amazon.com', 'walmart.com', 'etsy.com'];
-    return commonMarketplaces.some(market => hostname.includes(market));
   };
 
   return (
@@ -215,11 +208,6 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({
                   <h3 className="text-base font-medium">{group.platform}</h3>
                   <div className="flex items-center">
                     <span className="text-sm text-muted-foreground">({group.site})</span>
-                    {isLikelyAuthorized(group.site) ? (
-                      <Badge className="ml-2 bg-green-500 text-white text-xs">Authorized</Badge>
-                    ) : (
-                      <Badge className="ml-2 bg-red-500 text-white text-xs">Unauthorized</Badge>
-                    )}
                   </div>
                 </div>
                 <div className="flex items-center text-muted-foreground">
@@ -236,52 +224,6 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({
             </CollapsibleTrigger>
             
             <CollapsibleContent>
-              <div className="px-4 py-2 bg-gray-50 border-b flex justify-between items-center">
-                <div className="flex items-center space-x-2">
-                  {isLikelyAuthorized(group.site) ? (
-                    <div className="flex items-center text-green-600">
-                      <Shield className="h-4 w-4 mr-1" />
-                      <span className="text-sm">Authorized Reseller</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center text-red-600">
-                      <ShieldOff className="h-4 w-4 mr-1" />
-                      <span className="text-sm">Unauthorized Use</span>
-                    </div>
-                  )}
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="text-xs h-7"
-                    onClick={() => toast.info(`Domain ${group.site} added to whitelist`, {
-                      description: "This domain will be marked as authorized in future scans"
-                    })}
-                  >
-                    Add to Whitelist
-                  </Button>
-                  <Button 
-                    variant={isLikelyAuthorized(group.site) ? "outline" : "destructive"} 
-                    size="sm" 
-                    className="text-xs h-7"
-                    onClick={() => {
-                      if (isLikelyAuthorized(group.site)) {
-                        toast.info(`Contact ${group.site}`, {
-                          description: "This appears to be an authorized reseller"
-                        });
-                      } else {
-                        toast.info(`Report all matches from ${group.site}`, {
-                          description: "Preparing batch DMCA takedown notices"
-                        });
-                      }
-                    }}
-                  >
-                    {isLikelyAuthorized(group.site) ? 'Contact' : 'Report All'}
-                  </Button>
-                </div>
-              </div>
-              
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -290,7 +232,7 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({
                     <TableHead>URL</TableHead>
                     <TableHead className="w-24">Type</TableHead>
                     {!compact && <TableHead>Found</TableHead>}
-                    <TableHead className="w-32 text-right">Actions</TableHead>
+                    <TableHead className="w-20 text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -367,7 +309,7 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({
                         </TableCell>
                       )}
                       <TableCell className="text-right">
-                        <div className="opacity-0 group-hover:opacity-100 flex items-center justify-end space-x-1 transition-opacity">
+                        <div className="flex items-center justify-end space-x-1">
                           <Button 
                             variant="ghost" 
                             size="sm" 
@@ -383,28 +325,10 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({
                             variant="ghost" 
                             size="sm" 
                             className="h-8 w-8 p-0" 
-                            title="Report Infringement"
-                            onClick={() => handleReportClick(page.url)}
-                          >
-                            <Flag className="h-4 w-4 text-muted-foreground" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-8 w-8 p-0" 
                             title="Copy URL"
                             onClick={() => handleCopyUrl(page.url)}
                           >
                             <Copy className="h-4 w-4 text-muted-foreground" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-8 w-8 p-0" 
-                            title="Save" 
-                            onClick={() => toast.success("Saved for later")}
-                          >
-                            <Star className="h-4 w-4 text-muted-foreground" />
                           </Button>
                         </div>
                       </TableCell>
@@ -417,7 +341,7 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({
         ))
       ) : (
         <Card className="p-6 text-center">
-          <AlertTriangle className="mx-auto h-10 w-10 text-brand-blue mb-4" />
+          <FileText className="mx-auto h-10 w-10 text-brand-blue mb-4" />
           <p className="text-muted-foreground">No pages with matching images found</p>
         </Card>
       )}

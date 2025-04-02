@@ -4,8 +4,8 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
 } from '@/components/ui/table';
 import { 
-  ExternalLink, Download, Flag, Copy, Star, AlertTriangle, ChevronDown, ChevronUp,
-  Clock, FileText, Calendar, Shield, ShieldOff
+  ExternalLink, Copy, ChevronDown, ChevronUp,
+  Clock, FileText, Calendar
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -37,7 +37,7 @@ interface WebPage {
 interface ExactMatchesTableProps {
   matches: WebImage[];
   relatedPages?: WebPage[];
-  sortBy?: 'confidence' | 'date' | 'domain';
+  sortBy?: 'confidence' | 'date' | 'domain' | 'count';
   compact?: boolean;
 }
 
@@ -100,6 +100,15 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
           const domainB = getHostname(b.url);
           return domainA.localeCompare(domainB);
         });
+      case 'count':
+        // Sort by number of matches from same domain
+        return sorted.sort((a, b) => {
+          const hostnameA = getHostname(a.url);
+          const hostnameB = getHostname(b.url);
+          const countA = matches.filter(m => getHostname(m.url) === hostnameA).length;
+          const countB = matches.filter(m => getHostname(m.url) === hostnameB).length;
+          return countB - countA;
+        });
       default:
         return sorted;
     }
@@ -149,12 +158,6 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
     toast.success("URL copied to clipboard");
   };
 
-  const handleReportClick = (url: string) => {
-    toast.info(`Preparing DMCA takedown for ${getHostname(url)}`, {
-      description: "This will guide you through filing a copyright claim"
-    });
-  };
-
   const toggleExpand = (site: string) => {
     setGroupedState(prev => ({
       ...prev,
@@ -175,14 +178,6 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
     );
   };
 
-  // Determine if a domain might be an authorized reseller
-  const isLikelyAuthorized = (url: string): boolean => {
-    const hostname = getHostname(url);
-    // This would normally be a check against a user-configured whitelist
-    const commonMarketplaces = ['amazon.com', 'walmart.com', 'etsy.com'];
-    return commonMarketplaces.some(market => hostname.includes(market));
-  };
-
   return (
     <div className="space-y-4">
       {groupedMatches.length > 0 ? (
@@ -200,11 +195,6 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
                   <h3 className="text-base font-medium">{group.platform}</h3>
                   <div className="flex items-center">
                     <span className="text-sm text-muted-foreground">({group.site})</span>
-                    {isLikelyAuthorized(group.site) ? (
-                      <Badge className="ml-2 bg-green-500 text-white text-xs">Authorized</Badge>
-                    ) : (
-                      <Badge className="ml-2 bg-red-500 text-white text-xs">Unauthorized</Badge>
-                    )}
                   </div>
                 </div>
                 <div className="flex items-center text-muted-foreground">
@@ -221,51 +211,6 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
             </CollapsibleTrigger>
             
             <CollapsibleContent>
-              <div className="px-4 py-2 bg-gray-50 border-b flex justify-between items-center">
-                <div className="flex items-center space-x-2">
-                  {isLikelyAuthorized(group.site) ? (
-                    <div className="flex items-center text-green-600">
-                      <Shield className="h-4 w-4 mr-1" />
-                      <span className="text-sm">Authorized Reseller</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center text-red-600">
-                      <ShieldOff className="h-4 w-4 mr-1" />
-                      <span className="text-sm">Unauthorized Use</span>
-                    </div>
-                  )}
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="text-xs h-7"
-                    onClick={() => toast.info(`Domain ${group.site} added to whitelist`, {
-                      description: "This domain will be marked as authorized in future scans"
-                    })}
-                  >
-                    Add to Whitelist
-                  </Button>
-                  <Button 
-                    variant={isLikelyAuthorized(group.site) ? "outline" : "destructive"} 
-                    size="sm" 
-                    className="text-xs h-7"
-                    onClick={() => {
-                      if (isLikelyAuthorized(group.site)) {
-                        toast.info(`Contact ${group.site}`, {
-                          description: "This appears to be an authorized reseller"
-                        });
-                      } else {
-                        toast.info(`Report all matches from ${group.site}`, {
-                          description: "Preparing batch DMCA takedown notices"
-                        });
-                      }
-                    }}
-                  >
-                    {isLikelyAuthorized(group.site) ? 'Contact' : 'Report All'}
-                  </Button>
-                </div>
-              </div>
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -274,7 +219,7 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
                     <TableHead>URL</TableHead>
                     {!compact && <TableHead>Found</TableHead>}
                     <TableHead className="w-24 text-right">Confidence</TableHead>
-                    <TableHead className="w-32 text-right">Actions</TableHead>
+                    <TableHead className="w-20 text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -311,7 +256,7 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
                             </div>
                             {relatedPagesList.length > 0 && (
                               <div className="text-xs mt-1 text-brand-blue">
-                                {relatedPagesList.length} related page{relatedPagesList.length !== 1 ? 's' : ''}
+                                {relatedPagesList.length} page{relatedPagesList.length !== 1 ? 's' : ''} with this image
                               </div>
                             )}
                           </TableCell>
@@ -339,16 +284,7 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
                             </Badge>
                           </TableCell>
                           <TableCell className="text-right">
-                            <div className="opacity-0 group-hover:opacity-100 flex items-center justify-end space-x-1 transition-opacity">
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="h-8 w-8 p-0" 
-                                title="Report"
-                                onClick={() => handleReportClick(match.url)}
-                              >
-                                <Flag className="h-4 w-4 text-muted-foreground" />
-                              </Button>
+                            <div className="flex items-center justify-end space-x-1">
                               <Button 
                                 variant="ghost" 
                                 size="sm" 
@@ -362,10 +298,12 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
                                 variant="ghost" 
                                 size="sm" 
                                 className="h-8 w-8 p-0" 
-                                title="Save"
-                                onClick={() => toast.success("Saved for later")}
+                                title="Visit URL"
+                                asChild
                               >
-                                <Star className="h-4 w-4 text-muted-foreground" />
+                                <a href={match.url} target="_blank" rel="noopener noreferrer">
+                                  <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                                </a>
                               </Button>
                             </div>
                           </TableCell>
@@ -375,7 +313,7 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
                           <TableRow className="bg-gray-50/50 border-t border-dashed">
                             <TableCell colSpan={compact ? 5 : 6}>
                               <div className="pl-6 py-2">
-                                <p className="text-xs font-medium text-muted-foreground mb-1">Related Pages:</p>
+                                <p className="text-xs font-medium text-muted-foreground mb-1">Pages with Image:</p>
                                 <div className="space-y-1">
                                   {relatedPagesList.map((page, pageIdx) => (
                                     <div key={pageIdx} className="flex items-center justify-between text-sm">
@@ -415,7 +353,7 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
         ))
       ) : (
         <Card className="p-6 text-center">
-          <AlertTriangle className="mx-auto h-10 w-10 text-brand-blue mb-4" />
+          <FileText className="mx-auto h-10 w-10 text-brand-blue mb-4" />
           <p className="text-muted-foreground">No image matches found</p>
         </Card>
       )}

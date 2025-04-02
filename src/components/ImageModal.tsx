@@ -8,7 +8,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { ExternalLink, AlertCircle } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 interface ImageModalProps {
@@ -52,9 +52,6 @@ const ImageModal: React.FC<ImageModalProps> = ({
                 e.currentTarget.classList.add('p-8');
               }}
             />
-            <div className="absolute top-2 right-2">
-              
-            </div>
           </div>
         </div>
         <DialogFooter className="flex sm:justify-between items-center">

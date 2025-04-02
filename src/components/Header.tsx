@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Search, User } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const Header = () => {
@@ -20,23 +20,23 @@ const Header = () => {
         <nav>
           <ul className="flex items-center space-x-6">
             <li>
-              <a href="#" className="text-sm font-medium text-white/90 hover:text-white transition-colors">
+              <a href="#" className="text-sm font-medium text-white/90 hover:text-white transition-colors flex items-center">
                 Dashboard
               </a>
             </li>
             <li>
-              <a href="#" className="text-sm font-medium text-white/90 hover:text-white transition-colors">
+              <a href="#" className="text-sm font-medium text-white/90 hover:text-white transition-colors flex items-center">
+                <Search className="h-4 w-4 mr-1.5" />
                 Search
               </a>
             </li>
             <li>
-              <a href="#" className="text-sm font-medium text-white/90 hover:text-white transition-colors">
+              <a href="#" className="text-sm font-medium text-white/90 hover:text-white transition-colors flex items-center">
                 Help
               </a>
             </li>
             <li>
               <Button variant="secondary" size="sm" className="flex items-center gap-2">
-                <User className="h-4 w-4" />
                 Sign In
               </Button>
             </li>

@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { 
   AlertTriangle, AlertCircle, Link as LinkIcon, 
   ShoppingBag, LayoutGrid, Shield, Filter, SlidersHorizontal,
-  Check, Clock, Download, Globe, Ban, Tag, FileWarning
+  Check, Clock, Download, Globe, Tag, FileWarning
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ExactMatchesTable } from './ExactMatchesTable';
@@ -32,7 +32,7 @@ interface WebImage {
   score: number;
   imageUrl?: string;
   platform?: string;
-  dateFound?: Date; // Added date found
+  dateFound?: Date;
 }
 
 interface WebPage {
@@ -42,7 +42,7 @@ interface WebPage {
   platform?: string;
   pageType?: 'product' | 'category' | 'unknown';
   matchingImages?: WebImage[];
-  dateFound?: Date; // Added date found
+  dateFound?: Date;
 }
 
 interface MatchResult {
@@ -56,9 +56,9 @@ interface ResultsDisplayProps {
 }
 
 const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
-  const [platformFilter, setPlatformFilter] = useState<string | null>(null);
-  const [authorizedDomains, setAuthorizedDomains] = useState<string[]>([]);
-  const [sortBy, setSortBy] = useState<'confidence' | 'date' | 'domain'>('confidence');
+  const [sortBy, setSortBy] = useState<'confidence' | 'date' | 'domain' | 'count'>('confidence');
+  const [filterPageType, setFilterPageType] = useState<string | null>(null);
+  const [filterDomain, setFilterDomain] = useState<string | null>(null);
   const [today] = useState(new Date());
   
   if (!results) return null;
@@ -87,49 +87,38 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
   const productPages = allRelevantPages.filter(page => page.pageType === 'product');
   const categoryPages = allRelevantPages.filter(page => page.pageType === 'category' || page.pageType === 'unknown');
 
-  // Group matches by platform for insight
-  const platformMap = new Map<string, number>();
-  exactMatches.forEach(match => {
-    const platform = match.platform || 'unknown';
-    platformMap.set(platform, (platformMap.get(platform) || 0) + 1);
-  });
-  
-  // Apply platform filter if set
-  const filteredExactMatches = platformFilter 
-    ? exactMatches.filter(match => (match.platform || 'unknown') === platformFilter)
-    : exactMatches;
-
-  const filteredSimilarMatches = platformFilter 
-    ? similarMatches.filter(match => (match.platform || 'unknown') === platformFilter)
-    : similarMatches;
-
-  const filteredProductPages = platformFilter
-    ? productPages.filter(page => (page.platform || 'unknown') === platformFilter)
-    : productPages;
-
-  const filteredCategoryPages = platformFilter
-    ? categoryPages.filter(page => (page.platform || 'unknown') === platformFilter)
-    : categoryPages;
-
-  // Filter out authorized domains if needed
-  const filterAuthorizedDomains = (items: WebImage[] | WebPage[]): (WebImage | WebPage)[] => {
-    if (!authorizedDomains.length) return items;
+  // Apply domain filter if set
+  const applyFilters = (items: any[]) => {
+    let filtered = [...items];
     
-    return items.filter(item => {
-      try {
-        const hostname = new URL(item.url).hostname;
-        return !authorizedDomains.some(domain => hostname.includes(domain));
-      } catch {
+    if (filterPageType) {
+      filtered = filtered.filter(item => {
+        if ('pageType' in item) {
+          return item.pageType === filterPageType;
+        }
         return true;
-      }
-    });
+      });
+    }
+    
+    if (filterDomain) {
+      filtered = filtered.filter(item => {
+        try {
+          const hostname = new URL(item.url).hostname;
+          return hostname.includes(filterDomain);
+        } catch {
+          return true;
+        }
+      });
+    }
+    
+    return filtered;
   };
 
   // Final filtered lists
-  const finalExactMatches = filterAuthorizedDomains(filteredExactMatches) as WebImage[];
-  const finalSimilarMatches = filterAuthorizedDomains(filteredSimilarMatches) as WebImage[];
-  const finalProductPages = filterAuthorizedDomains(filteredProductPages) as WebPage[];
-  const finalCategoryPages = filterAuthorizedDomains(filteredCategoryPages) as WebPage[];
+  const finalExactMatches = applyFilters(exactMatches) as WebImage[];
+  const finalSimilarMatches = applyFilters(similarMatches) as WebImage[];
+  const finalProductPages = applyFilters(productPages) as WebPage[];
+  const finalCategoryPages = applyFilters(categoryPages) as WebPage[];
 
   // Get total potential issues
   const exactMatchCount = finalExactMatches.length;
@@ -168,15 +157,37 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
     }
   };
 
-  // Get unique platforms from all matches
-  const uniquePlatforms = Array.from(
+  // Get unique domains from all matches for filtering
+  const uniqueDomains = Array.from(
     new Set([
-      ...exactMatches.map(m => m.platform || 'unknown'),
-      ...similarMatches.map(m => m.platform || 'unknown'),
-      ...productPages.map(p => p.platform || 'unknown'),
-      ...categoryPages.map(p => p.platform || 'unknown')
+      ...exactMatches.map(m => {
+        try {
+          return new URL(m.url).hostname;
+        } catch {
+          return '';
+        }
+      }),
+      ...similarMatches.map(m => {
+        try {
+          return new URL(m.url).hostname;
+        } catch {
+          return '';
+        }
+      }),
+      ...allRelevantPages.map(p => {
+        try {
+          return new URL(p.url).hostname;
+        } catch {
+          return '';
+        }
+      })
     ])
-  ).filter(p => p !== 'unknown');
+  ).filter(Boolean);
+
+  // Get unique page types
+  const uniquePageTypes = Array.from(
+    new Set(allRelevantPages.map(p => p.pageType))
+  ).filter(Boolean);
 
   return (
     <div className="space-y-8">
@@ -221,31 +232,53 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
               </div>
             </div>
             
-            {uniquePlatforms.length > 0 && (
-              <div className="flex items-center gap-2 flex-wrap">
-                <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Filter by platform:</span>
-                {uniquePlatforms.map(platform => (
-                  <Badge 
-                    key={platform} 
-                    variant={platformFilter === platform ? "default" : "outline"}
-                    className="cursor-pointer hover:bg-muted/80"
-                    onClick={() => setPlatformFilter(platformFilter === platform ? null : platform)}
-                  >
-                    {platform}
-                  </Badge>
-                ))}
-                {platformFilter && (
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => setPlatformFilter(null)}
-                  >
-                    Clear
-                  </Button>
-                )}
-              </div>
-            )}
+            {/* Advanced filtering */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="text-xs h-8 flex items-center gap-1"
+                onClick={() => {
+                  // Reset filters
+                  setFilterDomain(null);
+                  setFilterPageType(null);
+                }}
+              >
+                <Filter className="h-3 w-3" />
+                Advanced Filter
+              </Button>
+              
+              {/* Domain filter */}
+              {uniqueDomains.length > 0 && (
+                <select
+                  className="text-sm border rounded-md px-2 py-1 h-8"
+                  value={filterDomain || ''}
+                  onChange={(e) => setFilterDomain(e.target.value || null)}
+                >
+                  <option value="">All Domains</option>
+                  {uniqueDomains.map(domain => (
+                    <option key={domain} value={domain}>{domain}</option>
+                  ))}
+                </select>
+              )}
+              
+              {/* Page type filter */}
+              {uniquePageTypes.length > 0 && (
+                <select
+                  className="text-sm border rounded-md px-2 py-1 h-8"
+                  value={filterPageType || ''}
+                  onChange={(e) => setFilterPageType(e.target.value || null)}
+                >
+                  <option value="">All Page Types</option>
+                  {uniquePageTypes.map(type => (
+                    <option key={type} value={type}>
+                      {type === 'product' ? 'Product Pages' : 
+                       type === 'category' ? 'Category Pages' : 'Other Pages'}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
           </div>
           
           <div className="flex justify-between items-center mb-4 flex-wrap gap-2 mt-6">
@@ -254,44 +287,13 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
               <select 
                 className="text-sm border rounded-md px-2 py-1"
                 value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as 'confidence' | 'date' | 'domain')}
+                onChange={(e) => setSortBy(e.target.value as 'confidence' | 'date' | 'domain' | 'count')}
               >
                 <option value="confidence">Confidence</option>
                 <option value="date">Date Found</option>
                 <option value="domain">Domain</option>
+                <option value="count"># of Matches</option>
               </select>
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <Button 
-                variant="outline" 
-                size="sm"
-                className="text-xs h-8"
-                onClick={() => setAuthorizedDomains(prev => 
-                  prev.length ? [] : ['amazon.com', 'ebay.com', 'etsy.com']
-                )}
-              >
-                {authorizedDomains.length ? (
-                  <>
-                    <Check className="h-3 w-3 mr-1" />
-                    Show All
-                  </>
-                ) : (
-                  <>
-                    <Ban className="h-3 w-3 mr-1" />
-                    Hide Authorized
-                  </>
-                )}
-              </Button>
-              
-              <Button 
-                variant="outline" 
-                size="sm"
-                className="text-xs h-8"
-              >
-                <Globe className="h-3 w-3 mr-1" />
-                Manage Whitelist
-              </Button>
             </div>
           </div>
           
@@ -310,8 +312,16 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
       </Card>
 
       {totalMatchCount > 0 && (
-        <Tabs defaultValue="exact" className="w-full">
+        <Tabs defaultValue="all" className="w-full">
           <TabsList className="w-full justify-start mb-4 bg-gray-100">
+            <TabsTrigger value="all" className="relative">
+              All Results
+              {totalMatchCount > 0 && (
+                <Badge className="absolute -top-2 -right-2 bg-gray-500 text-white h-5 min-w-5 flex items-center justify-center p-0">
+                  {totalMatchCount}
+                </Badge>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="exact" className="relative">
               Exact Matches
               {finalExactMatches.length > 0 && (
@@ -328,108 +338,15 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="products" className="relative">
-              Product Pages
-              {finalProductPages.length > 0 && (
+            <TabsTrigger value="pages" className="relative">
+              Pages with Image
+              {(finalProductPages.length + finalCategoryPages.length) > 0 && (
                 <Badge className="absolute -top-2 -right-2 bg-brand-blue text-white h-5 min-w-5 flex items-center justify-center p-0">
-                  {finalProductPages.length}
+                  {finalProductPages.length + finalCategoryPages.length}
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="all">All Results</TabsTrigger>
           </TabsList>
-
-          <TabsContent value="exact" className="m-0">
-            <Card className="border-0 shadow-md">
-              <CardHeader className="bg-brand-red/10 border-b">
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center">
-                    <Badge className="bg-brand-red text-white mr-2">{finalExactMatches.length}</Badge>
-                    <CardTitle className="text-lg">Exact Image Matches</CardTitle>
-                    <span className="text-xs text-muted-foreground ml-2">(Confidence ≥ 80%)</span>
-                  </div>
-                  <Alert variant="destructive" className="w-auto py-1 h-9 px-3">
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertDescription className="ml-2">
-                      High risk of infringement
-                    </AlertDescription>
-                  </Alert>
-                </div>
-                <CardDescription>
-                  These are direct copies of your image found online
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="pt-4">
-                <ExactMatchesTable 
-                  matches={finalExactMatches}
-                  relatedPages={allRelevantPages} 
-                  sortBy={sortBy}
-                />
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="similar" className="m-0">
-            <Card className="border-0 shadow-md">
-              <CardHeader className="bg-amber-500/10 border-b">
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center">
-                    <Badge className="bg-amber-500 text-white mr-2">{finalSimilarMatches.length}</Badge>
-                    <CardTitle className="text-lg">Similar Image Matches</CardTitle>
-                    <span className="text-xs text-muted-foreground ml-2">(Confidence 60-80%)</span>
-                  </div>
-                  <Alert variant="warning" className="w-auto py-1 h-9 px-3 bg-amber-50 border-amber-200 text-amber-700">
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertDescription className="ml-2">
-                      Potential derivative works
-                    </AlertDescription>
-                  </Alert>
-                </div>
-                <CardDescription>
-                  These images appear visually similar to yours
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="pt-4">
-                <ExactMatchesTable 
-                  matches={finalSimilarMatches}
-                  relatedPages={allRelevantPages} 
-                  sortBy={sortBy}
-                />
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="products" className="m-0">
-            <Card className="border-0 shadow-md">
-              <CardHeader className="bg-brand-blue/10 border-b">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <Badge className="bg-brand-blue text-white mr-2">{finalProductPages.length}</Badge>
-                    <ShoppingBag className="h-4 w-4 mr-2 text-brand-blue" />
-                    <CardTitle className="text-lg">Products Using Your Image</CardTitle>
-                  </div>
-                  <Alert variant="default" className="w-auto py-1 h-9 px-3 bg-blue-50 border-blue-200 text-blue-700">
-                    <ShoppingBag className="h-4 w-4" />
-                    <AlertDescription className="ml-2">
-                      Products using your images
-                    </AlertDescription>
-                  </Alert>
-                </div>
-                <CardDescription>
-                  These pages appear to be selling products that use your image
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="pt-4">
-                <Alert variant="default" className="mb-4 bg-blue-50 border-blue-200">
-                  <AlertTitle>Potential sales of your image</AlertTitle>
-                  <AlertDescription>
-                    These pages appear to be selling products that use your image.
-                  </AlertDescription>
-                </Alert>
-                <PagesMatchTable pages={finalProductPages} sortBy={sortBy} />
-              </CardContent>
-            </Card>
-          </TabsContent>
 
           <TabsContent value="all" className="m-0">
             <Card className="border-0 shadow-md">
@@ -492,6 +409,98 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
                     <PagesMatchTable pages={finalCategoryPages} sortBy={sortBy} compact />
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="exact" className="m-0">
+            <Card className="border-0 shadow-md">
+              <CardHeader className="bg-brand-red/10 border-b">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center">
+                    <Badge className="bg-brand-red text-white mr-2">{finalExactMatches.length}</Badge>
+                    <CardTitle className="text-lg">Exact Image Matches</CardTitle>
+                    <span className="text-xs text-muted-foreground ml-2">(Confidence ≥ 80%)</span>
+                  </div>
+                  <Alert variant="destructive" className="w-auto py-1 h-9 px-3">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription className="ml-2">
+                      High risk of infringement
+                    </AlertDescription>
+                  </Alert>
+                </div>
+                <CardDescription>
+                  These are direct copies of your image found online
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="pt-4">
+                <ExactMatchesTable 
+                  matches={finalExactMatches}
+                  relatedPages={allRelevantPages} 
+                  sortBy={sortBy}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="similar" className="m-0">
+            <Card className="border-0 shadow-md">
+              <CardHeader className="bg-amber-500/10 border-b">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center">
+                    <Badge className="bg-amber-500 text-white mr-2">{finalSimilarMatches.length}</Badge>
+                    <CardTitle className="text-lg">Similar Image Matches</CardTitle>
+                    <span className="text-xs text-muted-foreground ml-2">(Confidence 60-80%)</span>
+                  </div>
+                  <Alert variant="warning" className="w-auto py-1 h-9 px-3">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription className="ml-2">
+                      Potential derivative works
+                    </AlertDescription>
+                  </Alert>
+                </div>
+                <CardDescription>
+                  These images appear visually similar to yours
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="pt-4">
+                <ExactMatchesTable 
+                  matches={finalSimilarMatches}
+                  relatedPages={allRelevantPages} 
+                  sortBy={sortBy}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="pages" className="m-0">
+            <Card className="border-0 shadow-md">
+              <CardHeader className="bg-brand-blue/10 border-b">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Badge className="bg-brand-blue text-white mr-2">{finalProductPages.length + finalCategoryPages.length}</Badge>
+                    <ShoppingBag className="h-4 w-4 mr-2 text-brand-blue" />
+                    <CardTitle className="text-lg">Pages with Your Image</CardTitle>
+                  </div>
+                  <Alert variant="default" className="w-auto py-1 h-9 px-3 bg-blue-50 border-blue-200 text-blue-700">
+                    <ShoppingBag className="h-4 w-4" />
+                    <AlertDescription className="ml-2">
+                      Pages using your images
+                    </AlertDescription>
+                  </Alert>
+                </div>
+                <CardDescription>
+                  These pages are using your image
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="pt-4">
+                <Alert variant="default" className="mb-4 bg-blue-50 border-blue-200">
+                  <AlertTitle>Pages with your image</AlertTitle>
+                  <AlertDescription>
+                    These pages appear to be using your image.
+                  </AlertDescription>
+                </Alert>
+                <PagesMatchTable pages={[...finalProductPages, ...finalCategoryPages]} sortBy={sortBy} />
               </CardContent>
             </Card>
           </TabsContent>
