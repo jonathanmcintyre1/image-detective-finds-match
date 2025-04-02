@@ -17,6 +17,7 @@ interface WebPage {
   score: number;
   pageTitle: string;
   platform?: string; 
+  matchingImages?: WebImage[];
 }
 
 interface MatchResult {
@@ -203,11 +204,21 @@ const processResponse = (data: any): MatchResult => {
   const pagesWithMatchingImages = (webDetection.pagesWithMatchingImages || [])
     .map((page: any) => {
       const platform = identifyPlatform(page.url);
+      
+      // Extract matching images from this page
+      const pageMatchingImages = (page.fullMatchingImages || []).map((img: any) => ({
+        url: img.url,
+        score: 0.95,
+        imageUrl: img.url,
+        platform: identifyPlatform(img.url)
+      }));
+      
       return {
         url: page.url || '',
         score: page.score || 0.7, // Default reasonable score
         pageTitle: page.pageTitle || '',
-        platform
+        platform,
+        matchingImages: pageMatchingImages.length > 0 ? pageMatchingImages : undefined
       };
     });
   

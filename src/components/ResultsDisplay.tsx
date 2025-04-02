@@ -1,9 +1,11 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import DataTable from '@/components/DataTable';
 import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, AlertCircle, Link as LinkIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ExactMatchesTable } from './ExactMatchesTable';
+import { PagesMatchTable } from './PagesMatchTable';
 
 interface WebEntity {
   entityId: string;
@@ -79,13 +81,37 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
         )}
       </div>
 
-      {/* Data Tables - Main component that shows all the matches */}
-      {(exactMatches.length > 0 || similarImages.length > 0 || relevantPages.length > 0) && (
-        <DataTable 
-          exactMatches={exactMatches}
-          similarImages={similarImages}
-          pages={relevantPages}
-        />
+      {/* Show Exact Matches Section */}
+      {exactMatches.length > 0 && (
+        <div className="bg-white shadow-sm border rounded-lg p-6">
+          <h3 className="text-lg font-bold mb-4 text-brand-dark flex items-center">
+            <Badge className="bg-brand-red text-white mr-2">{exactMatches.length}</Badge>
+            Exact Image Matches
+          </h3>
+          <ExactMatchesTable matches={exactMatches} />
+        </div>
+      )}
+
+      {/* Show Pages with Matching Images Section */}
+      {relevantPages.length > 0 && (
+        <div className="bg-white shadow-sm border rounded-lg p-6">
+          <h3 className="text-lg font-bold mb-4 text-brand-dark flex items-center">
+            <Badge className="bg-brand-blue text-white mr-2">{relevantPages.length}</Badge>
+            Pages with Your Image
+          </h3>
+          <PagesMatchTable pages={relevantPages} />
+        </div>
+      )}
+
+      {/* Show Similar Images Section */}
+      {similarImages.length > 0 && (
+        <div className="bg-white shadow-sm border rounded-lg p-6">
+          <h3 className="text-lg font-bold mb-4 text-brand-dark flex items-center">
+            <Badge className="bg-gray-500 text-white mr-2">{similarImages.length}</Badge>
+            Similar Image Matches
+          </h3>
+          <ExactMatchesTable matches={similarImages} />
+        </div>
       )}
 
       {!exactMatches.length && !similarImages.length && !relevantPages.length && (
