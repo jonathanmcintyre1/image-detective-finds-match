@@ -38,14 +38,14 @@ interface ResultsDisplayProps {
 const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
   if (!results) return null;
   
-  // Filter images and pages to only show good matches
-  const exactMatches = results.visuallySimilarImages.filter(img => img.score >= 0.85);
-  const similarImages = results.visuallySimilarImages.filter(img => img.score >= 0.7 && img.score < 0.85);
-  const relevantPages = results.pagesWithMatchingImages.filter(page => page.score >= 0.65);
+  // Adjusted thresholds - lowering them to show more matches
+  const exactMatches = results.visuallySimilarImages.filter(img => img.score >= 0.7);
+  const similarImages = results.visuallySimilarImages.filter(img => img.score >= 0.5 && img.score < 0.7);
+  const relevantPages = results.pagesWithMatchingImages;
 
   // Get total potential issues
   const totalIssues = exactMatches.length + similarImages.length;
-  const totalMatchCount = relevantPages.length;
+  const totalMatchCount = relevantPages.length + exactMatches.length + similarImages.length;
 
   return (
     <div className="space-y-8">
@@ -55,9 +55,9 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-3">
             <Badge className="text-brand-light px-4 py-1 text-lg font-medium bg-brand-blue">
-              {relevantPages.length}
+              {totalMatchCount}
             </Badge>
-            <span className="font-medium text-lg">Pages with Matching Images</span>
+            <span className="font-medium text-lg">Total Matches Found</span>
           </div>
           
           <Button variant="outline" className="flex items-center gap-2">

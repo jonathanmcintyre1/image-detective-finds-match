@@ -62,6 +62,7 @@ export const analyzeImage = async (apiKey: string, imageData: string | File): Pr
       }
       
       const data = await response.json();
+      console.log("API Response:", JSON.stringify(data, null, 2)); // Log full API response
       return processResponse(data);
       
     } else if (imageData instanceof File) {
@@ -97,6 +98,7 @@ export const analyzeImage = async (apiKey: string, imageData: string | File): Pr
       }
       
       const data = await response.json();
+      console.log("API Response:", JSON.stringify(data, null, 2)); // Log full API response
       return processResponse(data);
     }
     
@@ -150,27 +152,60 @@ const identifyPlatform = (url: string): string => {
 
 const processResponse = (data: any): MatchResult => {
   const webDetection = data.responses[0]?.webDetection || {};
+  console.log("Web Detection Data:", JSON.stringify(webDetection, null, 2)); // Log parsed web detection
+
+  // Process all types of matches from the API
   
-  // Filter to only include exact matches and partial matches with high confidence
+  // Visually similar images - include all with a reasonable score
   const visuallySimilarImages = (webDetection.visuallySimilarImages || [])
-    .filter((image: any) => image.score >= 0.7)
     .map((image: any) => {
       const platform = identifyPlatform(image.url);
       return {
         url: image.url || '',
-        score: image.score || 0,
+        score: image.score || 0.7, // Default reasonable score if not provided
         imageUrl: image.url || '',
         platform
       };
     });
 
-  // Process pages with matching images
+  // Full matches - these are highest confidence
+  const fullMatchingImages = (webDetection.fullMatchingImages || [])
+    .map((image: any) => {
+      const platform = identifyPlatform(image.url);
+      return {
+        url: image.url || '',
+        score: 0.95, // High confidence for full matches
+        imageUrl: image.url || '',
+        platform
+      };
+    });
+
+  // Partial matching images
+  const partialMatchingImages = (webDetection.partialMatchingImages || [])
+    .map((image: any) => {
+      const platform = identifyPlatform(image.url);
+      return {
+        url: image.url || '',
+        score: 0.8, // Good confidence for partial matches
+        imageUrl: image.url || '',
+        platform
+      };
+    });
+
+  // Combine all image matches
+  const allSimilarImages = [
+    ...fullMatchingImages,
+    ...partialMatchingImages,
+    ...visuallySimilarImages
+  ];
+
+  // Process pages with matching images - don't filter these, show all
   const pagesWithMatchingImages = (webDetection.pagesWithMatchingImages || [])
     .map((page: any) => {
       const platform = identifyPlatform(page.url);
       return {
         url: page.url || '',
-        score: page.score || 0,
+        score: page.score || 0.7, // Default reasonable score
         pageTitle: page.pageTitle || '',
         platform
       };
@@ -183,7 +218,7 @@ const processResponse = (data: any): MatchResult => {
       description: entity.description || 'Unknown Entity'
     })) || [],
     
-    visuallySimilarImages,
+    visuallySimilarImages: allSimilarImages,
     pagesWithMatchingImages
   };
 };
