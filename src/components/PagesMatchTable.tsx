@@ -41,6 +41,27 @@ type GroupedPage = {
   expanded: boolean;
 };
 
+// Function to get hostname from URL
+const getHostname = (url: string): string => {
+  try {
+    return new URL(url).hostname.replace('www.', '');
+  } catch {
+    return url;
+  }
+};
+
+// Function to get website name from hostname
+const getWebsiteName = (url: string, platform?: string): string => {
+  if (platform) return platform;
+  
+  const hostname = getHostname(url);
+  const domainParts = hostname.split('.');
+  if (domainParts.length > 1) {
+    return domainParts[0].charAt(0).toUpperCase() + domainParts[0].slice(1);
+  }
+  return hostname;
+};
+
 export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({ pages }) => {
   const [visiblePages, setVisiblePages] = useState<WebPage[]>(pages.slice(0, 5));
   const [loadMoreVisible, setLoadMoreVisible] = useState(pages.length > 5);
@@ -70,27 +91,6 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({ pages }) => {
     
     return Array.from(sites.values());
   }, [visiblePages, groupedState]);
-
-  // Function to get hostname from URL
-  const getHostname = (url: string): string => {
-    try {
-      return new URL(url).hostname.replace('www.', '');
-    } catch {
-      return url;
-    }
-  };
-
-  // Function to get website name from hostname
-  const getWebsiteName = (url: string, platform?: string): string => {
-    if (platform) return platform;
-    
-    const hostname = getHostname(url);
-    const domainParts = hostname.split('.');
-    if (domainParts.length > 1) {
-      return domainParts[0].charAt(0).toUpperCase() + domainParts[0].slice(1);
-    }
-    return hostname;
-  };
 
   const getPlatformBadgeColor = (platform?: string): string => {
     if (!platform) return "bg-gray-500 text-white";
