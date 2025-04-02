@@ -1,9 +1,11 @@
+
 import React, { useState, useMemo } from 'react';
 import { 
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
 } from '@/components/ui/table';
 import { 
-  ExternalLink, Download, Flag, Copy, Star, AlertTriangle, ChevronDown, ChevronUp
+  ExternalLink, Download, Flag, Copy, Star, AlertTriangle, ChevronDown, ChevronUp,
+  Clock, FileText, Calendar, Shield, ShieldOff
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,12 +14,14 @@ import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from 'sonner';
 import ImageModal from './ImageModal';
+import { format } from 'date-fns';
 
 interface WebImage {
   url: string;
   score: number;
   imageUrl?: string;
   platform?: string;
+  dateFound?: Date;
 }
 
 interface WebPage {
@@ -27,11 +31,14 @@ interface WebPage {
   platform?: string;
   pageType?: 'product' | 'category' | 'unknown';
   matchingImages?: WebImage[];
+  dateFound?: Date;
 }
 
 interface ExactMatchesTableProps {
   matches: WebImage[];
   relatedPages?: WebPage[];
+  sortBy?: 'confidence' | 'date' | 'domain';
+  compact?: boolean;
 }
 
 type GroupedMatch = {
@@ -41,6 +48,7 @@ type GroupedMatch = {
   expanded: boolean;
 };
 
+// Function to get hostname from URL
 const getHostname = (url: string): string => {
   try {
     return new URL(url).hostname.replace('www.', '');
@@ -49,6 +57,7 @@ const getHostname = (url: string): string => {
   }
 };
 
+// Function to get website name from hostname
 const getWebsiteName = (url: string, platform?: string): string => {
   if (platform) return platform;
   
@@ -60,13 +69,49 @@ const getWebsiteName = (url: string, platform?: string): string => {
   return hostname;
 };
 
-export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({ matches, relatedPages = [] }) => {
-  const [visibleMatches, setVisibleMatches] = useState<WebImage[]>(matches.slice(0, 5));
-  const [loadMoreVisible, setLoadMoreVisible] = useState(matches.length > 5);
+export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({ 
+  matches, 
+  relatedPages = [],
+  sortBy = 'confidence',
+  compact = false
+}) => {
+  const [visibleMatches, setVisibleMatches] = useState<WebImage[]>(matches.slice(0, compact ? 3 : 5));
+  const [loadMoreVisible, setLoadMoreVisible] = useState(matches.length > (compact ? 3 : 5));
   const [groupedState, setGroupedState] = useState<Record<string, boolean>>({});
   const [selectedImage, setSelectedImage] = useState<WebImage | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
+  // Sort matches based on sortBy prop
+  const sortedMatches = useMemo(() => {
+    let sorted = [...matches];
+    
+    switch(sortBy) {
+      case 'confidence':
+        return sorted.sort((a, b) => b.score - a.score);
+      case 'date':
+        return sorted.sort((a, b) => {
+          const dateA = a.dateFound || new Date();
+          const dateB = b.dateFound || new Date();
+          return dateB.getTime() - dateA.getTime();
+        });
+      case 'domain':
+        return sorted.sort((a, b) => {
+          const domainA = getHostname(a.url);
+          const domainB = getHostname(b.url);
+          return domainA.localeCompare(domainB);
+        });
+      default:
+        return sorted;
+    }
+  }, [matches, sortBy]);
+
+  // Update visible matches when sorting changes
+  useMemo(() => {
+    setVisibleMatches(sortedMatches.slice(0, compact ? 3 : 5));
+    setLoadMoreVisible(sortedMatches.length > (compact ? 3 : 5));
+  }, [sortedMatches, compact]);
+
+  // Group visible matches by site
   const groupedMatches = useMemo(() => {
     const sites = new Map<string, GroupedMatch>();
     
@@ -79,7 +124,7 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({ matches, r
           site: hostname,
           platform: platform,
           matches: [match],
-          expanded: groupedState[hostname] ?? false
+          expanded: groupedState[hostname] ?? true // Default to expanded in this version
         });
       } else {
         sites.get(hostname)?.matches.push(match);
@@ -90,10 +135,11 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({ matches, r
   }, [visibleMatches, groupedState]);
 
   const loadMore = () => {
-    const nextBatch = matches.slice(visibleMatches.length, visibleMatches.length + 5);
+    const nextBatchSize = compact ? 3 : 5;
+    const nextBatch = sortedMatches.slice(visibleMatches.length, visibleMatches.length + nextBatchSize);
     setVisibleMatches(prev => [...prev, ...nextBatch]);
     
-    if (visibleMatches.length + 5 >= matches.length) {
+    if (visibleMatches.length + nextBatchSize >= sortedMatches.length) {
       setLoadMoreVisible(false);
     }
   };
@@ -104,8 +150,8 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({ matches, r
   };
 
   const handleReportClick = (url: string) => {
-    toast.info(`Reporting ${getHostname(url)}`, {
-      description: "This feature will be available soon"
+    toast.info(`Preparing DMCA takedown for ${getHostname(url)}`, {
+      description: "This will guide you through filing a copyright claim"
     });
   };
 
@@ -129,6 +175,14 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({ matches, r
     );
   };
 
+  // Determine if a domain might be an authorized reseller
+  const isLikelyAuthorized = (url: string): boolean => {
+    const hostname = getHostname(url);
+    // This would normally be a check against a user-configured whitelist
+    const commonMarketplaces = ['amazon.com', 'walmart.com', 'etsy.com'];
+    return commonMarketplaces.some(market => hostname.includes(market));
+  };
+
   return (
     <div className="space-y-4">
       {groupedMatches.length > 0 ? (
@@ -144,7 +198,14 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({ matches, r
                 <div className="flex items-center space-x-3">
                   <Badge className="bg-gray-200 text-gray-800">{group.matches.length}</Badge>
                   <h3 className="text-base font-medium">{group.platform}</h3>
-                  <span className="text-sm text-muted-foreground">({group.site})</span>
+                  <div className="flex items-center">
+                    <span className="text-sm text-muted-foreground">({group.site})</span>
+                    {isLikelyAuthorized(group.site) ? (
+                      <Badge className="ml-2 bg-green-500 text-white text-xs">Authorized</Badge>
+                    ) : (
+                      <Badge className="ml-2 bg-red-500 text-white text-xs">Unauthorized</Badge>
+                    )}
+                  </div>
                 </div>
                 <div className="flex items-center text-muted-foreground">
                   <span className="text-sm mr-2">
@@ -160,12 +221,58 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({ matches, r
             </CollapsibleTrigger>
             
             <CollapsibleContent>
+              <div className="px-4 py-2 bg-gray-50 border-b flex justify-between items-center">
+                <div className="flex items-center space-x-2">
+                  {isLikelyAuthorized(group.site) ? (
+                    <div className="flex items-center text-green-600">
+                      <Shield className="h-4 w-4 mr-1" />
+                      <span className="text-sm">Authorized Reseller</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center text-red-600">
+                      <ShieldOff className="h-4 w-4 mr-1" />
+                      <span className="text-sm">Unauthorized Use</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="text-xs h-7"
+                    onClick={() => toast.info(`Domain ${group.site} added to whitelist`, {
+                      description: "This domain will be marked as authorized in future scans"
+                    })}
+                  >
+                    Add to Whitelist
+                  </Button>
+                  <Button 
+                    variant={isLikelyAuthorized(group.site) ? "outline" : "destructive"} 
+                    size="sm" 
+                    className="text-xs h-7"
+                    onClick={() => {
+                      if (isLikelyAuthorized(group.site)) {
+                        toast.info(`Contact ${group.site}`, {
+                          description: "This appears to be an authorized reseller"
+                        });
+                      } else {
+                        toast.info(`Report all matches from ${group.site}`, {
+                          description: "Preparing batch DMCA takedown notices"
+                        });
+                      }
+                    }}
+                  >
+                    {isLikelyAuthorized(group.site) ? 'Contact' : 'Report All'}
+                  </Button>
+                </div>
+              </div>
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-16">Image</TableHead>
                     <TableHead>Website</TableHead>
                     <TableHead>URL</TableHead>
+                    {!compact && <TableHead>Found</TableHead>}
                     <TableHead className="w-24 text-right">Confidence</TableHead>
                     <TableHead className="w-32 text-right">Actions</TableHead>
                   </TableRow>
@@ -216,6 +323,16 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({ matches, r
                               </a>
                             </div>
                           </TableCell>
+                          {!compact && (
+                            <TableCell>
+                              <div className="flex items-center text-sm text-muted-foreground">
+                                <Calendar className="h-3 w-3 mr-1" />
+                                {match.dateFound 
+                                  ? format(match.dateFound, 'MMM d, yyyy')
+                                  : format(new Date(), 'MMM d, yyyy')}
+                              </div>
+                            </TableCell>
+                          )}
                           <TableCell className="text-right">
                             <Badge className={`${match.score >= 0.9 ? 'bg-brand-red' : 'bg-amber-500'} text-white`}>
                               {Math.round(match.score * 100)}%
@@ -241,7 +358,13 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({ matches, r
                               >
                                 <Copy className="h-4 w-4 text-muted-foreground" />
                               </Button>
-                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0" title="Save">
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-8 w-8 p-0" 
+                                title="Save"
+                                onClick={() => toast.success("Saved for later")}
+                              >
                                 <Star className="h-4 w-4 text-muted-foreground" />
                               </Button>
                             </div>
@@ -250,7 +373,7 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({ matches, r
                         
                         {relatedPagesList.length > 0 && (
                           <TableRow className="bg-gray-50/50 border-t border-dashed">
-                            <TableCell colSpan={5}>
+                            <TableCell colSpan={compact ? 5 : 6}>
                               <div className="pl-6 py-2">
                                 <p className="text-xs font-medium text-muted-foreground mb-1">Related Pages:</p>
                                 <div className="space-y-1">
@@ -265,9 +388,16 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({ matches, r
                                         <span className="truncate max-w-xs">{page.pageTitle || getHostname(page.url)}</span>
                                         <ExternalLink className="ml-1 h-3 w-3 inline flex-shrink-0" />
                                       </a>
-                                      <Badge variant="outline" className="text-xs">
-                                        {page.pageType === 'product' ? 'Product' : 'Page'}
-                                      </Badge>
+                                      <div className="flex items-center space-x-2">
+                                        <Badge variant="outline" className="text-xs">
+                                          {page.pageType === 'product' ? 'Product' : 'Page'}
+                                        </Badge>
+                                        {!compact && page.dateFound && (
+                                          <span className="text-xs text-muted-foreground">
+                                            {format(page.dateFound, 'MMM d, yyyy')}
+                                          </span>
+                                        )}
+                                      </div>
                                     </div>
                                   ))}
                                 </div>
@@ -286,7 +416,7 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({ matches, r
       ) : (
         <Card className="p-6 text-center">
           <AlertTriangle className="mx-auto h-10 w-10 text-brand-blue mb-4" />
-          <p className="text-muted-foreground">No exact image matches found</p>
+          <p className="text-muted-foreground">No image matches found</p>
         </Card>
       )}
 

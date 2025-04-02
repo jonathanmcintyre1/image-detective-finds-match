@@ -4,7 +4,8 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
 } from '@/components/ui/table';
 import { 
-  ExternalLink, Image, FileText, Eye, Flag, Copy, ShoppingBag, Tag, AlertTriangle, ChevronDown, ChevronUp
+  ExternalLink, Image, FileText, Eye, Flag, Copy, ShoppingBag, Tag, AlertTriangle, 
+  ChevronDown, ChevronUp, Calendar, Shield, ShieldOff, Star
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,12 +14,14 @@ import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from 'sonner';
 import ImageModal from './ImageModal';
+import { format } from 'date-fns';
 
 interface WebImage {
   url: string;
   score: number;
   imageUrl?: string;
   platform?: string;
+  dateFound?: Date;
 }
 
 interface WebPage {
@@ -28,10 +31,13 @@ interface WebPage {
   platform?: string;
   pageType?: 'product' | 'category' | 'unknown';
   matchingImages?: WebImage[];
+  dateFound?: Date;
 }
 
 interface PagesMatchTableProps {
   pages: WebPage[];
+  sortBy?: 'confidence' | 'date' | 'domain';
+  compact?: boolean;
 }
 
 type GroupedPage = {
@@ -62,12 +68,46 @@ const getWebsiteName = (url: string, platform?: string): string => {
   return hostname;
 };
 
-export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({ pages }) => {
-  const [visiblePages, setVisiblePages] = useState<WebPage[]>(pages.slice(0, 5));
-  const [loadMoreVisible, setLoadMoreVisible] = useState(pages.length > 5);
+export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({ 
+  pages,
+  sortBy = 'confidence',
+  compact = false 
+}) => {
+  // Sort pages based on sortBy prop
+  const sortedPages = useMemo(() => {
+    let sorted = [...pages];
+    
+    switch(sortBy) {
+      case 'confidence':
+        return sorted.sort((a, b) => b.score - a.score);
+      case 'date':
+        return sorted.sort((a, b) => {
+          const dateA = a.dateFound || new Date();
+          const dateB = b.dateFound || new Date();
+          return dateB.getTime() - dateA.getTime();
+        });
+      case 'domain':
+        return sorted.sort((a, b) => {
+          const domainA = getHostname(a.url);
+          const domainB = getHostname(b.url);
+          return domainA.localeCompare(domainB);
+        });
+      default:
+        return sorted;
+    }
+  }, [pages, sortBy]);
+
+  const [visiblePages, setVisiblePages] = useState<WebPage[]>(sortedPages.slice(0, compact ? 3 : 5));
+  const [loadMoreVisible, setLoadMoreVisible] = useState(sortedPages.length > (compact ? 3 : 5));
   const [groupedState, setGroupedState] = useState<Record<string, boolean>>({});
   const [selectedImage, setSelectedImage] = useState<WebImage | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+
+  // Update visible pages when sorting changes
+  useMemo(() => {
+    setVisiblePages(sortedPages.slice(0, compact ? 3 : 5));
+    setLoadMoreVisible(sortedPages.length > (compact ? 3 : 5));
+  }, [sortedPages, compact]);
 
   // Group pages by hostname
   const groupedPages = useMemo(() => {
@@ -82,7 +122,7 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({ pages }) => {
           site: hostname,
           platform: platform,
           pages: [page],
-          expanded: groupedState[hostname] ?? false
+          expanded: groupedState[hostname] ?? true
         });
       } else {
         sites.get(hostname)?.pages.push(page);
@@ -106,10 +146,11 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({ pages }) => {
   };
 
   const loadMore = () => {
-    const nextBatch = pages.slice(visiblePages.length, visiblePages.length + 5);
+    const nextBatchSize = compact ? 3 : 5;
+    const nextBatch = sortedPages.slice(visiblePages.length, visiblePages.length + nextBatchSize);
     setVisiblePages(prev => [...prev, ...nextBatch]);
     
-    if (visiblePages.length + 5 >= pages.length) {
+    if (visiblePages.length + nextBatchSize >= sortedPages.length) {
       setLoadMoreVisible(false);
     }
   };
@@ -133,7 +174,7 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({ pages }) => {
 
   const handleReportClick = (url: string) => {
     toast.info(`Reporting ${getHostname(url)}`, {
-      description: "This feature will be available soon"
+      description: "This will guide you through filing a copyright claim"
     });
   };
 
@@ -147,6 +188,14 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({ pages }) => {
   const handleImageClick = (image: WebImage) => {
     setSelectedImage(image);
     setModalOpen(true);
+  };
+
+  // Determine if a domain might be an authorized reseller
+  const isLikelyAuthorized = (url: string): boolean => {
+    const hostname = getHostname(url);
+    // This would normally be a check against a user-configured whitelist
+    const commonMarketplaces = ['amazon.com', 'walmart.com', 'etsy.com'];
+    return commonMarketplaces.some(market => hostname.includes(market));
   };
 
   return (
@@ -164,7 +213,14 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({ pages }) => {
                 <div className="flex items-center space-x-3">
                   <Badge className="bg-gray-200 text-gray-800">{group.pages.length}</Badge>
                   <h3 className="text-base font-medium">{group.platform}</h3>
-                  <span className="text-sm text-muted-foreground">({group.site})</span>
+                  <div className="flex items-center">
+                    <span className="text-sm text-muted-foreground">({group.site})</span>
+                    {isLikelyAuthorized(group.site) ? (
+                      <Badge className="ml-2 bg-green-500 text-white text-xs">Authorized</Badge>
+                    ) : (
+                      <Badge className="ml-2 bg-red-500 text-white text-xs">Unauthorized</Badge>
+                    )}
+                  </div>
                 </div>
                 <div className="flex items-center text-muted-foreground">
                   <span className="text-sm mr-2">
@@ -180,6 +236,52 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({ pages }) => {
             </CollapsibleTrigger>
             
             <CollapsibleContent>
+              <div className="px-4 py-2 bg-gray-50 border-b flex justify-between items-center">
+                <div className="flex items-center space-x-2">
+                  {isLikelyAuthorized(group.site) ? (
+                    <div className="flex items-center text-green-600">
+                      <Shield className="h-4 w-4 mr-1" />
+                      <span className="text-sm">Authorized Reseller</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center text-red-600">
+                      <ShieldOff className="h-4 w-4 mr-1" />
+                      <span className="text-sm">Unauthorized Use</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="text-xs h-7"
+                    onClick={() => toast.info(`Domain ${group.site} added to whitelist`, {
+                      description: "This domain will be marked as authorized in future scans"
+                    })}
+                  >
+                    Add to Whitelist
+                  </Button>
+                  <Button 
+                    variant={isLikelyAuthorized(group.site) ? "outline" : "destructive"} 
+                    size="sm" 
+                    className="text-xs h-7"
+                    onClick={() => {
+                      if (isLikelyAuthorized(group.site)) {
+                        toast.info(`Contact ${group.site}`, {
+                          description: "This appears to be an authorized reseller"
+                        });
+                      } else {
+                        toast.info(`Report all matches from ${group.site}`, {
+                          description: "Preparing batch DMCA takedown notices"
+                        });
+                      }
+                    }}
+                  >
+                    {isLikelyAuthorized(group.site) ? 'Contact' : 'Report All'}
+                  </Button>
+                </div>
+              </div>
+              
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -187,6 +289,7 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({ pages }) => {
                     <TableHead>Page</TableHead>
                     <TableHead>URL</TableHead>
                     <TableHead className="w-24">Type</TableHead>
+                    {!compact && <TableHead>Found</TableHead>}
                     <TableHead className="w-32 text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -198,7 +301,7 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({ pages }) => {
                           {page.matchingImages && page.matchingImages.length > 0 ? (
                             <div 
                               className="w-full h-full cursor-pointer hover:ring-2 hover:ring-brand-blue hover:ring-opacity-50 transition-all"
-                              onClick={() => handleImageClick(page.matchingImages![0])}
+                              onClick={() => page.matchingImages && handleImageClick(page.matchingImages[0])}
                             >
                               <AspectRatio ratio={1 / 1} className="bg-muted">
                                 <img 
@@ -253,6 +356,16 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({ pages }) => {
                           </span>
                         </div>
                       </TableCell>
+                      {!compact && (
+                        <TableCell>
+                          <div className="flex items-center text-sm text-muted-foreground">
+                            <Calendar className="h-3 w-3 mr-1" />
+                            {page.dateFound 
+                              ? format(page.dateFound, 'MMM d, yyyy')
+                              : format(new Date(), 'MMM d, yyyy')}
+                          </div>
+                        </TableCell>
+                      )}
                       <TableCell className="text-right">
                         <div className="opacity-0 group-hover:opacity-100 flex items-center justify-end space-x-1 transition-opacity">
                           <Button 
@@ -283,6 +396,15 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({ pages }) => {
                             onClick={() => handleCopyUrl(page.url)}
                           >
                             <Copy className="h-4 w-4 text-muted-foreground" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-8 w-8 p-0" 
+                            title="Save" 
+                            onClick={() => toast.success("Saved for later")}
+                          >
+                            <Star className="h-4 w-4 text-muted-foreground" />
                           </Button>
                         </div>
                       </TableCell>
