@@ -6,7 +6,7 @@ import ResultsDisplay from '@/components/ResultsDisplay';
 import ApiKeyInput from '@/components/ApiKeyInput';
 import { analyzeImage } from '@/services/googleVisionService';
 import { toast } from 'sonner';
-import { Loader2, Shield, Image as ImageIcon, AlertCircle } from 'lucide-react';
+import { Loader2, Shield, Image as ImageIcon, AlertCircle, Upload, Sparkles, Search } from 'lucide-react';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -110,11 +110,11 @@ const Index = () => {
       <main className="flex-1 container py-8 space-y-8">
         <div className="text-center max-w-2xl mx-auto space-y-4 mb-8">
           <div className="flex items-center justify-center mb-2">
-            <div className="relative h-12 w-12 mr-3">
+            <div className="relative h-16 w-16 mr-3">
               <img 
-                src="/lovable-uploads/c387652c-0c08-4865-bde3-c40cbbf872f5.png" 
+                src="/lovable-uploads/02ba20bb-b85e-440c-9a4d-865ee5336758.png" 
                 alt="CopyProtect Logo" 
-                className="h-full w-full object-contain"
+                className="h-full w-full object-contain drop-shadow-lg"
               />
             </div>
             <h1 className="text-4xl font-bold text-brand-dark">
@@ -122,9 +122,9 @@ const Index = () => {
             </h1>
           </div>
           <p className="text-lg text-muted-foreground">
-            Upload an image or enter an image URL to discover unauthorized copies across the web
+            Discover unauthorized copies of your images across the web in seconds
           </p>
-          <div className="flex justify-center">
+          <div className="hidden">
             <ApiKeyInput apiKey={apiKey} setApiKey={setApiKey} />
           </div>
         </div>
@@ -144,7 +144,7 @@ const Index = () => {
                 {previewUrl && (
                   <div className="mt-6">
                     <p className="text-sm font-medium mb-2 text-brand-dark">Image Preview:</p>
-                    <div className="border rounded-lg overflow-hidden shadow-sm bg-gray-50">
+                    <div className="border rounded-lg overflow-hidden shadow-sm bg-gray-100">
                       {imageError ? (
                         <div className="aspect-video flex items-center justify-center bg-gray-100 p-4">
                           <Alert variant="destructive">
@@ -156,14 +156,14 @@ const Index = () => {
                           </Alert>
                         </div>
                       ) : (
-                        <AspectRatio ratio={4 / 3} className="bg-muted">
+                        <div className="p-4 flex justify-center items-center bg-gray-50 max-h-60">
                           <img 
                             src={previewUrl}
                             alt="Preview"
-                            className="w-full h-full object-contain"
+                            className="max-h-52 max-w-full object-contain"
                             onError={handleImageError}
                           />
-                        </AspectRatio>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -175,21 +175,38 @@ const Index = () => {
               <CardHeader className="bg-gray-50 border-b">
                 <CardTitle className="text-base">How It Works</CardTitle>
               </CardHeader>
-              <CardContent className="p-6">
-                <ol className="space-y-3 text-sm text-muted-foreground">
-                  <li className="flex">
-                    <span className="h-6 w-6 rounded-full bg-brand-blue text-white flex items-center justify-center mr-2 flex-shrink-0 text-xs font-bold">1</span>
-                    <span>Upload your image or provide a URL</span>
-                  </li>
-                  <li className="flex">
-                    <span className="h-6 w-6 rounded-full bg-brand-blue text-white flex items-center justify-center mr-2 flex-shrink-0 text-xs font-bold">2</span>
-                    <span>Our AI scans the web for exact or similar matches</span>
-                  </li>
-                  <li className="flex">
-                    <span className="h-6 w-6 rounded-full bg-brand-blue text-white flex items-center justify-center mr-2 flex-shrink-0 text-xs font-bold">3</span>
-                    <span>Review results and take action if unauthorized use is found</span>
-                  </li>
-                </ol>
+              <CardContent className="p-6 space-y-6">
+                <div className="grid grid-cols-1 gap-6">
+                  <div className="flex flex-col items-center text-center">
+                    <div className="w-12 h-12 bg-brand-blue/10 rounded-full flex items-center justify-center mb-3">
+                      <Upload className="h-6 w-6 text-brand-blue" />
+                    </div>
+                    <h3 className="font-medium mb-1">Upload Your Image</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Upload an image or provide a URL that you want to protect
+                    </p>
+                  </div>
+                  
+                  <div className="flex flex-col items-center text-center">
+                    <div className="w-12 h-12 bg-brand-blue/10 rounded-full flex items-center justify-center mb-3">
+                      <Search className="h-6 w-6 text-brand-blue" />
+                    </div>
+                    <h3 className="font-medium mb-1">AI-Powered Scan</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Our AI scans the web for exact or similar matches to your image
+                    </p>
+                  </div>
+                  
+                  <div className="flex flex-col items-center text-center">
+                    <div className="w-12 h-12 bg-brand-blue/10 rounded-full flex items-center justify-center mb-3">
+                      <Sparkles className="h-6 w-6 text-brand-blue" />
+                    </div>
+                    <h3 className="font-medium mb-1">Review Results</h3>
+                    <p className="text-sm text-muted-foreground">
+                      See where your images appear and take action against unauthorized use
+                    </p>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -235,7 +252,7 @@ const Index = () => {
         <div className="container text-center text-sm">
           <div className="flex items-center justify-center gap-2 mb-2">
             <img 
-              src="/lovable-uploads/c387652c-0c08-4865-bde3-c40cbbf872f5.png" 
+              src="/lovable-uploads/02ba20bb-b85e-440c-9a4d-865ee5336758.png" 
               alt="CopyProtect Logo" 
               className="h-5 w-5"
             />

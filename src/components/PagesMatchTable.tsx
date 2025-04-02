@@ -1,16 +1,25 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
 } from '@/components/ui/table';
 import { 
-  ExternalLink, Image, FileText, Eye, Flag, Copy, ShoppingBag, Tag, AlertTriangle
+  ExternalLink, Image, FileText, Eye, Flag, Copy, ShoppingBag, Tag, AlertTriangle, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from 'sonner';
+import ImageModal from './ImageModal';
+
+interface WebImage {
+  url: string;
+  score: number;
+  imageUrl?: string;
+  platform?: string;
+}
 
 interface WebPage {
   url: string;
@@ -18,29 +27,49 @@ interface WebPage {
   pageTitle: string;
   platform?: string;
   pageType?: 'product' | 'category' | 'unknown';
-  matchingImages?: {
-    url: string;
-    score: number;
-    imageUrl?: string;
-    platform?: string;
-  }[];
+  matchingImages?: WebImage[];
 }
 
 interface PagesMatchTableProps {
   pages: WebPage[];
 }
 
+type GroupedPage = {
+  site: string;
+  platform: string;
+  pages: WebPage[];
+  expanded: boolean;
+};
+
 export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({ pages }) => {
   const [visiblePages, setVisiblePages] = useState<WebPage[]>(pages.slice(0, 5));
   const [loadMoreVisible, setLoadMoreVisible] = useState(pages.length > 5);
+  const [groupedState, setGroupedState] = useState<Record<string, boolean>>({});
+  const [selectedImage, setSelectedImage] = useState<WebImage | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
 
-  // Group pages by platform
-  const groupedPages = visiblePages.reduce((acc, page) => {
-    const platform = page.platform || 'unknown';
-    if (!acc[platform]) acc[platform] = [];
-    acc[platform].push(page);
-    return acc;
-  }, {} as Record<string, WebPage[]>);
+  // Group pages by hostname
+  const groupedPages = useMemo(() => {
+    const sites = new Map<string, GroupedPage>();
+    
+    visiblePages.forEach(page => {
+      const hostname = getHostname(page.url);
+      const platform = page.platform || getWebsiteName(page.url);
+      
+      if (!sites.has(hostname)) {
+        sites.set(hostname, {
+          site: hostname,
+          platform: platform,
+          pages: [page],
+          expanded: groupedState[hostname] ?? false
+        });
+      } else {
+        sites.get(hostname)?.pages.push(page);
+      }
+    });
+    
+    return Array.from(sites.values());
+  }, [visiblePages, groupedState]);
 
   // Function to get hostname from URL
   const getHostname = (url: string): string => {
@@ -108,19 +137,51 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({ pages }) => {
     });
   };
 
+  const toggleExpand = (site: string) => {
+    setGroupedState(prev => ({
+      ...prev,
+      [site]: !prev[site]
+    }));
+  };
+
+  const handleImageClick = (image: WebImage) => {
+    setSelectedImage(image);
+    setModalOpen(true);
+  };
+
   return (
     <div className="space-y-4">
-      {Object.entries(groupedPages).length > 0 ? (
-        Object.entries(groupedPages).map(([platform, platformPages]) => (
-          <div key={platform} className="mb-6">
-            <div className="flex items-center mb-2">
-              <h3 className="text-base font-medium">{platform !== 'unknown' ? platform : 'Other Sources'}</h3>
-              <Badge className="ml-2 bg-gray-200 text-gray-800">{platformPages.length}</Badge>
-            </div>
+      {groupedPages.length > 0 ? (
+        groupedPages.map((group) => (
+          <Collapsible 
+            key={group.site} 
+            open={groupedState[group.site]} 
+            onOpenChange={() => toggleExpand(group.site)}
+            className="border rounded-lg overflow-hidden mb-4"
+          >
+            <CollapsibleTrigger asChild>
+              <div className="flex items-center justify-between bg-gray-50 px-4 py-3 cursor-pointer hover:bg-gray-100">
+                <div className="flex items-center space-x-3">
+                  <Badge className="bg-gray-200 text-gray-800">{group.pages.length}</Badge>
+                  <h3 className="text-base font-medium">{group.platform}</h3>
+                  <span className="text-sm text-muted-foreground">({group.site})</span>
+                </div>
+                <div className="flex items-center text-muted-foreground">
+                  <span className="text-sm mr-2">
+                    {groupedState[group.site] ? 'Hide pages' : 'Show pages'}
+                  </span>
+                  {groupedState[group.site] ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
+                </div>
+              </div>
+            </CollapsibleTrigger>
             
-            <div className="border rounded-lg overflow-hidden">
+            <CollapsibleContent>
               <Table>
-                <TableHeader className="bg-gray-50">
+                <TableHeader>
                   <TableRow>
                     <TableHead className="w-14"></TableHead>
                     <TableHead>Page</TableHead>
@@ -130,26 +191,31 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({ pages }) => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {platformPages.map((page, index) => (
+                  {group.pages.map((page, index) => (
                     <TableRow key={index} className="group hover:bg-gray-50">
                       <TableCell className="p-2">
                         <div className="w-14 h-14 bg-gray-100 rounded overflow-hidden">
                           {page.matchingImages && page.matchingImages.length > 0 ? (
-                            <AspectRatio ratio={1 / 1} className="bg-muted">
-                              <img 
-                                src={page.matchingImages[0].imageUrl} 
-                                alt={getWebsiteName(page.url, page.platform)}
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  (e.target as HTMLImageElement).onerror = null;
-                                  (e.target as HTMLImageElement).style.display = 'none';
-                                  (e.target as HTMLImageElement).parentElement!.innerHTML = 
-                                    `<div class="w-full h-full flex items-center justify-center bg-gray-200">
-                                      ${getPageTypeIcon(page.pageType) ? getPageTypeIcon(page.pageType).toString() : ''}
-                                    </div>`;
-                                }}
-                              />
-                            </AspectRatio>
+                            <div 
+                              className="w-full h-full cursor-pointer hover:ring-2 hover:ring-brand-blue hover:ring-opacity-50 transition-all"
+                              onClick={() => handleImageClick(page.matchingImages![0])}
+                            >
+                              <AspectRatio ratio={1 / 1} className="bg-muted">
+                                <img 
+                                  src={page.matchingImages[0].imageUrl || page.matchingImages[0].url} 
+                                  alt={getWebsiteName(page.url, page.platform)}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    (e.currentTarget as HTMLImageElement).onerror = null;
+                                    (e.currentTarget as HTMLImageElement).style.display = 'none';
+                                    (e.currentTarget as HTMLImageElement).parentElement!.innerHTML = 
+                                      `<div class="w-full h-full flex items-center justify-center bg-gray-200">
+                                        ${getPageTypeIcon(page.pageType) ? getPageTypeIcon(page.pageType).toString() : ''}
+                                      </div>`;
+                                  }}
+                                />
+                              </AspectRatio>
+                            </div>
                           ) : (
                             <div className="w-full h-full flex items-center justify-center bg-gray-200">
                               {getPageTypeIcon(page.pageType)}
@@ -162,8 +228,13 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({ pages }) => {
                           {page.pageTitle || getWebsiteName(page.url, page.platform)}
                         </div>
                         <div className="flex items-center text-xs text-muted-foreground">
-                          {platform !== 'unknown' ? platform : getHostname(page.url)}
+                          {page.platform !== 'unknown' ? page.platform : getHostname(page.url)}
                         </div>
+                        {page.matchingImages && page.matchingImages.length > 1 && (
+                          <div className="text-xs mt-1 text-brand-blue">
+                            {page.matchingImages.length} matching images
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell>
                         <div className="max-w-xs truncate text-sm text-brand-blue hover:underline">
@@ -189,8 +260,11 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({ pages }) => {
                             size="sm" 
                             className="h-8 w-8 p-0" 
                             title="View Page"
+                            asChild
                           >
-                            <Eye className="h-4 w-4 text-muted-foreground" />
+                            <a href={page.url} target="_blank" rel="noopener noreferrer">
+                              <Eye className="h-4 w-4 text-muted-foreground" />
+                            </a>
                           </Button>
                           <Button 
                             variant="ghost" 
@@ -216,8 +290,8 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({ pages }) => {
                   ))}
                 </TableBody>
               </Table>
-            </div>
-          </div>
+            </CollapsibleContent>
+          </Collapsible>
         ))
       ) : (
         <Card className="p-6 text-center">
@@ -236,6 +310,17 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({ pages }) => {
             Load More Pages
           </Button>
         </div>
+      )}
+      
+      {selectedImage && (
+        <ImageModal
+          open={modalOpen}
+          onOpenChange={setModalOpen}
+          imageUrl={selectedImage.imageUrl || selectedImage.url}
+          sourceUrl={selectedImage.url}
+          siteName={selectedImage.platform || "Unknown Platform"}
+          confidence={selectedImage.score}
+        />
       )}
     </div>
   );

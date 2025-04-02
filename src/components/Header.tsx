@@ -9,7 +9,7 @@ const Header = () => {
       <div className="container flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <img 
-            src="/lovable-uploads/c387652c-0c08-4865-bde3-c40cbbf872f5.png" 
+            src="/lovable-uploads/02ba20bb-b85e-440c-9a4d-865ee5336758.png" 
             alt="CopyProtect Logo" 
             className="h-10 w-10"
           />

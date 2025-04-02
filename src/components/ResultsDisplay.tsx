@@ -17,7 +17,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { AspectRatio } from "@/components/ui/aspect-ratio";
 
 interface WebEntity {
   entityId: string;
@@ -38,6 +37,7 @@ interface WebPage {
   pageTitle: string;
   platform?: string;
   pageType?: 'product' | 'category' | 'unknown';
+  matchingImages?: WebImage[];
 }
 
 interface MatchResult {
@@ -177,7 +177,10 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-4">
-            <ExactMatchesTable matches={filteredExactMatches} />
+            <ExactMatchesTable 
+              matches={filteredExactMatches}
+              relatedPages={allRelevantPages} 
+            />
           </CardContent>
         </Card>
       )}
