@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { 
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
@@ -42,6 +41,25 @@ type GroupedMatch = {
   expanded: boolean;
 };
 
+const getHostname = (url: string): string => {
+  try {
+    return new URL(url).hostname.replace('www.', '');
+  } catch {
+    return url;
+  }
+};
+
+const getWebsiteName = (url: string, platform?: string): string => {
+  if (platform) return platform;
+  
+  const hostname = getHostname(url);
+  const domainParts = hostname.split('.');
+  if (domainParts.length > 1) {
+    return domainParts[0].charAt(0).toUpperCase() + domainParts[0].slice(1);
+  }
+  return hostname;
+};
+
 export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({ matches, relatedPages = [] }) => {
   const [visibleMatches, setVisibleMatches] = useState<WebImage[]>(matches.slice(0, 5));
   const [loadMoreVisible, setLoadMoreVisible] = useState(matches.length > 5);
@@ -49,7 +67,6 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({ matches, r
   const [selectedImage, setSelectedImage] = useState<WebImage | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
-  // Group matches by hostname
   const groupedMatches = useMemo(() => {
     const sites = new Map<string, GroupedMatch>();
     
@@ -71,27 +88,6 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({ matches, r
     
     return Array.from(sites.values());
   }, [visibleMatches, groupedState]);
-
-  // Function to get hostname from URL
-  const getHostname = (url: string): string => {
-    try {
-      return new URL(url).hostname.replace('www.', '');
-    } catch {
-      return url;
-    }
-  };
-
-  // Function to get website name from hostname
-  const getWebsiteName = (url: string, platform?: string): string => {
-    if (platform) return platform;
-    
-    const hostname = getHostname(url);
-    const domainParts = hostname.split('.');
-    if (domainParts.length > 1) {
-      return domainParts[0].charAt(0).toUpperCase() + domainParts[0].slice(1);
-    }
-    return hostname;
-  };
 
   const loadMore = () => {
     const nextBatch = matches.slice(visibleMatches.length, visibleMatches.length + 5);
@@ -125,7 +121,6 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({ matches, r
     setModalOpen(true);
   };
 
-  // Find related pages for an image
   const findRelatedPages = (imageUrl: string): WebPage[] => {
     return relatedPages.filter(page => 
       page.matchingImages?.some(img => 
@@ -253,7 +248,6 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({ matches, r
                           </TableCell>
                         </TableRow>
                         
-                        {/* Related pages row */}
                         {relatedPagesList.length > 0 && (
                           <TableRow className="bg-gray-50/50 border-t border-dashed">
                             <TableCell colSpan={5}>
