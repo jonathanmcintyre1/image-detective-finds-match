@@ -9,12 +9,14 @@ interface WebImage {
   url: string;
   score: number;
   imageUrl?: string;
+  platform?: string;
 }
 
 interface WebPage {
   url: string;
   score: number;
   pageTitle: string;
+  platform?: string; 
 }
 
 interface MatchResult {
@@ -40,7 +42,7 @@ export const analyzeImage = async (apiKey: string, imageData: string | File): Pr
             features: [
               {
                 type: 'WEB_DETECTION',
-                maxResults: 50
+                maxResults: 100
               }
             ]
           }
@@ -75,7 +77,7 @@ export const analyzeImage = async (apiKey: string, imageData: string | File): Pr
             features: [
               {
                 type: 'WEB_DETECTION',
-                maxResults: 50
+                maxResults: 100
               }
             ]
           }
@@ -106,8 +108,73 @@ export const analyzeImage = async (apiKey: string, imageData: string | File): Pr
   }
 };
 
+const identifyPlatform = (url: string): string => {
+  const urlLower = url.toLowerCase();
+  
+  if (urlLower.includes('amazon') || urlLower.includes('amzn')) {
+    return 'Amazon';
+  } else if (urlLower.includes('aliexpress')) {
+    return 'AliExpress';
+  } else if (urlLower.includes('etsy')) {
+    return 'Etsy';
+  } else if (urlLower.includes('ebay')) {
+    return 'eBay';
+  } else if (urlLower.includes('walmart')) {
+    return 'Walmart';
+  } else if (urlLower.includes('shopify')) {
+    return 'Shopify Store';
+  } else if (urlLower.includes('target')) {
+    return 'Target';
+  } else if (urlLower.includes('wayfair')) {
+    return 'Wayfair';
+  } else if (urlLower.includes('homedepot')) {
+    return 'Home Depot';
+  } else if (urlLower.includes('bestbuy')) {
+    return 'Best Buy';
+  } else if (urlLower.includes('ikea')) {
+    return 'IKEA';
+  } else {
+    // Check for CDNs
+    if (urlLower.includes('cloudfront.net') || 
+        urlLower.includes('cdn.shopify') || 
+        urlLower.includes('cloudinary') || 
+        urlLower.includes('imgix') ||
+        urlLower.includes('fastly') ||
+        urlLower.includes('akamaized') ||
+        urlLower.includes('cdn.')) {
+      return 'CDN Hosted';
+    }
+    return '';
+  }
+};
+
 const processResponse = (data: any): MatchResult => {
   const webDetection = data.responses[0]?.webDetection || {};
+  
+  // Filter to only include exact matches and partial matches with high confidence
+  const visuallySimilarImages = (webDetection.visuallySimilarImages || [])
+    .filter((image: any) => image.score >= 0.7)
+    .map((image: any) => {
+      const platform = identifyPlatform(image.url);
+      return {
+        url: image.url || '',
+        score: image.score || 0,
+        imageUrl: image.url || '',
+        platform
+      };
+    });
+
+  // Process pages with matching images
+  const pagesWithMatchingImages = (webDetection.pagesWithMatchingImages || [])
+    .map((page: any) => {
+      const platform = identifyPlatform(page.url);
+      return {
+        url: page.url || '',
+        score: page.score || 0,
+        pageTitle: page.pageTitle || '',
+        platform
+      };
+    });
   
   return {
     webEntities: webDetection.webEntities?.map((entity: any) => ({
@@ -116,17 +183,8 @@ const processResponse = (data: any): MatchResult => {
       description: entity.description || 'Unknown Entity'
     })) || [],
     
-    visuallySimilarImages: webDetection.visuallySimilarImages?.map((image: any) => ({
-      url: image.url || '',
-      score: image.score || 0,
-      imageUrl: image.url || ''
-    })) || [],
-    
-    pagesWithMatchingImages: webDetection.pagesWithMatchingImages?.map((page: any) => ({
-      url: page.url || '',
-      score: page.score || 0,
-      pageTitle: page.pageTitle || ''
-    })) || []
+    visuallySimilarImages,
+    pagesWithMatchingImages
   };
 };
 

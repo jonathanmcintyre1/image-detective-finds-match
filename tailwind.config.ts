@@ -26,16 +26,16 @@ export default {
 				background: 'hsl(var(--background))',
 				foreground: 'hsl(var(--foreground))',
 				primary: {
-					DEFAULT: 'hsl(var(--primary))',
-					foreground: 'hsl(var(--primary-foreground))'
+					DEFAULT: '#0073E6',
+					foreground: '#F1F1F1'
 				},
 				secondary: {
-					DEFAULT: 'hsl(var(--secondary))',
-					foreground: 'hsl(var(--secondary-foreground))'
+					DEFAULT: '#2D2D2D',
+					foreground: '#F1F1F1'
 				},
 				destructive: {
-					DEFAULT: 'hsl(var(--destructive))',
-					foreground: 'hsl(var(--destructive-foreground))'
+					DEFAULT: '#FF4141',
+					foreground: '#F1F1F1'
 				},
 				muted: {
 					DEFAULT: 'hsl(var(--muted))',
@@ -64,9 +64,14 @@ export default {
 					ring: 'hsl(var(--sidebar-ring))'
 				},
 				brand: {
-					purple: '#8B5CF6',
-					blue: '#0EA5E9',
+					blue: '#0073E6',
+					red: '#FF4141',
+					dark: '#2D2D2D',
+					light: '#F1F1F1',
 				}
+			},
+			fontFamily: {
+				sans: ['Roboto', 'sans-serif'],
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
@@ -106,7 +111,7 @@ export default {
 			},
 			backgroundImage: {
 				'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
-				'hero-gradient': 'linear-gradient(to right, #8B5CF6, #0EA5E9)',
+				'hero-gradient': 'linear-gradient(to right, #0073E6, #4DA8FF)',
 			}
 		}
 	},
