@@ -36,6 +36,11 @@ export const trackImageSearch = async (
   }
 };
 
+// Define the expected return type for the average_search_results RPC call
+interface AverageSearchResult {
+  average: number;
+}
+
 /**
  * Get analytics about recent searches
  * @returns Promise with search analytics
@@ -59,9 +64,9 @@ export const getSearchAnalytics = async () => {
       .select('*', { count: 'exact', head: true })
       .eq('result_count', 0);
 
-    // Get average results per search
+    // Get average results per search with proper typing
     const { data: avgResults } = await supabase
-      .rpc('average_search_results');
+      .rpc<AverageSearchResult[]>('average_search_results');
 
     // Safely access average value with proper null checks
     const avgResultsPerSearch = 
