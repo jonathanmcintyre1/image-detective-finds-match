@@ -9,6 +9,65 @@ interface AverageSearchResult {
 }
 
 /**
+ * Get search analytics data from the database
+ * @returns Object containing search analytics data
+ */
+export const getSearchAnalytics = async () => {
+  try {
+    // Get total search count
+    const { count: totalSearches } = await supabase
+      .from('searches')
+      .select('*', { count: 'exact', head: true });
+    
+    // Get searches with results
+    const { count: searchesWithResults } = await supabase
+      .from('searches')
+      .select('*', { count: 'exact', head: true })
+      .gt('result_count', 0);
+    
+    // Get searches with zero results
+    const { count: searchesNoResults } = await supabase
+      .from('searches')
+      .select('*', { count: 'exact', head: true })
+      .eq('result_count', 0);
+
+    // Get average results per search
+    const { data, error } = await supabase
+      .rpc<AverageSearchResult>('average_search_results');
+    
+    if (error) {
+      console.error('Error getting average search results:', error);
+      return {
+        totalSearches: totalSearches || 0,
+        searchesWithResults: searchesWithResults || 0,
+        searchesNoResults: searchesNoResults || 0,
+        avgResultsPerSearch: 0
+      };
+    }
+    
+    // Handle the case where data might be null or undefined
+    const avgResultsPerSearch = data && data.average !== null 
+      ? data.average 
+      : 0;
+
+    return {
+      totalSearches: totalSearches || 0,
+      searchesWithResults: searchesWithResults || 0,
+      searchesNoResults: searchesNoResults || 0,
+      avgResultsPerSearch
+    };
+  } catch (error) {
+    console.error('Error getting search analytics:', error);
+    return {
+      totalSearches: 0,
+      searchesWithResults: 0,
+      searchesNoResults: 0,
+      avgResultsPerSearch: 0
+    };
+  }
+};
+
+/**
  * Tracks an image search and its result count
  * @param image File or URL of the image being searched
  * @param resultCount Number of results found
