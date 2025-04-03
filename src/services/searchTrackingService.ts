@@ -65,12 +65,12 @@ export const getSearchAnalytics = async () => {
       .eq('result_count', 0);
 
     // Get average results per search
-    // Fix: Properly type the RPC call result
+    // Fix: Properly type the RPC call with both input and output types
     const { data } = await supabase
-      .rpc<AverageSearchResult>('average_search_results');
+      .rpc<void, { average: number }>('average_search_results');
 
     // Fix: Handle the case where data might be null or empty
-    const avgResultsPerSearch = data && data.average ? data.average : 0;
+    const avgResultsPerSearch = data && data.average !== undefined ? data.average : 0;
 
     return {
       totalSearches,

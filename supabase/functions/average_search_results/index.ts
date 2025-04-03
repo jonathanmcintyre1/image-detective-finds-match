@@ -26,15 +26,24 @@ serve(async (req) => {
     )
 
     // Get the average result count from searches
-    const { data, error } = await supabaseClient
-      .rpc('calculate_average_results')
-
+    const { data: rawData, error } = await supabaseClient
+      .from('searches')
+      .select('result_count')
+      .not('result_count', 'is', null);
+    
     if (error) {
-      throw error
+      throw error;
+    }
+    
+    // Calculate the average manually
+    let average = 0;
+    if (rawData && rawData.length > 0) {
+      const sum = rawData.reduce((acc, curr) => acc + (curr.result_count || 0), 0);
+      average = sum / rawData.length;
     }
 
-    // Return the data
-    return new Response(JSON.stringify({ data, success: true }), {
+    // Return the data with the correct structure
+    return new Response(JSON.stringify({ average }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     })
