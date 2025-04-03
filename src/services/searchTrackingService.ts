@@ -1,20 +1,75 @@
 
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from "@/integrations/supabase/client";
+import { useState, useEffect } from 'react';
 
-/**
- * Interface for the average search result returned from the Supabase RPC function
- */
+interface SearchRecord {
+  id: string;
+  created_at: string;
+  image_hash: string;
+  result_count: number;
+  search_type: 'url' | 'file';
+  image_type?: string;
+}
+
+interface SearchStats {
+  totalSearches: number;
+  searchesWithResults: number;
+  searchesNoResults: number;
+  avgResultsPerSearch: number;
+}
+
+// Define a proper interface for the RPC function return type
 interface AverageSearchResult {
   average: number;
 }
 
 /**
- * Get search analytics data from the database
- * @returns Object containing search analytics data
+ * Track an image search in the database
  */
-export const getSearchAnalytics = async () => {
+export const trackImageSearch = async (
+  image: File | string,
+  resultCount: number
+): Promise<void> => {
   try {
-    // Get total search count
+    // Generate a simple hash for the image
+    let imageHash = '';
+    let searchType: 'url' | 'file' = 'file';
+    let imageType = '';
+    
+    if (typeof image === 'string') {
+      // Handle URL
+      imageHash = btoa(image).slice(0, 50);
+      searchType = 'url';
+    } else {
+      // Handle File
+      imageHash = btoa(image.name + image.size + image.lastModified).slice(0, 50);
+      imageType = image.type;
+    }
+    
+    // Insert search record
+    const { error } = await supabase
+      .from('searches')
+      .insert({
+        image_hash: imageHash,
+        result_count: resultCount,
+        search_type: searchType,
+        image_type: imageType
+      });
+      
+    if (error) {
+      console.error('Error tracking search:', error);
+    }
+  } catch (err) {
+    console.error('Failed to track search:', err);
+  }
+};
+
+/**
+ * Get statistics about image searches
+ */
+export const getSearchStats = async (): Promise<SearchStats> => {
+  try {
+    // Get total number of searches
     const { count: totalSearches } = await supabase
       .from('searches')
       .select('*', { count: 'exact', head: true });
@@ -25,30 +80,19 @@ export const getSearchAnalytics = async () => {
       .select('*', { count: 'exact', head: true })
       .gt('result_count', 0);
     
-    // Get searches with zero results
+    // Get searches with no results
     const { count: searchesNoResults } = await supabase
       .from('searches')
       .select('*', { count: 'exact', head: true })
       .eq('result_count', 0);
 
     // Get average results per search
+    // Fix: Provide both input and output type parameters to the RPC call
     const { data, error } = await supabase
-      .rpc<AverageSearchResult>('average_search_results');
+      .rpc<AverageSearchResult, {}>('average_search_results');
     
-    if (error) {
-      console.error('Error getting average search results:', error);
-      return {
-        totalSearches: totalSearches || 0,
-        searchesWithResults: searchesWithResults || 0,
-        searchesNoResults: searchesNoResults || 0,
-        avgResultsPerSearch: 0
-      };
-    }
-    
-    // Handle the case where data might be null or undefined
-    const avgResultsPerSearch = data && data.average !== null 
-      ? data.average 
-      : 0;
+    // Fix: Handle the case where data might be null, undefined, or not have the expected structure
+    const avgResultsPerSearch = data && 'average' in data ? data.average : 0;
 
     return {
       totalSearches: totalSearches || 0,
@@ -56,8 +100,8 @@ export const getSearchAnalytics = async () => {
       searchesNoResults: searchesNoResults || 0,
       avgResultsPerSearch
     };
-  } catch (error) {
-    console.error('Error getting search analytics:', error);
+  } catch (err) {
+    console.error('Failed to get search stats:', err);
     return {
       totalSearches: 0,
       searchesWithResults: 0,
@@ -67,84 +111,43 @@ export const getSearchAnalytics = async () => {
   }
 };
 
+// Export for useSearchAnalytics hook
+export const getSearchAnalytics = getSearchStats;
+
 /**
- * Tracks an image search and its result count
- * @param image File or URL of the image being searched
- * @param resultCount Number of results found
- * @returns Object containing success status and total searches count
+ * Custom hook to get search statistics
  */
-export const trackImageSearch = async (image: File | string, resultCount: number) => {
-  try {
-    // Get image metadata
-    let source_type = 'url';
-    let file_name = '';
-    let file_size = 0;
-    let file_type = '';
-    
-    if (typeof image !== 'string') {
-      source_type = 'upload';
-      file_name = image.name;
-      file_size = image.size;
-      file_type = image.type;
-    } else {
-      file_name = image;
-    }
-    
-    // Get user's browser info
-    const userAgent = navigator.userAgent;
-    const browserInfo = {
-      userAgent,
-      language: navigator.language,
-      platform: navigator.platform,
-      screenWidth: window.screen.width,
-      screenHeight: window.screen.height,
-    };
-    
-    // Insert search record
-    const { error } = await supabase
-      .from('searches')
-      .insert({
-        source_type,
-        file_name,
-        file_size,
-        file_type,
-        result_count: resultCount,
-        browser_info: browserInfo
-      });
-    
-    if (error) {
-      console.error('Error tracking search:', error);
-      return { success: false };
-    }
-    
-    // Get total search count
-    const { count } = await supabase
-      .from('searches')
-      .select('*', { count: 'exact', head: true });
-    
-    // Get searches with zero results
-    const { count: zeroResultCount } = await supabase
-      .from('searches')
-      .select('*', { count: 'exact', head: true })
-      .eq('result_count', 0);
+export const useSearchStats = () => {
+  const [stats, setStats] = useState<SearchStats>({
+    totalSearches: 0,
+    searchesWithResults: 0,
+    searchesNoResults: 0,
+    avgResultsPerSearch: 0
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
 
-    // Get average results per search
-    const { data } = await supabase
-      .rpc<AverageSearchResult>('average_search_results');
-    
-    // Handle the case where data might be null or undefined
-    const avgResultsPerSearch = data && data.average !== null 
-      ? data.average 
-      : 0;
-
-    return {
-      success: true,
-      total_searches: count || 0,
-      zero_result_searches: zeroResultCount || 0,
-      avg_results_per_search: avgResultsPerSearch
+  useEffect(() => {
+    const fetchStats = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const searchStats = await getSearchStats();
+        setStats(searchStats);
+      } catch (err: any) {
+        setError(err);
+        console.error('Failed to fetch search stats:', err);
+      } finally {
+        setIsLoading(false);
+      }
     };
-  } catch (error) {
-    console.error('Error tracking search:', error);
-    return { success: false };
-  }
+
+    fetchStats();
+  }, []);
+
+  return {
+    stats,
+    isLoading,
+    error
+  };
 };

@@ -1,3 +1,4 @@
+
 interface WebEntity {
   entityId: string;
   score: number;
@@ -38,40 +39,48 @@ export const analyzeImage = async (apiKey: string, imageData: string | File): Pr
     let response;
     let data;
     
-    // Process the image data
     if (typeof imageData === 'string' && imageData.startsWith('http')) {
-      // Use our edge function to call the Google Vision API
-      response = await fetch('/functions/v1/vision-api', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ imageData })
-      });
+      const requestBody = {
+        requests: [
+          {
+            image: {
+              source: {
+                imageUri: imageData
+              }
+            },
+            features: [
+              {
+                type: 'WEB_DETECTION',
+                maxResults: 100
+              }
+            ]
+          }
+        ]
+      };
       
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Vision API error (${response.status}): ${errorText}`);
-      }
-      
+      response = await callGoogleVisionAPI(apiKey, requestBody);
       data = await response.json();
+      
     } else if (imageData instanceof File) {
       base64Image = await fileToBase64(imageData);
       
-      // Use our edge function to call the Google Vision API
-      response = await fetch('/functions/v1/vision-api', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ imageData: base64Image })
-      });
+      const requestBody = {
+        requests: [
+          {
+            image: {
+              content: base64Image.split(',')[1]
+            },
+            features: [
+              {
+                type: 'WEB_DETECTION',
+                maxResults: 100
+              }
+            ]
+          }
+        ]
+      };
       
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Vision API error (${response.status}): ${errorText}`);
-      }
-      
+      response = await callGoogleVisionAPI(apiKey, requestBody);
       data = await response.json();
     } else {
       throw new Error('Invalid image data provided');
