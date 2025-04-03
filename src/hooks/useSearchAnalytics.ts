@@ -28,12 +28,13 @@ export function useSearchAnalytics() {
         setAnalytics({
           totalSearches: data.totalSearches,
           searchesWithResults: data.searchesWithResults,
-          searchesWithoutResults: data.searchesNoResults, // Map to the correct property
+          searchesWithoutResults: data.searchesNoResults,
           avgResultsPerSearch: data.avgResultsPerSearch,
           isLoading: false,
           error: null
         });
       } catch (error) {
+        console.error("Error fetching analytics:", error);
         setAnalytics(prev => ({
           ...prev,
           isLoading: false,

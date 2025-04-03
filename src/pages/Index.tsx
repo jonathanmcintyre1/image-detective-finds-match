@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import ImageUploader from '@/components/ImageUploader';
@@ -58,10 +57,14 @@ const Index = () => {
     
     if (envApiKey) {
       setApiKey(envApiKey);
+      console.log("Using API key from environment variables");
     } else {
       const savedApiKey = localStorage.getItem('gcv_api_key');
       if (savedApiKey) {
         setApiKey(savedApiKey);
+        console.log("Using API key from local storage");
+      } else {
+        console.log("No API key found");
       }
     }
 
@@ -74,7 +77,6 @@ const Index = () => {
     localStorage.setItem('seen_beta_signup', 'true');
   };
 
-  // Handle successful beta signup
   const handleBetaSignupSuccess = () => {
     setShowBetaSignup(false);
     localStorage.setItem('seen_beta_signup', 'true');
@@ -111,6 +113,7 @@ const Index = () => {
     }
     
     try {
+      console.log("Starting image analysis with API key:", apiKey.substring(0, 5) + "...");
       setIsProcessing(true);
       const result = await analyzeImage(apiKey, image);
       setResults(result);
@@ -122,7 +125,6 @@ const Index = () => {
       
       await trackImageSearch(image, totalResults);
       
-      // Show beta signup after first successful search if not seen before
       const hasSeenBetaSignup = localStorage.getItem('seen_beta_signup');
       if (!hasSeenBetaSignup) {
         setTimeout(() => {
@@ -167,7 +169,7 @@ const Index = () => {
             <p className="text-lg text-muted-foreground">
               Discover unauthorized copies of your images across the web in seconds
             </p>
-            <div className="hidden">
+            <div className="flex justify-center mt-4">
               <ApiKeyInput apiKey={apiKey} setApiKey={setApiKey} />
             </div>
           </div>

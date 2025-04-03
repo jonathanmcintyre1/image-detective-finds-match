@@ -1,4 +1,3 @@
-
 interface WebEntity {
   entityId: string;
   score: number;
@@ -34,12 +33,20 @@ const FULL_MATCH_SCORE = 0.98; // Score to assign to full matches
 const PARTIAL_MATCH_SCORE = 0.85; // Score to assign to partial matches
 
 export const analyzeImage = async (apiKey: string, imageData: string | File): Promise<MatchResult> => {
+  if (!apiKey) {
+    console.error("Missing API key");
+    throw new Error("Missing API key. Please set your Google Cloud Vision API key.");
+  }
+
   try {
     let base64Image = '';
     let response;
     let data;
     
+    console.log("Analyzing image with API key:", apiKey.substring(0, 5) + "...");
+    
     if (typeof imageData === 'string' && imageData.startsWith('http')) {
+      console.log("Processing image URL:", imageData.substring(0, 30) + "...");
       const requestBody = {
         requests: [
           {
@@ -62,6 +69,7 @@ export const analyzeImage = async (apiKey: string, imageData: string | File): Pr
       data = await response.json();
       
     } else if (imageData instanceof File) {
+      console.log("Processing image file:", imageData.name);
       base64Image = await fileToBase64(imageData);
       
       const requestBody = {
@@ -86,7 +94,14 @@ export const analyzeImage = async (apiKey: string, imageData: string | File): Pr
       throw new Error('Invalid image data provided');
     }
     
-    console.log("API Response:", JSON.stringify(data, null, 2)); // Log full API response
+    // Check for error in the API response
+    if (data.error || (data.responses && data.responses[0] && data.responses[0].error)) {
+      const errorMessage = data.error?.message || data.responses?.[0]?.error?.message || 'Unknown API error';
+      console.error('Google Vision API error:', errorMessage);
+      throw new Error(`Google Vision API error: ${errorMessage}`);
+    }
+    
+    console.log("API Response received successfully");
     return processResponse(data);
     
   } catch (error) {
@@ -97,20 +112,29 @@ export const analyzeImage = async (apiKey: string, imageData: string | File): Pr
 
 // Helper function to call Google Vision API
 const callGoogleVisionAPI = async (apiKey: string, requestBody: any): Promise<Response> => {
-  const response = await fetch(`https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`, {
-    method: 'POST',
-    body: JSON.stringify(requestBody),
-    headers: {
-      'Content-Type': 'application/json'
+  console.log('Calling Google Vision API...');
+  
+  try {
+    const response = await fetch(`https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`, {
+      method: 'POST',
+      body: JSON.stringify(requestBody),
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Google Vision API error (${response.status}):`, errorText);
+      throw new Error(`Google Vision API error (${response.status}): ${errorText}`);
     }
-  });
-  
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Google Vision API error (${response.status}): ${errorText}`);
+    
+    console.log('Google Vision API responded with status:', response.status);
+    return response;
+  } catch (error) {
+    console.error('Network error calling Google Vision API:', error);
+    throw error;
   }
-  
-  return response;
 };
 
 // Platform identification using mapping approach

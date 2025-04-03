@@ -15,9 +15,12 @@ const ApiKeyInput = ({ apiKey, setApiKey }: ApiKeyInputProps) => {
   const [tempApiKey, setTempApiKey] = useState(apiKey || '');
 
   const handleSave = () => {
-    setApiKey(tempApiKey);
-    localStorage.setItem('gcv_api_key', tempApiKey);
-    setOpen(false);
+    if (tempApiKey.trim()) {
+      setApiKey(tempApiKey.trim());
+      localStorage.setItem('gcv_api_key', tempApiKey.trim());
+      console.log("API Key saved:", tempApiKey.substring(0, 5) + "...");
+      setOpen(false);
+    }
   };
 
   return (
