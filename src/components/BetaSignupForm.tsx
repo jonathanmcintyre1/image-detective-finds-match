@@ -20,11 +20,17 @@ import { supabase } from '@/integrations/supabase/client';
 const formSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
   phone: z.string().optional(),
+  name: z.string().optional(),
+  company: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
-const BetaSignupForm = () => {
+interface BetaSignupFormProps {
+  onSuccess?: () => void;
+}
+
+const BetaSignupForm = ({ onSuccess }: BetaSignupFormProps) => {
   const [loading, setLoading] = useState(false);
 
   // Initialize form with Zod validation
@@ -33,6 +39,8 @@ const BetaSignupForm = () => {
     defaultValues: {
       email: '',
       phone: '',
+      name: '',
+      company: '',
     },
   });
 
@@ -52,14 +60,36 @@ const BetaSignupForm = () => {
         });
         setLoading(false);
         form.reset();
+        
+        // Call onSuccess even if already signed up
+        if (onSuccess) {
+          onSuccess();
+        }
+        
         return;
       }
       
-      // Add email to the beta signup list
+      // Collect additional user information
+      const userAgent = navigator.userAgent;
+      const browserInfo = {
+        userAgent,
+        language: navigator.language,
+        platform: navigator.platform,
+        screenWidth: window.screen.width,
+        screenHeight: window.screen.height,
+      };
+      
+      // Add email and additional info to the beta signup list
       const { error } = await supabase
         .from('prelaunch_signups')
         .insert({
           email: data.email,
+          phone: data.phone || null,
+          name: data.name || null,
+          company: data.company || null,
+          browser_info: browserInfo,
+          signup_page: window.location.pathname,
+          referrer: document.referrer || null,
         });
       
       if (error) {
@@ -72,6 +102,12 @@ const BetaSignupForm = () => {
       
       // Reset form
       form.reset();
+      
+      // Call success callback if provided
+      if (onSuccess) {
+        onSuccess();
+      }
+      
     } catch (error) {
       console.error("Error signing up for beta:", error);
       toast.error("Failed to sign up", {
@@ -92,7 +128,7 @@ const BetaSignupForm = () => {
       </div>
       
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
           <FormField
             control={form.control}
             name="email"
@@ -105,6 +141,44 @@ const BetaSignupForm = () => {
                     type="email"
                     disabled={loading}
                     required
+                    {...field} 
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Full name (optional)</FormLabel>
+                <FormControl>
+                  <Input 
+                    placeholder="John Smith" 
+                    type="text"
+                    disabled={loading}
+                    {...field} 
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          <FormField
+            control={form.control}
+            name="company"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Company (optional)</FormLabel>
+                <FormControl>
+                  <Input 
+                    placeholder="Your Company, Inc." 
+                    type="text"
+                    disabled={loading}
                     {...field} 
                   />
                 </FormControl>

@@ -5,7 +5,7 @@ import {
 } from '@/components/ui/table';
 import { 
   ExternalLink, Copy, ChevronDown, ChevronUp,
-  Calendar, FileText, ShoppingBag, Globe, Tag, Eye
+  Calendar, FileText, ShoppingBag, Globe, Tag, Eye, Server
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -38,6 +38,7 @@ interface PagesMatchTableProps {
   pages: WebPage[];
   sortBy?: 'confidence' | 'date' | 'domain' | 'count';
   compact?: boolean;
+  initialItemsToShow?: number;
 }
 
 type GroupedPage = {
@@ -56,6 +57,40 @@ const getHostname = (url: string): string => {
   }
 };
 
+// Function to determine if a URL is from a CDN
+const isCdnUrl = (url: string): boolean => {
+  const cdnPatterns = [
+    'cloudfront.net', 'cdn.shopify', 'cloudinary', 'imgix', 
+    'fastly', 'akamaized', 'cdn.', 'ibb.co', 'imgur.com',
+    'postimg.cc', 'amazonaws.com', 's3.', 'media-amazon.com',
+    'staticflickr.com', 'cdninstagram.com', 'fbcdn.net',
+    'pinimg.com', 'twimg.com', 'assets.', 'static.'
+  ];
+  
+  const urlLower = url.toLowerCase();
+  return cdnPatterns.some(pattern => urlLower.includes(pattern));
+};
+
+// Function to get CDN info from URL
+const getCdnInfo = (url: string): string | null => {
+  const hostname = getHostname(url);
+  
+  if (hostname.includes('cloudfront.net')) return 'Amazon CloudFront';
+  if (hostname.includes('amazonaws.com') || hostname.includes('s3.')) return 'Amazon S3';
+  if (hostname.includes('cdn.shopify')) return 'Shopify CDN';
+  if (hostname.includes('cloudinary')) return 'Cloudinary CDN';
+  if (hostname.includes('imgix')) return 'Imgix CDN';
+  if (hostname.includes('media-amazon')) return 'Amazon Media';
+  if (hostname.includes('akamaized')) return 'Akamai CDN';
+  if (hostname.includes('staticflickr')) return 'Flickr CDN';
+  if (hostname.includes('twimg')) return 'Twitter CDN';
+  if (hostname.includes('fbcdn')) return 'Facebook CDN';
+  if (hostname.includes('cdninstagram')) return 'Instagram CDN';
+  if (hostname.includes('pinimg')) return 'Pinterest CDN';
+  
+  return null;
+};
+
 // Function to get website name from hostname
 const getWebsiteName = (url: string, platform?: string): string => {
   if (platform) return platform;
@@ -71,7 +106,8 @@ const getWebsiteName = (url: string, platform?: string): string => {
 export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({ 
   pages,
   sortBy = 'confidence',
-  compact = false 
+  compact = false,
+  initialItemsToShow = 5
 }) => {
   // Sort pages based on sortBy prop
   const sortedPages = useMemo(() => {
@@ -104,17 +140,17 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({
     }
   }, [pages, sortBy]);
 
-  const [visiblePages, setVisiblePages] = useState<WebPage[]>(sortedPages.slice(0, compact ? 3 : 5));
-  const [loadMoreVisible, setLoadMoreVisible] = useState(sortedPages.length > (compact ? 3 : 5));
+  const [visiblePages, setVisiblePages] = useState<WebPage[]>(sortedPages.slice(0, initialItemsToShow));
+  const [loadMoreVisible, setLoadMoreVisible] = useState(sortedPages.length > initialItemsToShow);
   const [groupedState, setGroupedState] = useState<Record<string, boolean>>({});
   const [selectedImage, setSelectedImage] = useState<WebImage | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
   // Update visible pages when sorting changes
   useMemo(() => {
-    setVisiblePages(sortedPages.slice(0, compact ? 3 : 5));
-    setLoadMoreVisible(sortedPages.length > (compact ? 3 : 5));
-  }, [sortedPages, compact]);
+    setVisiblePages(sortedPages.slice(0, initialItemsToShow));
+    setLoadMoreVisible(sortedPages.length > initialItemsToShow);
+  }, [sortedPages, initialItemsToShow]);
 
   // Group pages by hostname
   const groupedPages = useMemo(() => {
@@ -162,11 +198,10 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({
   };
 
   const loadMore = () => {
-    const nextBatchSize = compact ? 3 : 5;
-    const nextBatch = sortedPages.slice(visiblePages.length, visiblePages.length + nextBatchSize);
+    const nextBatch = sortedPages.slice(visiblePages.length, visiblePages.length + initialItemsToShow);
     setVisiblePages(prev => [...prev, ...nextBatch]);
     
-    if (visiblePages.length + nextBatchSize >= sortedPages.length) {
+    if (visiblePages.length + initialItemsToShow >= sortedPages.length) {
       setLoadMoreVisible(false);
     }
   };
@@ -210,7 +245,7 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({
             key={group.site} 
             open={groupedState[group.site]} 
             onOpenChange={() => toggleExpand(group.site)}
-            className="border rounded-lg overflow-hidden mb-4"
+            className="border rounded-lg overflow-hidden mb-4 shadow-sm"
           >
             <CollapsibleTrigger asChild>
               <div className="flex items-center justify-between bg-gray-50 px-4 py-3 cursor-pointer hover:bg-gray-100">
@@ -235,123 +270,146 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({
             </CollapsibleTrigger>
             
             <CollapsibleContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-14"></TableHead>
-                    <TableHead>Page</TableHead>
-                    <TableHead>URL</TableHead>
-                    <TableHead className="w-24">Type</TableHead>
-                    {!compact && <TableHead>Found</TableHead>}
-                    <TableHead className="w-20 text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {group.pages.map((page, index) => (
-                    <TableRow key={index} className="group hover:bg-gray-50">
-                      <TableCell className="p-2">
-                        <div className="w-14 h-14 bg-gray-100 rounded overflow-hidden">
-                          {page.matchingImages && page.matchingImages.length > 0 ? (
-                            <div 
-                              className="w-full h-full cursor-pointer hover:ring-2 hover:ring-brand-blue hover:ring-opacity-50 transition-all"
-                              onClick={() => page.matchingImages && handleImageClick(page.matchingImages[0])}
-                            >
-                              <AspectRatio ratio={1 / 1} className="bg-muted">
-                                <img 
-                                  src={page.matchingImages[0].imageUrl || page.matchingImages[0].url} 
-                                  alt={getWebsiteName(page.url, page.platform)}
-                                  className="w-full h-full object-cover"
-                                  onError={(e) => {
-                                    (e.currentTarget as HTMLImageElement).onerror = null;
-                                    (e.currentTarget as HTMLImageElement).style.display = 'none';
-                                    (e.currentTarget.parentElement as HTMLElement).innerHTML = `
-                                      <div class="w-full h-full flex items-center justify-center bg-gray-200">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6 text-gray-400">
-                                          <rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect>
-                                          <circle cx="9" cy="9" r="2"></circle>
-                                          <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>
-                                        </svg>
-                                      </div>`;
-                                  }}
-                                />
-                              </AspectRatio>
-                            </div>
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-gray-200">
-                              {getPageTypeIcon(page.pageType)}
-                            </div>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-medium line-clamp-1" title={page.pageTitle || getWebsiteName(page.url, page.platform)}>
-                          {page.pageTitle || getWebsiteName(page.url, page.platform)}
-                        </div>
-                        <div className="flex items-center text-xs text-muted-foreground">
-                          {page.platform !== 'unknown' ? page.platform : getHostname(page.url)}
-                        </div>
-                        {page.matchingImages && page.matchingImages.length > 1 && (
-                          <div className="text-xs mt-1 text-brand-blue">
-                            {page.matchingImages.length} matching images
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="max-w-xs truncate text-sm text-brand-blue hover:underline">
-                          <a href={page.url} target="_blank" rel="noopener noreferrer" className="flex items-center">
-                            {getHostname(page.url)}
-                            <ExternalLink className="ml-1 h-3 w-3 inline flex-shrink-0" />
-                          </a>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center">
-                          {getPageTypeIcon(page.pageType)}
-                          <span className="ml-2 text-sm">
-                            {page.pageType === 'product' ? 'Product' : 
-                            page.pageType === 'category' ? 'Category' : 
-                            page.pageType === 'search' ? 'Search' : 'Web Page'}
-                          </span>
-                        </div>
-                      </TableCell>
-                      {!compact && (
-                        <TableCell>
-                          <div className="flex items-center text-sm text-muted-foreground">
-                            <Calendar className="h-3 w-3 mr-1" />
-                            {page.dateFound 
-                              ? format(page.dateFound, 'MMM d, yyyy')
-                              : format(new Date(), 'MMM d, yyyy')}
-                          </div>
-                        </TableCell>
-                      )}
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end space-x-1">
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-8 w-8 p-0" 
-                            title="View Page"
-                            asChild
-                          >
-                            <a href={page.url} target="_blank" rel="noopener noreferrer">
-                              <Eye className="h-4 w-4 text-muted-foreground" />
-                            </a>
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-8 w-8 p-0" 
-                            title="Copy URL"
-                            onClick={() => handleCopyUrl(page.url)}
-                          >
-                            <Copy className="h-4 w-4 text-muted-foreground" />
-                          </Button>
-                        </div>
-                      </TableCell>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-14"></TableHead>
+                      <TableHead>Page</TableHead>
+                      <TableHead>URL</TableHead>
+                      <TableHead className="w-24">Type</TableHead>
+                      {!compact && <TableHead>Found</TableHead>}
+                      <TableHead className="w-20 text-right">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {group.pages.map((page, index) => {
+                      // Check if image is from CDN
+                      let cdnInfo = null;
+                      let isFromCdn = false;
+                      
+                      if (page.matchingImages && page.matchingImages.length > 0) {
+                        const imageUrl = page.matchingImages[0].url;
+                        isFromCdn = isCdnUrl(imageUrl);
+                        if (isFromCdn) {
+                          cdnInfo = getCdnInfo(imageUrl);
+                        }
+                      }
+                      
+                      return (
+                        <TableRow key={index} className="group hover:bg-gray-50">
+                          <TableCell className="p-2">
+                            <div className="w-14 h-14 bg-gray-100 rounded overflow-hidden">
+                              {page.matchingImages && page.matchingImages.length > 0 ? (
+                                <div 
+                                  className="w-full h-full cursor-pointer hover:ring-2 hover:ring-brand-blue hover:ring-opacity-50 transition-all"
+                                  onClick={() => page.matchingImages && handleImageClick(page.matchingImages[0])}
+                                >
+                                  <AspectRatio ratio={1 / 1} className="bg-muted">
+                                    <img 
+                                      src={page.matchingImages[0].imageUrl || page.matchingImages[0].url} 
+                                      alt={getWebsiteName(page.url, page.platform)}
+                                      className="w-full h-full object-cover"
+                                      onError={(e) => {
+                                        (e.currentTarget as HTMLImageElement).onerror = null;
+                                        (e.currentTarget as HTMLImageElement).style.display = 'none';
+                                        (e.currentTarget.parentElement as HTMLElement).innerHTML = `
+                                          <div class="w-full h-full flex items-center justify-center bg-gray-200">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6 text-gray-400">
+                                              <rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect>
+                                              <circle cx="9" cy="9" r="2"></circle>
+                                              <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>
+                                            </svg>
+                                          </div>`;
+                                      }}
+                                    />
+                                  </AspectRatio>
+                                </div>
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                                  {getPageTypeIcon(page.pageType)}
+                                </div>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="font-medium line-clamp-1" title={page.pageTitle || getWebsiteName(page.url, page.platform)}>
+                              {page.pageTitle || getWebsiteName(page.url, page.platform)}
+                            </div>
+                            <div className="flex items-center text-xs text-muted-foreground">
+                              {isFromCdn ? (
+                                <span className="flex items-center">
+                                  <Server className="h-3 w-3 mr-1 text-gray-400" />
+                                  <span>Image from {cdnInfo}</span>
+                                </span>
+                              ) : (
+                                page.platform !== 'unknown' ? page.platform : getHostname(page.url)
+                              )}
+                            </div>
+                            {page.matchingImages && page.matchingImages.length > 1 && (
+                              <div className="text-xs mt-1 text-brand-blue">
+                                {page.matchingImages.length} matching images
+                              </div>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <div className="max-w-xs truncate text-sm text-brand-blue hover:underline">
+                              <a href={page.url} target="_blank" rel="noopener noreferrer" className="flex items-center">
+                                {getHostname(page.url)}
+                                <ExternalLink className="ml-1 h-3 w-3 inline flex-shrink-0" />
+                              </a>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center">
+                              {getPageTypeIcon(page.pageType)}
+                              <span className="ml-2 text-sm">
+                                {page.pageType === 'product' ? 'Product' : 
+                                page.pageType === 'category' ? 'Category' : 
+                                page.pageType === 'search' ? 'Search' : 'Web Page'}
+                              </span>
+                            </div>
+                          </TableCell>
+                          {!compact && (
+                            <TableCell>
+                              <div className="flex items-center text-sm text-muted-foreground">
+                                <Calendar className="h-3 w-3 mr-1" />
+                                {page.dateFound 
+                                  ? format(page.dateFound, 'MMM d, yyyy')
+                                  : format(new Date(), 'MMM d, yyyy')}
+                              </div>
+                            </TableCell>
+                          )}
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end space-x-1">
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-8 w-8 p-0" 
+                                title="View Page"
+                                asChild
+                              >
+                                <a href={page.url} target="_blank" rel="noopener noreferrer">
+                                  <Eye className="h-4 w-4 text-muted-foreground" />
+                                </a>
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-8 w-8 p-0" 
+                                title="Copy URL"
+                                onClick={() => handleCopyUrl(page.url)}
+                              >
+                                <Copy className="h-4 w-4 text-muted-foreground" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
             </CollapsibleContent>
           </Collapsible>
         ))

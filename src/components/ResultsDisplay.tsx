@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -18,6 +19,8 @@ import {
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from 'date-fns';
+import { useBetaSignupPrompt } from '@/hooks/useBetaSignupPrompt';
+import { toast } from 'sonner';
 
 interface WebEntity {
   entityId: string;
@@ -53,9 +56,12 @@ interface ResultsDisplayProps {
   results: MatchResult | null;
 }
 
+const DEFAULT_ITEMS_TO_SHOW = 8; // Show more items by default
+
 const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
   const [sortBy, setSortBy] = useState<'confidence' | 'date' | 'domain' | 'count'>('confidence');
   const [today] = useState(new Date());
+  const { showBetaSignup, setShowBetaSignup } = useBetaSignupPrompt();
   
   if (!results) return null;
   
@@ -94,6 +100,17 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
   const totalMatchCount = exactMatchCount + partialMatchCount + pageMatchCount;
 
   const exportResults = (type: 'csv' | 'pdf') => {
+    // Check if user has signed up for beta
+    const hasSeenBetaSignup = localStorage.getItem('seen_beta_signup');
+    
+    if (!hasSeenBetaSignup) {
+      setShowBetaSignup(true);
+      toast.info("Sign up for our beta to export results", {
+        description: "Join our beta program to unlock export functionality"
+      });
+      return;
+    }
+    
     if (type === 'csv') {
       let csvContent = "Match Type,Domain,URL,Page Type,Confidence,Date Found\n";
       
@@ -213,40 +230,34 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
 
       {totalMatchCount > 0 && (
         <Tabs defaultValue="all" className="w-full">
-          <TabsList className="w-full justify-start mb-4 bg-gray-100">
-            <TabsTrigger value="all" className="relative">
-              All Results
-              {totalMatchCount > 0 && (
-                <Badge className="absolute -top-2 -right-2 bg-gray-500 text-white h-5 min-w-5 flex items-center justify-center p-0">
+          <div className="overflow-x-auto">
+            <TabsList className="w-full h-auto justify-start mb-4 bg-gray-100 p-1.5">
+              <TabsTrigger value="all" className="relative px-6 py-2">
+                All Results
+                <Badge className="ml-2 bg-gray-500 text-white">
                   {totalMatchCount}
                 </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="exact" className="relative">
-              Exact Matches
-              {exactMatchCount > 0 && (
-                <Badge className="absolute -top-2 -right-2 bg-brand-red text-white h-5 min-w-5 flex items-center justify-center p-0">
+              </TabsTrigger>
+              <TabsTrigger value="exact" className="relative px-6 py-2">
+                Exact Matches
+                <Badge className="ml-2 bg-brand-red text-white">
                   {exactMatchCount}
                 </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="partial" className="relative">
-              Partial Matches
-              {partialMatchCount > 0 && (
-                <Badge className="absolute -top-2 -right-2 bg-amber-500 text-white h-5 min-w-5 flex items-center justify-center p-0">
+              </TabsTrigger>
+              <TabsTrigger value="partial" className="relative px-6 py-2">
+                Partial Matches
+                <Badge className="ml-2 bg-amber-500 text-white">
                   {partialMatchCount}
                 </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="pages" className="relative">
-              Pages with Image
-              {pageMatchCount > 0 && (
-                <Badge className="absolute -top-2 -right-2 bg-brand-blue text-white h-5 min-w-5 flex items-center justify-center p-0">
+              </TabsTrigger>
+              <TabsTrigger value="pages" className="relative px-6 py-2">
+                Pages with Image
+                <Badge className="ml-2 bg-brand-blue text-white">
                   {pageMatchCount}
                 </Badge>
-              )}
-            </TabsTrigger>
-          </TabsList>
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="all" className="m-0">
             <Card className="border-0 shadow-md">
@@ -270,6 +281,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
                       matches={exactMatches}
                       relatedPages={allRelevantPages} 
                       sortBy={sortBy}
+                      initialItemsToShow={DEFAULT_ITEMS_TO_SHOW}
                       compact
                     />
                   </div>
@@ -285,6 +297,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
                       matches={partialMatches}
                       relatedPages={allRelevantPages} 
                       sortBy={sortBy}
+                      initialItemsToShow={DEFAULT_ITEMS_TO_SHOW}
                       compact
                     />
                   </div>
@@ -296,7 +309,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
                       <Badge className="bg-brand-blue text-white mr-2">{productPageCount}</Badge>
                       Product Pages
                     </h3>
-                    <PagesMatchTable pages={productPages} sortBy={sortBy} compact />
+                    <PagesMatchTable pages={productPages} sortBy={sortBy} initialItemsToShow={DEFAULT_ITEMS_TO_SHOW} compact />
                   </div>
                 )}
                 
@@ -306,7 +319,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
                       <Badge className="bg-green-500 text-white mr-2">{categoryPageCount}</Badge>
                       Category Pages
                     </h3>
-                    <PagesMatchTable pages={categoryPages} sortBy={sortBy} compact />
+                    <PagesMatchTable pages={categoryPages} sortBy={sortBy} initialItemsToShow={DEFAULT_ITEMS_TO_SHOW} compact />
                   </div>
                 )}
                 
@@ -316,7 +329,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
                       <Badge className="bg-purple-500 text-white mr-2">{searchPageCount}</Badge>
                       Search Results Pages
                     </h3>
-                    <PagesMatchTable pages={searchPages} sortBy={sortBy} compact />
+                    <PagesMatchTable pages={searchPages} sortBy={sortBy} initialItemsToShow={DEFAULT_ITEMS_TO_SHOW} compact />
                   </div>
                 )}
                 
@@ -326,7 +339,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
                       <Badge className="bg-gray-500 text-white mr-2">{otherPageCount}</Badge>
                       Other Pages
                     </h3>
-                    <PagesMatchTable pages={otherPages} sortBy={sortBy} compact />
+                    <PagesMatchTable pages={otherPages} sortBy={sortBy} initialItemsToShow={DEFAULT_ITEMS_TO_SHOW} compact />
                   </div>
                 )}
               </CardContent>
@@ -352,6 +365,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
                   matches={exactMatches}
                   relatedPages={allRelevantPages} 
                   sortBy={sortBy}
+                  initialItemsToShow={DEFAULT_ITEMS_TO_SHOW}
                 />
               </CardContent>
             </Card>
@@ -376,6 +390,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
                   matches={partialMatches}
                   relatedPages={allRelevantPages} 
                   sortBy={sortBy}
+                  initialItemsToShow={DEFAULT_ITEMS_TO_SHOW}
                 />
               </CardContent>
             </Card>
@@ -403,7 +418,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
                       <ShoppingBag className="h-4 w-4 mr-2" />
                       Product Pages
                     </h3>
-                    <PagesMatchTable pages={productPages} sortBy={sortBy} />
+                    <PagesMatchTable pages={productPages} sortBy={sortBy} initialItemsToShow={DEFAULT_ITEMS_TO_SHOW} />
                   </div>
                 )}
                 
@@ -414,7 +429,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
                       <FileText className="h-4 w-4 mr-2" />
                       Category Pages
                     </h3>
-                    <PagesMatchTable pages={categoryPages} sortBy={sortBy} />
+                    <PagesMatchTable pages={categoryPages} sortBy={sortBy} initialItemsToShow={DEFAULT_ITEMS_TO_SHOW} />
                   </div>
                 )}
                 
@@ -425,7 +440,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
                       <Globe className="h-4 w-4 mr-2" />
                       Search Results Pages
                     </h3>
-                    <PagesMatchTable pages={searchPages} sortBy={sortBy} />
+                    <PagesMatchTable pages={searchPages} sortBy={sortBy} initialItemsToShow={DEFAULT_ITEMS_TO_SHOW} />
                   </div>
                 )}
                 
@@ -436,7 +451,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
                       <FileText className="h-4 w-4 mr-2" />
                       Other Pages
                     </h3>
-                    <PagesMatchTable pages={otherPages} sortBy={sortBy} />
+                    <PagesMatchTable pages={otherPages} sortBy={sortBy} initialItemsToShow={DEFAULT_ITEMS_TO_SHOW} />
                   </div>
                 )}
                 
