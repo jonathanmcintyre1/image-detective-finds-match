@@ -25,15 +25,11 @@ export function useSearchAnalytics() {
     async function fetchAnalytics() {
       try {
         const data = await getSearchAnalytics();
-        
-        // Calculate searches with results
-        const searchesWithResults = data.total_searches - data.zero_result_searches;
-        
         setAnalytics({
-          totalSearches: data.total_searches,
-          searchesWithResults: searchesWithResults,
-          searchesWithoutResults: data.zero_result_searches,
-          avgResultsPerSearch: data.avg_results_per_search,
+          totalSearches: data.totalSearches,
+          searchesWithResults: data.searchesWithResults,
+          searchesWithoutResults: data.searchesNoResults, // Map to the correct property
+          avgResultsPerSearch: data.avgResultsPerSearch,
           isLoading: false,
           error: null
         });
