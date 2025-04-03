@@ -69,7 +69,7 @@ export const trackImageSearch = async (image: File | string, resultCount: number
       .select('*', { count: 'exact', head: true })
       .eq('result_count', 0);
 
-    // Get average results per search
+    // Get average results per search - properly typed to handle the returned average value
     const { data } = await supabase
       .rpc<AverageSearchResult>('average_search_results');
     
@@ -87,5 +87,50 @@ export const trackImageSearch = async (image: File | string, resultCount: number
   } catch (error) {
     console.error('Error tracking search:', error);
     return { success: false };
+  }
+};
+
+/**
+ * Gets search analytics data from the database
+ * @returns Object containing analytics data
+ */
+export const getSearchAnalytics = async () => {
+  try {
+    // Get total search count
+    const { count: totalSearchCount } = await supabase
+      .from('searches')
+      .select('*', { count: 'exact', head: true });
+    
+    // Get searches with zero results
+    const { count: zeroResultCount } = await supabase
+      .from('searches')
+      .select('*', { count: 'exact', head: true })
+      .eq('result_count', 0);
+    
+    // Get average results per search
+    const { data } = await supabase
+      .rpc<AverageSearchResult>('average_search_results');
+    
+    // Handle the case where data might be null or undefined
+    const avgResultsPerSearch = data && data.average !== null 
+      ? data.average 
+      : 0;
+
+    return {
+      success: true,
+      total_searches: totalSearchCount || 0,
+      zero_result_searches: zeroResultCount || 0,
+      avg_results_per_search: avgResultsPerSearch,
+      percentage_with_results: totalSearchCount ? ((totalSearchCount - (zeroResultCount || 0)) / totalSearchCount) * 100 : 0
+    };
+  } catch (error) {
+    console.error('Error getting search analytics:', error);
+    return {
+      success: false,
+      total_searches: 0,
+      zero_result_searches: 0,
+      avg_results_per_search: 0,
+      percentage_with_results: 0
+    };
   }
 };
