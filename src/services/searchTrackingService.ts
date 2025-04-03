@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import SHA256 from 'crypto-js/sha256';
+import { createHash } from 'crypto-js/sha256';
 
 /**
  * Track an image search in Supabase
@@ -18,10 +18,10 @@ export const trackImageSearch = async (
     
     if (typeof imageData === 'string') {
       // For URL-based images, use the URL as the hash
-      imageHash = SHA256(imageData).toString();
+      imageHash = createHash(imageData).toString();
     } else if (imageData instanceof File) {
       // For file-based images, use the file name and size as the hash
-      imageHash = SHA256(`${imageData.name}-${imageData.size}-${Date.now()}`).toString();
+      imageHash = createHash(`${imageData.name}-${imageData.size}-${Date.now()}`).toString();
     }
     
     // Save the search to Supabase
@@ -35,11 +35,6 @@ export const trackImageSearch = async (
     console.error('Error tracking image search:', error);
   }
 };
-
-// Define the expected return type for the average_search_results RPC call
-interface AverageSearchResult {
-  average: number;
-}
 
 /**
  * Get analytics about recent searches
@@ -64,22 +59,15 @@ export const getSearchAnalytics = async () => {
       .select('*', { count: 'exact', head: true })
       .eq('result_count', 0);
 
-    // Get average results per search with proper typing
+    // Get average results per search
     const { data: avgResults } = await supabase
-      .rpc<AverageSearchResult>('average_search_results');
-
-    // Safely access average value with proper null checks
-    const avgResultsPerSearch = 
-      avgResults && 
-      typeof avgResults.average === 'number' 
-        ? avgResults.average 
-        : 0;
+      .rpc('average_search_results');
 
     return {
-      totalSearches: totalSearches || 0,
-      searchesWithResults: searchesWithResults || 0,
-      searchesWithoutResults: searchesWithoutResults || 0,
-      avgResultsPerSearch
+      totalSearches,
+      searchesWithResults,
+      searchesWithoutResults,
+      avgResultsPerSearch: avgResults?.[0]?.average || 0
     };
   } catch (error) {
     console.error('Error getting search analytics:', error);
