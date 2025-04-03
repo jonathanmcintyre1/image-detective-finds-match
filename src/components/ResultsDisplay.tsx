@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -21,6 +20,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from 'date-fns';
 import { useBetaSignupPrompt } from '@/hooks/useBetaSignupPrompt';
 import { toast } from 'sonner';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import BetaSignupForm from './BetaSignupForm';
 
 interface WebEntity {
   entityId: string;
@@ -62,6 +63,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
   const [sortBy, setSortBy] = useState<'confidence' | 'date' | 'domain' | 'count'>('confidence');
   const [today] = useState(new Date());
   const { showBetaSignup, setShowBetaSignup } = useBetaSignupPrompt();
+  const [showExportSignup, setShowExportSignup] = useState(false);
   
   if (!results) return null;
   
@@ -104,10 +106,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
     const hasSeenBetaSignup = localStorage.getItem('seen_beta_signup');
     
     if (!hasSeenBetaSignup) {
-      setShowBetaSignup(true);
-      toast.info("Sign up for our beta to export results", {
-        description: "Join our beta program to unlock export functionality"
-      });
+      setShowExportSignup(true);
       return;
     }
     
@@ -154,6 +153,17 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
     } else {
       alert('PDF export coming soon');
     }
+  };
+  
+  // Callback for successful beta signup from export dialog
+  const handleExportSignupSuccess = () => {
+    setShowExportSignup(false);
+    localStorage.setItem('seen_beta_signup', 'true');
+    
+    // After successful signup, proceed with the export
+    setTimeout(() => {
+      exportResults('csv');
+    }, 1000);
   };
 
   return (
@@ -474,6 +484,19 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
           <p className="text-muted-foreground">Your image appears to be unique or we couldn't find any similar images with confidence score ≥ 70%</p>
         </div>
       )}
+      
+      {/* Export Beta Signup Dialog */}
+      <Dialog open={showExportSignup} onOpenChange={setShowExportSignup}>
+        <DialogContent className="sm:max-w-md">
+          <DialogTitle>Join Our Beta to Export Results</DialogTitle>
+          <DialogDescription>
+            Sign up for the CopyProtect beta to access export features and more.
+          </DialogDescription>
+          <div className="py-4">
+            <BetaSignupForm onSuccess={handleExportSignupSuccess} embedded={true} />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

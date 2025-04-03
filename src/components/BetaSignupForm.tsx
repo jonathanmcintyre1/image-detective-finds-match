@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/form";
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { Loader2 } from 'lucide-react';
 
 // Create schema for form validation
 const formSchema = z.object({
@@ -28,9 +29,10 @@ type FormValues = z.infer<typeof formSchema>;
 
 interface BetaSignupFormProps {
   onSuccess?: () => void;
+  embedded?: boolean;
 }
 
-const BetaSignupForm = ({ onSuccess }: BetaSignupFormProps) => {
+const BetaSignupForm = ({ onSuccess, embedded = false }: BetaSignupFormProps) => {
   const [loading, setLoading] = useState(false);
 
   // Initialize form with Zod validation
@@ -119,22 +121,26 @@ const BetaSignupForm = ({ onSuccess }: BetaSignupFormProps) => {
   };
 
   return (
-    <div className="bg-white border rounded-lg p-6 shadow-sm max-w-md w-full">
-      <div className="mb-4 text-center">
-        <h2 className="text-lg font-semibold text-brand-dark">Get Early Access</h2>
-        <p className="text-sm text-muted-foreground">
+    <div className="bg-card rounded-lg p-6 shadow-sm max-w-md w-full border">
+      <div className="mb-6 text-center">
+        <h2 className="text-2xl font-bold text-card-foreground">
+          Get Early Access
+        </h2>
+        <p className="text-base mt-2 text-muted-foreground">
           Sign up for beta access to CopyProtect when we launch
         </p>
       </div>
       
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <FormField
             control={form.control}
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Email address *</FormLabel>
+                <FormLabel className="font-medium">
+                  Email address *
+                </FormLabel>
                 <FormControl>
                   <Input 
                     placeholder="youremail@example.com" 
@@ -154,7 +160,9 @@ const BetaSignupForm = ({ onSuccess }: BetaSignupFormProps) => {
             name="name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Full name (optional)</FormLabel>
+                <FormLabel className="font-medium">
+                  Full name (optional)
+                </FormLabel>
                 <FormControl>
                   <Input 
                     placeholder="John Smith" 
@@ -173,7 +181,9 @@ const BetaSignupForm = ({ onSuccess }: BetaSignupFormProps) => {
             name="company"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Company (optional)</FormLabel>
+                <FormLabel className="font-medium">
+                  Company (optional)
+                </FormLabel>
                 <FormControl>
                   <Input 
                     placeholder="Your Company, Inc." 
@@ -192,7 +202,9 @@ const BetaSignupForm = ({ onSuccess }: BetaSignupFormProps) => {
             name="phone"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Phone number (optional)</FormLabel>
+                <FormLabel className="font-medium">
+                  Phone number (optional)
+                </FormLabel>
                 <FormControl>
                   <Input 
                     placeholder="+1 (555) 123-4567" 
@@ -208,15 +220,12 @@ const BetaSignupForm = ({ onSuccess }: BetaSignupFormProps) => {
           
           <Button 
             type="submit" 
-            className="w-full bg-brand-blue hover:bg-brand-blue/90"
+            className="w-full mt-2"
             disabled={loading}
           >
             {loading ? (
               <span className="flex items-center">
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
+                <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4" />
                 Processing...
               </span>
             ) : (

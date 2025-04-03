@@ -3,17 +3,21 @@ import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import ImageUploader from '@/components/ImageUploader';
 import ResultsDisplay from '@/components/ResultsDisplay';
-import ApiKeyInput from '@/components/ApiKeyInput';
 import BetaSignupForm from '@/components/BetaSignupForm';
+import ApiKeyInput from '@/components/ApiKeyInput';
 import { analyzeImage } from '@/services/googleVisionService';
 import { trackImageSearch } from '@/services/searchTrackingService';
 import { toast } from 'sonner';
 import { Loader2, Shield, Image as ImageIcon, AlertCircle, Upload, Sparkles, Search } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { BetaSignupProvider } from '@/hooks/useBetaSignupPrompt';
+
+// Define interface for config options
+interface AppConfig {
+  showHeader: boolean;
+}
 
 interface WebEntity {
   entityId: string;
@@ -43,8 +47,15 @@ interface MatchResult {
   pagesWithMatchingImages: WebPage[];
 }
 
+// Default configuration
+const defaultConfig: AppConfig = {
+  showHeader: true
+};
+
 const Index = () => {
-  const [apiKey, setApiKey] = useState('');
+  // App configuration
+  const [config, setConfig] = useState<AppConfig>(defaultConfig);
+  
   const [selectedImage, setSelectedImage] = useState<File | string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [results, setResults] = useState<MatchResult | null>(null);
@@ -52,22 +63,7 @@ const Index = () => {
   const [imageError, setImageError] = useState(false);
   const [showBetaSignup, setShowBetaSignup] = useState(false);
   const [hasPerformedSearch, setHasPerformedSearch] = useState(false);
-
-  useEffect(() => {
-    const envApiKey = import.meta.env.VITE_GOOGLE_VISION_API_KEY;
-    
-    if (envApiKey) {
-      setApiKey(envApiKey);
-    } else {
-      const savedApiKey = localStorage.getItem('gcv_api_key');
-      if (savedApiKey) {
-        setApiKey(savedApiKey);
-      }
-    }
-
-    // Don't show beta signup on first load anymore
-    // We'll trigger it after search or export now
-  }, []);
+  const [apiKey, setApiKey] = useState<string>('');
 
   const handleBetaDialogClose = () => {
     setShowBetaSignup(false);
@@ -101,12 +97,21 @@ const Index = () => {
     }
   }, [selectedImage]);
 
+  const handleApiKeySubmit = (key: string) => {
+    setApiKey(key);
+    toast.success("API Key set successfully", {
+      description: "Your API key has been saved in your browser"
+    });
+  };
+
   const handleImageSelected = async (image: File | string) => {
     setSelectedImage(image);
     setResults(null);
     
     if (!apiKey) {
-      toast.error('Please set your Google Cloud Vision API key first');
+      toast.error("API Key Required", {
+        description: "Please set your Google Vision API key first"
+      });
       return;
     }
     
@@ -132,7 +137,9 @@ const Index = () => {
       
     } catch (error) {
       console.error('Error analyzing image:', error);
-      toast.error('Failed to analyze image. Please check your API key and try again.');
+      toast.error('Failed to analyze image', {
+        description: 'Please check your API key and internet connection and try again.'
+      });
     } finally {
       setIsProcessing(false);
     }
@@ -145,13 +152,31 @@ const Index = () => {
     });
   };
 
+  // For demonstration, this function would be called from a settings component
+  const toggleHeader = () => {
+    setConfig(prevConfig => ({
+      ...prevConfig,
+      showHeader: !prevConfig.showHeader
+    }));
+  };
+
+  // Expose toggle function to window for easy access
+  useEffect(() => {
+    (window as any).toggleHeader = toggleHeader;
+    
+    // Clean up when component unmounts
+    return () => {
+      delete (window as any).toggleHeader;
+    };
+  }, []);
+
   return (
     <BetaSignupProvider initialValue={showBetaSignup} onChange={setShowBetaSignup}>
       <div className="min-h-screen flex flex-col bg-gray-50 font-sans">
-        <Header />
+        {config.showHeader && <Header />}
         
         <main className="flex-1 container py-8 space-y-8">
-          <div className="text-center max-w-2xl mx-auto space-y-4 mb-8">
+          <div className="text-center max-w-3xl mx-auto space-y-4 mb-8">
             <div className="flex items-center justify-center mb-2">
               <div className="relative h-16 w-16 mr-3">
                 <img 
@@ -164,12 +189,9 @@ const Index = () => {
                 CopyProtect
               </h1>
             </div>
-            <p className="text-lg text-muted-foreground">
+            <p className="text-xl text-muted-foreground mb-2">
               Discover unauthorized copies of your images across the web in seconds
             </p>
-            <div className="hidden">
-              <ApiKeyInput apiKey={apiKey} setApiKey={setApiKey} />
-            </div>
           </div>
           
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -182,6 +204,10 @@ const Index = () => {
                   </div>
                 </CardHeader>
                 <CardContent className="p-6">
+                  <div className="mb-6">
+                    <ApiKeyInput onApiKeySubmit={handleApiKeySubmit} isProcessing={isProcessing} />
+                  </div>
+                
                   <ImageUploader onImageSelected={handleImageSelected} isProcessing={isProcessing} />
                   
                   {previewUrl && (
@@ -212,57 +238,49 @@ const Index = () => {
                   )}
                 </CardContent>
               </Card>
-              
-              <Card className="border-0 shadow-md overflow-hidden">
+            </div>
+            
+            <div className="lg:col-span-2">
+              {/* How It Works Section - Moved to right column above results */}
+              <Card className="border-0 shadow-md mb-8">
                 <CardHeader className="bg-gray-50 border-b">
-                  <CardTitle className="text-base">How It Works</CardTitle>
+                  <CardTitle className="text-xl">How It Works</CardTitle>
                 </CardHeader>
-                <CardContent className="p-6 space-y-6">
-                  <div className="grid grid-cols-1 gap-6">
+                <CardContent className="p-6">
+                  <div className="grid grid-cols-3 gap-4">
                     <div className="flex flex-col items-center text-center">
                       <div className="w-12 h-12 bg-brand-blue/10 rounded-full flex items-center justify-center mb-3">
-                        <Upload className="h-6 w-6 text-brand-blue" />
+                        <Upload className="h-5 w-5 text-brand-blue" />
                       </div>
-                      <h3 className="font-medium mb-1">Upload Your Image</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Upload an image or provide a URL that you want to protect
+                      <h3 className="font-medium mb-1 text-sm">1. Upload Your Image</h3>
+                      <p className="text-xs text-muted-foreground">
+                        Upload an image you want to protect
                       </p>
                     </div>
                     
                     <div className="flex flex-col items-center text-center">
                       <div className="w-12 h-12 bg-brand-blue/10 rounded-full flex items-center justify-center mb-3">
-                        <Search className="h-6 w-6 text-brand-blue" />
+                        <Search className="h-5 w-5 text-brand-blue" />
                       </div>
-                      <h3 className="font-medium mb-1">AI-Powered Scan</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Our AI scans the web for exact or similar matches to your image
+                      <h3 className="font-medium mb-1 text-sm">2. AI-Powered Scan</h3>
+                      <p className="text-xs text-muted-foreground">
+                        Our AI scans the web for matches
                       </p>
                     </div>
                     
                     <div className="flex flex-col items-center text-center">
                       <div className="w-12 h-12 bg-brand-blue/10 rounded-full flex items-center justify-center mb-3">
-                        <Sparkles className="h-6 w-6 text-brand-blue" />
+                        <Sparkles className="h-5 w-5 text-brand-blue" />
                       </div>
-                      <h3 className="font-medium mb-1">Review Results</h3>
-                      <p className="text-sm text-muted-foreground">
-                        See where your images appear and take action against unauthorized use
+                      <h3 className="font-medium mb-1 text-sm">3. Review Results</h3>
+                      <p className="text-xs text-muted-foreground">
+                        See where your images appear online
                       </p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
               
-              <Card className="border-0 shadow-md overflow-hidden">
-                <CardHeader className="bg-brand-blue text-white">
-                  <CardTitle className="text-base">Get Early Access</CardTitle>
-                </CardHeader>
-                <CardContent className="p-6">
-                  <BetaSignupForm onSuccess={handleBetaSignupSuccess} />
-                </CardContent>
-              </Card>
-            </div>
-            
-            <div className="lg:col-span-2">
               {isProcessing && (
                 <Card className="border-0 shadow-md h-64">
                   <CardContent className="p-6 h-full flex flex-col items-center justify-center">
@@ -283,6 +301,18 @@ const Index = () => {
               {!isProcessing && results && (
                 <div>
                   <ResultsDisplay results={results} />
+                  
+                  {/* Get Early Access - Moved below results with updated styling */}
+                  <div className="mt-8">
+                    <Card className="border-0 shadow-md">
+                      <CardHeader className="bg-primary/10 border-b">
+                        <CardTitle>Get Early Access</CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-6">
+                        <BetaSignupForm onSuccess={handleBetaSignupSuccess} embedded={true} />
+                      </CardContent>
+                    </Card>
+                  </div>
                 </div>
               )}
               
@@ -297,38 +327,9 @@ const Index = () => {
               )}
             </div>
           </div>
-          
-          <Separator className="my-10" />
-          
-          <div className="text-center">
-            <h2 className="text-2xl font-bold text-brand-dark mb-6">Protect Your Digital Assets</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-              <div className="flex flex-col items-center p-6 rounded-lg border bg-white">
-                <Shield className="h-10 w-10 text-brand-blue mb-4" />
-                <h3 className="text-lg font-medium mb-2">Detect Unauthorized Use</h3>
-                <p className="text-sm text-muted-foreground">
-                  Find where your images are being used across the internet without permission
-                </p>
-              </div>
-              <div className="flex flex-col items-center p-6 rounded-lg border bg-white">
-                <AlertCircle className="h-10 w-10 text-brand-blue mb-4" />
-                <h3 className="text-lg font-medium mb-2">Monitor Marketplaces</h3>
-                <p className="text-sm text-muted-foreground">
-                  Track product images on marketplaces like Amazon, Etsy and more
-                </p>
-              </div>
-              <div className="flex flex-col items-center p-6 rounded-lg border bg-white">
-                <Sparkles className="h-10 w-10 text-brand-blue mb-4" />
-                <h3 className="text-lg font-medium mb-2">Preserve Value</h3>
-                <p className="text-sm text-muted-foreground">
-                  Maintain exclusivity and value of your digital content and products
-                </p>
-              </div>
-            </div>
-          </div>
         </main>
         
-        <footer className="border-t py-6 bg-gradient-to-r from-brand-dark to-brand-blue/90 text-white">
+        <footer className="py-6 bg-[#2d2d2d] text-white">
           <div className="container text-center text-sm">
             <div className="flex items-center justify-center gap-2 mb-2">
               <img 
@@ -338,7 +339,7 @@ const Index = () => {
               />
               <span className="font-medium">CopyProtect</span>
             </div>
-            <p>Powered by Google Cloud Vision API</p>
+            <p>© CopyProtect LLC {new Date().getFullYear()}</p>
           </div>
         </footer>
         
@@ -349,7 +350,7 @@ const Index = () => {
               Be among the first to access CopyProtect when we launch.
             </DialogDescription>
             <div className="py-4">
-              <BetaSignupForm onSuccess={handleBetaSignupSuccess} />
+              <BetaSignupForm onSuccess={handleBetaSignupSuccess} embedded={true} />
             </div>
           </DialogContent>
         </Dialog>

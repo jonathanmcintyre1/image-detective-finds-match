@@ -1,96 +1,124 @@
 
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { KeyRound, Info } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Key, Loader2 } from 'lucide-react';
 
 interface ApiKeyInputProps {
-  apiKey: string;
-  setApiKey: (apiKey: string) => void;
+  onApiKeySubmit: (apiKey: string) => void;
+  isProcessing?: boolean;
 }
 
-const ApiKeyInput = ({ apiKey, setApiKey }: ApiKeyInputProps) => {
-  const [open, setOpen] = useState(!apiKey);
-  const [tempApiKey, setTempApiKey] = useState(apiKey || '');
+const ApiKeyInput: React.FC<ApiKeyInputProps> = ({ onApiKeySubmit, isProcessing = false }) => {
+  const [apiKey, setApiKey] = useState<string>('');
+  const [showKey, setShowKey] = useState<boolean>(false);
+  const [submitted, setSubmitted] = useState<boolean>(false);
+  
+  // Check local storage for previously saved key
+  React.useEffect(() => {
+    const savedKey = localStorage.getItem('google_vision_api_key');
+    if (savedKey) {
+      setApiKey(savedKey);
+      setSubmitted(true);
+    }
+  }, []);
 
-  const handleSave = () => {
-    setApiKey(tempApiKey);
-    localStorage.setItem('gcv_api_key', tempApiKey);
-    setOpen(false);
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (apiKey.trim()) {
+      localStorage.setItem('google_vision_api_key', apiKey);
+      setSubmitted(true);
+      onApiKeySubmit(apiKey);
+    }
+  };
+
+  const handleReset = () => {
+    setApiKey('');
+    setSubmitted(false);
+    localStorage.removeItem('google_vision_api_key');
   };
 
   return (
-    <>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => setOpen(true)}
-        className="flex items-center gap-1"
-      >
-        <KeyRound className="h-4 w-4 mr-1" />
-        {apiKey ? 'Change API Key' : 'Set API Key'}
-      </Button>
-
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Google Cloud Vision API Key</DialogTitle>
-            <DialogDescription>
-              Enter your Google Cloud Vision API key to use the image detection features.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <div className="flex items-start space-x-2 rounded-md bg-muted/50 p-3">
-              <Info className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
-              <div className="text-sm text-muted-foreground">
-                <p>To get an API key:</p>
-                <ol className="list-decimal ml-4 space-y-1 mt-1">
-                  <li>Go to the Google Cloud Console</li>
-                  <li>Create or select a project</li>
-                  <li>Enable the Vision API</li>
-                  <li>Create an API key with Vision API access</li>
-                </ol>
-                <a 
-                  href="https://cloud.google.com/vision/docs/setup"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary hover:underline"
-                >
-                  Learn more about setting up Google Cloud Vision
-                </a>
+    <Card className="border-0 shadow-sm w-full">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-lg flex items-center">
+          <Key className="h-5 w-5 mr-2 text-brand-blue" />
+          Google Vision API Key
+        </CardTitle>
+        <CardDescription>
+          {!submitted 
+            ? "Enter your API key to analyze images" 
+            : "Your API key has been set"}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit}>
+          <div className="space-y-4">
+            {!submitted ? (
+              <>
+                <div className="relative">
+                  <Input
+                    type={showKey ? "text" : "password"}
+                    placeholder="Enter your Google Vision API key"
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                    className="pr-20"
+                    disabled={isProcessing}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-1 top-1 h-7"
+                    onClick={() => setShowKey(!showKey)}
+                    disabled={isProcessing}
+                  >
+                    {showKey ? "Hide" : "Show"}
+                  </Button>
+                </div>
+                <div className="flex justify-end">
+                  <Button 
+                    type="submit" 
+                    size="sm"
+                    disabled={!apiKey.trim() || isProcessing}
+                  >
+                    {isProcessing ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Setting...
+                      </>
+                    ) : (
+                      "Set API Key"
+                    )}
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <div className="space-y-4">
+                <Alert>
+                  <AlertDescription className="text-sm">
+                    API key is set and stored in your browser
+                  </AlertDescription>
+                </Alert>
+                <div className="flex justify-end">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm"
+                    onClick={handleReset}
+                    disabled={isProcessing}
+                  >
+                    Reset API Key
+                  </Button>
+                </div>
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <label htmlFor="api-key" className="text-sm font-medium">
-                API Key
-              </label>
-              <Input
-                id="api-key"
-                value={tempApiKey}
-                onChange={(e) => setTempApiKey(e.target.value)}
-                placeholder="Enter your Google Cloud Vision API key"
-                className="w-full"
-              />
-              <p className="text-xs text-muted-foreground">
-                Your API key is stored locally in your browser and is not sent to our servers.
-              </p>
-            </div>
+            )}
           </div>
-          
-          <DialogFooter>
-            <Button
-              onClick={handleSave}
-              disabled={!tempApiKey.trim()}
-            >
-              Save API Key
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+        </form>
+      </CardContent>
+    </Card>
   );
 };
 
