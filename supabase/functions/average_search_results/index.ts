@@ -42,7 +42,7 @@ serve(async (req) => {
       average = sum / rawData.length;
     }
 
-    // Return the data with the correct structure
+    // Return the data with the correct structure - as expected by the client
     return new Response(JSON.stringify({ average }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,

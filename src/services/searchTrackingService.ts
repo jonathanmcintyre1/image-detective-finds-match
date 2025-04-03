@@ -1,4 +1,6 @@
+
 import { supabase } from "@/integrations/supabase/client";
+import { useState, useEffect } from 'react';
 
 interface SearchRecord {
   id: string;
@@ -84,12 +86,12 @@ export const getSearchStats = async (): Promise<SearchStats> => {
       .eq('result_count', 0);
 
     // Get average results per search
-    // Fix: Use a proper typing for the RPC call
-    const { data: averageData, error } = await supabase
-      .rpc<null, AverageSearchResult>('average_search_results');
+    // Fix: Use the correct type parameters for the RPC call
+    const { data, error } = await supabase
+      .rpc<AverageSearchResult>('average_search_results');
     
-    // Fix: Handle the case where data might be null or undefined
-    const avgResultsPerSearch = averageData && typeof averageData.average === 'number' ? averageData.average : 0;
+    // Fix: Handle the case where data might be null, undefined, or not have the expected structure
+    const avgResultsPerSearch = data && typeof data.average === 'number' ? data.average : 0;
 
     return {
       totalSearches: totalSearches || 0,
@@ -108,20 +110,23 @@ export const getSearchStats = async (): Promise<SearchStats> => {
   }
 };
 
+// Added this export to fix the missing function in useSearchAnalytics.ts
+export const getSearchAnalytics = getSearchStats;
+
 /**
  * Custom hook to get search statistics
  */
 export const useSearchStats = () => {
-  const [stats, setStats] = React.useState<SearchStats>({
+  const [stats, setStats] = useState<SearchStats>({
     totalSearches: 0,
     searchesWithResults: 0,
     searchesNoResults: 0,
     avgResultsPerSearch: 0
   });
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [error, setError] = React.useState<Error | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const fetchStats = async () => {
       setIsLoading(true);
       setError(null);

@@ -26,7 +26,10 @@ export function useSearchAnalytics() {
       try {
         const data = await getSearchAnalytics();
         setAnalytics({
-          ...data,
+          totalSearches: data.totalSearches,
+          searchesWithResults: data.searchesWithResults,
+          searchesWithoutResults: data.searchesNoResults, // Map to the correct property
+          avgResultsPerSearch: data.avgResultsPerSearch,
           isLoading: false,
           error: null
         });
