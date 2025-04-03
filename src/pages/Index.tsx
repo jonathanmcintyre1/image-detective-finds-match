@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import ImageUploader from '@/components/ImageUploader';
 import ResultsDisplay from '@/components/ResultsDisplay';
-import ApiKeyInput from '@/components/ApiKeyInput';
 import BetaSignupForm from '@/components/BetaSignupForm';
 import { analyzeImage } from '@/services/googleVisionService';
 import { trackImageSearch } from '@/services/searchTrackingService';
@@ -44,7 +43,6 @@ interface MatchResult {
 }
 
 const Index = () => {
-  const [apiKey, setApiKey] = useState('');
   const [selectedImage, setSelectedImage] = useState<File | string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [results, setResults] = useState<MatchResult | null>(null);
@@ -54,17 +52,6 @@ const Index = () => {
   const [hasPerformedSearch, setHasPerformedSearch] = useState(false);
 
   useEffect(() => {
-    const envApiKey = import.meta.env.VITE_GOOGLE_VISION_API_KEY;
-    
-    if (envApiKey) {
-      setApiKey(envApiKey);
-    } else {
-      const savedApiKey = localStorage.getItem('gcv_api_key');
-      if (savedApiKey) {
-        setApiKey(savedApiKey);
-      }
-    }
-
     // Don't show beta signup on first load anymore
     // We'll trigger it after search or export now
   }, []);
@@ -105,14 +92,10 @@ const Index = () => {
     setSelectedImage(image);
     setResults(null);
     
-    if (!apiKey) {
-      toast.error('Please set your Google Cloud Vision API key first');
-      return;
-    }
-    
     try {
       setIsProcessing(true);
-      const result = await analyzeImage(apiKey, image);
+      // We no longer need to pass the API key since it's handled by our edge function
+      const result = await analyzeImage('', image);
       setResults(result);
       setHasPerformedSearch(true);
       
@@ -132,7 +115,9 @@ const Index = () => {
       
     } catch (error) {
       console.error('Error analyzing image:', error);
-      toast.error('Failed to analyze image. Please check your API key and try again.');
+      toast.error('Failed to analyze image', {
+        description: 'Please check your internet connection and try again.'
+      });
     } finally {
       setIsProcessing(false);
     }
@@ -167,9 +152,6 @@ const Index = () => {
             <p className="text-lg text-muted-foreground">
               Discover unauthorized copies of your images across the web in seconds
             </p>
-            <div className="hidden">
-              <ApiKeyInput apiKey={apiKey} setApiKey={setApiKey} />
-            </div>
           </div>
           
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -253,7 +235,7 @@ const Index = () => {
               </Card>
               
               <Card className="border-0 shadow-md overflow-hidden">
-                <CardHeader className="bg-brand-blue text-white">
+                <CardHeader className="bg-gradient-to-r from-[#b1081e] to-[#ea384c] text-white">
                   <CardTitle className="text-base">Get Early Access</CardTitle>
                 </CardHeader>
                 <CardContent className="p-6">
@@ -328,7 +310,7 @@ const Index = () => {
           </div>
         </main>
         
-        <footer className="border-t py-6 bg-gradient-to-r from-brand-dark to-brand-blue/90 text-white">
+        <footer className="border-t py-6 bg-gradient-to-r from-[#b1081e] to-[#ea384c] text-white">
           <div className="container text-center text-sm">
             <div className="flex items-center justify-center gap-2 mb-2">
               <img 
@@ -349,7 +331,7 @@ const Index = () => {
               Be among the first to access CopyProtect when we launch.
             </DialogDescription>
             <div className="py-4">
-              <BetaSignupForm onSuccess={handleBetaSignupSuccess} />
+              <BetaSignupForm onSuccess={handleBetaSignupSuccess} embedded={true} />
             </div>
           </DialogContent>
         </Dialog>
