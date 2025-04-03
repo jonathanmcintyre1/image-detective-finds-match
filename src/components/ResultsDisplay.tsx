@@ -3,8 +3,7 @@ import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { 
   AlertTriangle, AlertCircle, Link as LinkIcon, 
-  ShoppingBag, LayoutGrid, Shield, Filter, SlidersHorizontal,
-  Check, Clock, Download, Globe, Tag, FileWarning
+  ShoppingBag, FileText, Shield, Clock, Download, Globe
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ExactMatchesTable } from './ExactMatchesTable';
@@ -40,7 +39,7 @@ interface WebPage {
   score: number;
   pageTitle: string;
   platform?: string;
-  pageType?: 'product' | 'category' | 'unknown';
+  pageType?: 'product' | 'category' | 'search' | 'unknown';
   matchingImages?: WebImage[];
   dateFound?: Date;
 }
@@ -57,8 +56,6 @@ interface ResultsDisplayProps {
 
 const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
   const [sortBy, setSortBy] = useState<'confidence' | 'date' | 'domain' | 'count'>('confidence');
-  const [filterPageType, setFilterPageType] = useState<string | null>(null);
-  const [filterDomain, setFilterDomain] = useState<string | null>(null);
   const [today] = useState(new Date());
   
   if (!results) return null;
@@ -76,72 +73,68 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
     }))
   };
   
-  // Filter results to only show high confidence matches (80% or higher)
-  const exactMatches = processedResults.visuallySimilarImages.filter(img => img.score >= 0.8);
-  
-  // Similar matches (medium confidence: 60-80%)
-  const similarMatches = processedResults.visuallySimilarImages.filter(img => img.score >= 0.6 && img.score < 0.8);
+  // Split matches by score: exact matches (90%+) vs partial matches (60-90%)
+  const exactMatches = processedResults.visuallySimilarImages.filter(img => img.score >= 0.9);
+  const partialMatches = processedResults.visuallySimilarImages.filter(img => img.score >= 0.6 && img.score < 0.9);
   
   // Split pages by type
   const allRelevantPages = processedResults.pagesWithMatchingImages.filter(page => page.score >= 0.6);
   const productPages = allRelevantPages.filter(page => page.pageType === 'product');
-  const categoryPages = allRelevantPages.filter(page => page.pageType === 'category' || page.pageType === 'unknown');
-
-  // Apply domain filter if set
-  const applyFilters = (items: any[]) => {
-    let filtered = [...items];
-    
-    if (filterPageType) {
-      filtered = filtered.filter(item => {
-        if ('pageType' in item) {
-          return item.pageType === filterPageType;
-        }
-        return true;
-      });
-    }
-    
-    if (filterDomain) {
-      filtered = filtered.filter(item => {
-        try {
-          const hostname = new URL(item.url).hostname;
-          return hostname.includes(filterDomain);
-        } catch {
-          return true;
-        }
-      });
-    }
-    
-    return filtered;
-  };
-
-  // Final filtered lists
-  const finalExactMatches = applyFilters(exactMatches) as WebImage[];
-  const finalSimilarMatches = applyFilters(similarMatches) as WebImage[];
-  const finalProductPages = applyFilters(productPages) as WebPage[];
-  const finalCategoryPages = applyFilters(categoryPages) as WebPage[];
+  const categoryPages = allRelevantPages.filter(page => page.pageType === 'category');
+  const searchPages = allRelevantPages.filter(page => page.pageType === 'search');
+  const otherPages = allRelevantPages.filter(page => 
+    page.pageType !== 'product' && 
+    page.pageType !== 'category' && 
+    page.pageType !== 'search'
+  );
 
   // Get total potential issues
-  const exactMatchCount = finalExactMatches.length;
-  const similarMatchCount = finalSimilarMatches.length;
-  const pageMatchCount = finalProductPages.length + finalCategoryPages.length;
-  const totalMatchCount = exactMatchCount + similarMatchCount + pageMatchCount;
+  const exactMatchCount = exactMatches.length;
+  const partialMatchCount = partialMatches.length;
+  const productPageCount = productPages.length;
+  const categoryPageCount = categoryPages.length;
+  const searchPageCount = searchPages.length;
+  const otherPageCount = otherPages.length;
+  const pageMatchCount = productPageCount + categoryPageCount + searchPageCount + otherPageCount;
+  const totalMatchCount = exactMatchCount + partialMatchCount + pageMatchCount;
 
   // Helper for exports
   const exportResults = (type: 'csv' | 'pdf') => {
     if (type === 'csv') {
       // Create CSV content
-      let csvContent = "Type,Domain,URL,Confidence,Date Found\n";
+      let csvContent = "Match Type,Domain,URL,Page Type,Confidence,Date Found\n";
       
       // Add exact matches
-      finalExactMatches.forEach(match => {
-        const domain = new URL(match.url).hostname;
-        csvContent += `Exact Match,${domain},${match.url},${(match.score * 100).toFixed(1)}%,${format(match.dateFound || new Date(), 'yyyy-MM-dd')}\n`;
+      exactMatches.forEach(match => {
+        let domain = "";
+        try {
+          domain = new URL(match.url).hostname;
+        } catch (e) {
+          domain = "Unknown";
+        }
+        csvContent += `Exact Match,${domain},${match.url},Image,${(match.score * 100).toFixed(1)}%,${format(match.dateFound || new Date(), 'yyyy-MM-dd')}\n`;
       });
       
-      // Add product pages
-      finalProductPages.forEach(page => {
-        const domain = new URL(page.url).hostname;
-        csvContent += `Product Page,${domain},${page.url},${(page.score * 100).toFixed(1)}%,${format(page.dateFound || new Date(), 'yyyy-MM-dd')}\n`;
+      // Add partial matches
+      partialMatches.forEach(match => {
+        let domain = "";
+        try {
+          domain = new URL(match.url).hostname;
+        } catch (e) {
+          domain = "Unknown";
+        }
+        csvContent += `Partial Match,${domain},${match.url},Image,${(match.score * 100).toFixed(1)}%,${format(match.dateFound || new Date(), 'yyyy-MM-dd')}\n`;
+      });
+      
+      // Add all pages
+      allRelevantPages.forEach(page => {
+        let domain = "";
+        try {
+          domain = new URL(page.url).hostname;
+        } catch (e) {
+          domain = "Unknown";
+        }
+        csvContent += `Page with Image,${domain},${page.url},${page.pageType || 'Unknown'},${(page.score * 100).toFixed(1)}%,${format(page.dateFound || new Date(), 'yyyy-MM-dd')}\n`;
       });
 
       // Create and download the CSV file
@@ -156,38 +149,6 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
       alert('PDF export coming soon');
     }
   };
-
-  // Get unique domains from all matches for filtering
-  const uniqueDomains = Array.from(
-    new Set([
-      ...exactMatches.map(m => {
-        try {
-          return new URL(m.url).hostname;
-        } catch {
-          return '';
-        }
-      }),
-      ...similarMatches.map(m => {
-        try {
-          return new URL(m.url).hostname;
-        } catch {
-          return '';
-        }
-      }),
-      ...allRelevantPages.map(p => {
-        try {
-          return new URL(p.url).hostname;
-        } catch {
-          return '';
-        }
-      })
-    ])
-  ).filter(Boolean);
-
-  // Get unique page types
-  const uniquePageTypes = Array.from(
-    new Set(allRelevantPages.map(p => p.pageType))
-  ).filter(Boolean);
 
   return (
     <div className="space-y-8">
@@ -222,66 +183,16 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
                   <span className="text-xs text-muted-foreground">Exact</span>
                 </div>
                 <div className="flex flex-col items-center justify-center px-4 py-2 bg-amber-50 border border-amber-100 rounded-lg">
-                  <span className="text-xl font-bold text-amber-500">{similarMatchCount}</span>
-                  <span className="text-xs text-muted-foreground">Similar</span>
+                  <span className="text-xl font-bold text-amber-500">{partialMatchCount}</span>
+                  <span className="text-xs text-muted-foreground">Partial</span>
                 </div>
                 <div className="flex flex-col items-center justify-center px-4 py-2 bg-blue-50 border border-blue-100 rounded-lg">
-                  <span className="text-xl font-bold text-brand-blue">{finalProductPages.length}</span>
-                  <span className="text-xs text-muted-foreground">Products</span>
+                  <span className="text-xl font-bold text-brand-blue">{pageMatchCount}</span>
+                  <span className="text-xs text-muted-foreground">Pages</span>
                 </div>
               </div>
             </div>
             
-            {/* Advanced filtering */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="text-xs h-8 flex items-center gap-1"
-                onClick={() => {
-                  // Reset filters
-                  setFilterDomain(null);
-                  setFilterPageType(null);
-                }}
-              >
-                <Filter className="h-3 w-3" />
-                Advanced Filter
-              </Button>
-              
-              {/* Domain filter */}
-              {uniqueDomains.length > 0 && (
-                <select
-                  className="text-sm border rounded-md px-2 py-1 h-8"
-                  value={filterDomain || ''}
-                  onChange={(e) => setFilterDomain(e.target.value || null)}
-                >
-                  <option value="">All Domains</option>
-                  {uniqueDomains.map(domain => (
-                    <option key={domain} value={domain}>{domain}</option>
-                  ))}
-                </select>
-              )}
-              
-              {/* Page type filter */}
-              {uniquePageTypes.length > 0 && (
-                <select
-                  className="text-sm border rounded-md px-2 py-1 h-8"
-                  value={filterPageType || ''}
-                  onChange={(e) => setFilterPageType(e.target.value || null)}
-                >
-                  <option value="">All Page Types</option>
-                  {uniquePageTypes.map(type => (
-                    <option key={type} value={type}>
-                      {type === 'product' ? 'Product Pages' : 
-                       type === 'category' ? 'Category Pages' : 'Other Pages'}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
-          </div>
-          
-          <div className="flex justify-between items-center mb-4 flex-wrap gap-2 mt-6">
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">Sort by:</span>
               <select 
@@ -324,25 +235,25 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
             </TabsTrigger>
             <TabsTrigger value="exact" className="relative">
               Exact Matches
-              {finalExactMatches.length > 0 && (
+              {exactMatchCount > 0 && (
                 <Badge className="absolute -top-2 -right-2 bg-brand-red text-white h-5 min-w-5 flex items-center justify-center p-0">
-                  {finalExactMatches.length}
+                  {exactMatchCount}
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="similar" className="relative">
-              Similar Matches
-              {finalSimilarMatches.length > 0 && (
+            <TabsTrigger value="partial" className="relative">
+              Partial Matches
+              {partialMatchCount > 0 && (
                 <Badge className="absolute -top-2 -right-2 bg-amber-500 text-white h-5 min-w-5 flex items-center justify-center p-0">
-                  {finalSimilarMatches.length}
+                  {partialMatchCount}
                 </Badge>
               )}
             </TabsTrigger>
             <TabsTrigger value="pages" className="relative">
               Pages with Image
-              {(finalProductPages.length + finalCategoryPages.length) > 0 && (
+              {pageMatchCount > 0 && (
                 <Badge className="absolute -top-2 -right-2 bg-brand-blue text-white h-5 min-w-5 flex items-center justify-center p-0">
-                  {finalProductPages.length + finalCategoryPages.length}
+                  {pageMatchCount}
                 </Badge>
               )}
             </TabsTrigger>
@@ -360,14 +271,14 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-4">
-                {finalExactMatches.length > 0 && (
+                {exactMatchCount > 0 && (
                   <div className="mb-8">
                     <h3 className="text-lg font-medium flex items-center mb-3">
-                      <Badge className="bg-brand-red text-white mr-2">{finalExactMatches.length}</Badge>
+                      <Badge className="bg-brand-red text-white mr-2">{exactMatchCount}</Badge>
                       Exact Matches
                     </h3>
                     <ExactMatchesTable 
-                      matches={finalExactMatches}
+                      matches={exactMatches}
                       relatedPages={allRelevantPages} 
                       sortBy={sortBy}
                       compact
@@ -375,14 +286,14 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
                   </div>
                 )}
                 
-                {finalSimilarMatches.length > 0 && (
+                {partialMatchCount > 0 && (
                   <div className="mb-8">
                     <h3 className="text-lg font-medium flex items-center mb-3">
-                      <Badge className="bg-amber-500 text-white mr-2">{finalSimilarMatches.length}</Badge>
-                      Similar Matches
+                      <Badge className="bg-amber-500 text-white mr-2">{partialMatchCount}</Badge>
+                      Partial Matches
                     </h3>
                     <ExactMatchesTable 
-                      matches={finalSimilarMatches}
+                      matches={partialMatches}
                       relatedPages={allRelevantPages} 
                       sortBy={sortBy}
                       compact
@@ -390,23 +301,43 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
                   </div>
                 )}
                 
-                {finalProductPages.length > 0 && (
+                {productPageCount > 0 && (
                   <div className="mb-8">
                     <h3 className="text-lg font-medium flex items-center mb-3">
-                      <Badge className="bg-brand-blue text-white mr-2">{finalProductPages.length}</Badge>
+                      <Badge className="bg-brand-blue text-white mr-2">{productPageCount}</Badge>
                       Product Pages
                     </h3>
-                    <PagesMatchTable pages={finalProductPages} sortBy={sortBy} compact />
+                    <PagesMatchTable pages={productPages} sortBy={sortBy} compact />
                   </div>
                 )}
                 
-                {finalCategoryPages.length > 0 && (
-                  <div>
+                {categoryPageCount > 0 && (
+                  <div className="mb-8">
                     <h3 className="text-lg font-medium flex items-center mb-3">
-                      <Badge className="bg-gray-500 text-white mr-2">{finalCategoryPages.length}</Badge>
+                      <Badge className="bg-green-500 text-white mr-2">{categoryPageCount}</Badge>
+                      Category Pages
+                    </h3>
+                    <PagesMatchTable pages={categoryPages} sortBy={sortBy} compact />
+                  </div>
+                )}
+                
+                {searchPageCount > 0 && (
+                  <div className="mb-8">
+                    <h3 className="text-lg font-medium flex items-center mb-3">
+                      <Badge className="bg-purple-500 text-white mr-2">{searchPageCount}</Badge>
+                      Search Results Pages
+                    </h3>
+                    <PagesMatchTable pages={searchPages} sortBy={sortBy} compact />
+                  </div>
+                )}
+                
+                {otherPageCount > 0 && (
+                  <div className="mb-8">
+                    <h3 className="text-lg font-medium flex items-center mb-3">
+                      <Badge className="bg-gray-500 text-white mr-2">{otherPageCount}</Badge>
                       Other Pages
                     </h3>
-                    <PagesMatchTable pages={finalCategoryPages} sortBy={sortBy} compact />
+                    <PagesMatchTable pages={otherPages} sortBy={sortBy} compact />
                   </div>
                 )}
               </CardContent>
@@ -418,9 +349,9 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
               <CardHeader className="bg-brand-red/10 border-b">
                 <div className="flex justify-between items-center">
                   <div className="flex items-center">
-                    <Badge className="bg-brand-red text-white mr-2">{finalExactMatches.length}</Badge>
+                    <Badge className="bg-brand-red text-white mr-2">{exactMatchCount}</Badge>
                     <CardTitle className="text-lg">Exact Image Matches</CardTitle>
-                    <span className="text-xs text-muted-foreground ml-2">(Confidence ≥ 80%)</span>
+                    <span className="text-xs text-muted-foreground ml-2">(Confidence ≥ 90%)</span>
                   </div>
                   <Alert variant="destructive" className="w-auto py-1 h-9 px-3">
                     <AlertTriangle className="h-4 w-4" />
@@ -435,7 +366,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
               </CardHeader>
               <CardContent className="pt-4">
                 <ExactMatchesTable 
-                  matches={finalExactMatches}
+                  matches={exactMatches}
                   relatedPages={allRelevantPages} 
                   sortBy={sortBy}
                 />
@@ -443,16 +374,16 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="similar" className="m-0">
+          <TabsContent value="partial" className="m-0">
             <Card className="border-0 shadow-md">
               <CardHeader className="bg-amber-500/10 border-b">
                 <div className="flex justify-between items-center">
                   <div className="flex items-center">
-                    <Badge className="bg-amber-500 text-white mr-2">{finalSimilarMatches.length}</Badge>
-                    <CardTitle className="text-lg">Similar Image Matches</CardTitle>
-                    <span className="text-xs text-muted-foreground ml-2">(Confidence 60-80%)</span>
+                    <Badge className="bg-amber-500 text-white mr-2">{partialMatchCount}</Badge>
+                    <CardTitle className="text-lg">Partial Image Matches</CardTitle>
+                    <span className="text-xs text-muted-foreground ml-2">(Confidence 60-90%)</span>
                   </div>
-                  <Alert variant="warning" className="w-auto py-1 h-9 px-3">
+                  <Alert variant="default" className="w-auto py-1 h-9 px-3 bg-amber-50 border-amber-200 text-amber-700">
                     <AlertTriangle className="h-4 w-4" />
                     <AlertDescription className="ml-2">
                       Potential derivative works
@@ -465,7 +396,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
               </CardHeader>
               <CardContent className="pt-4">
                 <ExactMatchesTable 
-                  matches={finalSimilarMatches}
+                  matches={partialMatches}
                   relatedPages={allRelevantPages} 
                   sortBy={sortBy}
                 />
@@ -478,38 +409,75 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
               <CardHeader className="bg-brand-blue/10 border-b">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
-                    <Badge className="bg-brand-blue text-white mr-2">{finalProductPages.length + finalCategoryPages.length}</Badge>
+                    <Badge className="bg-brand-blue text-white mr-2">{pageMatchCount}</Badge>
                     <ShoppingBag className="h-4 w-4 mr-2 text-brand-blue" />
-                    <CardTitle className="text-lg">Pages with Your Image</CardTitle>
+                    <CardTitle className="text-lg">Pages with Image</CardTitle>
                   </div>
-                  <Alert variant="default" className="w-auto py-1 h-9 px-3 bg-blue-50 border-blue-200 text-blue-700">
-                    <ShoppingBag className="h-4 w-4" />
-                    <AlertDescription className="ml-2">
-                      Pages using your images
-                    </AlertDescription>
-                  </Alert>
                 </div>
                 <CardDescription>
-                  These pages are using your image
+                  Webpages showing your image, categorized by page type
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-4">
-                <Alert variant="default" className="mb-4 bg-blue-50 border-blue-200">
-                  <AlertTitle>Pages with your image</AlertTitle>
-                  <AlertDescription>
-                    These pages appear to be using your image.
-                  </AlertDescription>
-                </Alert>
-                <PagesMatchTable pages={[...finalProductPages, ...finalCategoryPages]} sortBy={sortBy} />
+                {productPageCount > 0 && (
+                  <div className="mb-8">
+                    <h3 className="text-lg font-medium flex items-center mb-3">
+                      <Badge className="bg-brand-blue text-white mr-2">{productPageCount}</Badge>
+                      <ShoppingBag className="h-4 w-4 mr-2" />
+                      Product Pages
+                    </h3>
+                    <PagesMatchTable pages={productPages} sortBy={sortBy} />
+                  </div>
+                )}
+                
+                {categoryPageCount > 0 && (
+                  <div className="mb-8">
+                    <h3 className="text-lg font-medium flex items-center mb-3">
+                      <Badge className="bg-green-500 text-white mr-2">{categoryPageCount}</Badge>
+                      <FileText className="h-4 w-4 mr-2" />
+                      Category Pages
+                    </h3>
+                    <PagesMatchTable pages={categoryPages} sortBy={sortBy} />
+                  </div>
+                )}
+                
+                {searchPageCount > 0 && (
+                  <div className="mb-8">
+                    <h3 className="text-lg font-medium flex items-center mb-3">
+                      <Badge className="bg-purple-500 text-white mr-2">{searchPageCount}</Badge>
+                      <Globe className="h-4 w-4 mr-2" />
+                      Search Results Pages
+                    </h3>
+                    <PagesMatchTable pages={searchPages} sortBy={sortBy} />
+                  </div>
+                )}
+                
+                {otherPageCount > 0 && (
+                  <div>
+                    <h3 className="text-lg font-medium flex items-center mb-3">
+                      <Badge className="bg-gray-500 text-white mr-2">{otherPageCount}</Badge>
+                      <FileText className="h-4 w-4 mr-2" />
+                      Other Pages
+                    </h3>
+                    <PagesMatchTable pages={otherPages} sortBy={sortBy} />
+                  </div>
+                )}
+                
+                {pageMatchCount === 0 && (
+                  <div className="p-6 text-center bg-gray-50 rounded-lg border border-dashed">
+                    <FileText className="h-10 w-10 mx-auto text-gray-400 mb-2" />
+                    <p className="text-muted-foreground">No pages containing your image were found</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
       )}
 
-      {!totalMatchCount && (
+      {totalMatchCount === 0 && (
         <div className="text-center py-12 bg-white shadow-sm border rounded-lg">
-          <FileWarning className="h-16 w-16 text-brand-blue mx-auto mb-4" />
+          <FileText className="h-16 w-16 text-brand-blue mx-auto mb-4" />
           <h2 className="text-xl font-medium mb-2">No matches found</h2>
           <p className="text-muted-foreground">Your image appears to be unique or we couldn't find any similar images with confidence score ≥ 60%</p>
         </div>

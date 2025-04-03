@@ -4,8 +4,8 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
 } from '@/components/ui/table';
 import { 
-  ExternalLink, Image, FileText, Eye, Copy, ShoppingBag, Tag, 
-  ChevronDown, ChevronUp, Calendar
+  ExternalLink, Copy, ChevronDown, ChevronUp,
+  Calendar, FileText, ShoppingBag, Globe, Tag, Eye
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -29,7 +29,7 @@ interface WebPage {
   score: number;
   pageTitle: string;
   platform?: string;
-  pageType?: 'product' | 'category' | 'unknown';
+  pageType?: 'product' | 'category' | 'search' | 'unknown';
   matchingImages?: WebImage[];
   dateFound?: Date;
 }
@@ -152,6 +152,15 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({
     }
   };
 
+  const getPageTypeColor = (pageType?: string): string => {
+    switch(pageType) {
+      case 'product': return "text-brand-blue";
+      case 'category': return "text-green-600";
+      case 'search': return "text-purple-600";
+      default: return "text-gray-600";
+    }
+  };
+
   const loadMore = () => {
     const nextBatchSize = compact ? 3 : 5;
     const nextBatch = sortedPages.slice(visiblePages.length, visiblePages.length + nextBatchSize);
@@ -166,11 +175,13 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({
   const getPageTypeIcon = (pageType?: string) => {
     switch(pageType) {
       case 'product':
-        return <ShoppingBag className="h-4 w-4 text-brand-blue" />;
+        return <ShoppingBag className={`h-4 w-4 ${getPageTypeColor(pageType)}`} />;
       case 'category':
-        return <Tag className="h-4 w-4 text-gray-500" />;
+        return <Tag className={`h-4 w-4 ${getPageTypeColor(pageType)}`} />;
+      case 'search':
+        return <Globe className={`h-4 w-4 ${getPageTypeColor(pageType)}`} />;
       default:
-        return <FileText className="h-4 w-4 text-gray-500" />;
+        return <FileText className={`h-4 w-4 ${getPageTypeColor(pageType)}`} />;
     }
   };
 
@@ -253,9 +264,13 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({
                                   onError={(e) => {
                                     (e.currentTarget as HTMLImageElement).onerror = null;
                                     (e.currentTarget as HTMLImageElement).style.display = 'none';
-                                    (e.currentTarget as HTMLImageElement).parentElement!.innerHTML = 
-                                      `<div class="w-full h-full flex items-center justify-center bg-gray-200">
-                                        ${getPageTypeIcon(page.pageType) ? getPageTypeIcon(page.pageType).toString() : ''}
+                                    (e.currentTarget.parentElement as HTMLElement).innerHTML = `
+                                      <div class="w-full h-full flex items-center justify-center bg-gray-200">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6 text-gray-400">
+                                          <rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect>
+                                          <circle cx="9" cy="9" r="2"></circle>
+                                          <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>
+                                        </svg>
                                       </div>`;
                                   }}
                                 />
@@ -292,9 +307,10 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({
                       <TableCell>
                         <div className="flex items-center">
                           {getPageTypeIcon(page.pageType)}
-                          <span className="ml-1 text-sm">
+                          <span className="ml-2 text-sm">
                             {page.pageType === 'product' ? 'Product' : 
-                            page.pageType === 'category' ? 'Category' : 'Web Page'}
+                            page.pageType === 'category' ? 'Category' : 
+                            page.pageType === 'search' ? 'Search' : 'Web Page'}
                           </span>
                         </div>
                       </TableCell>

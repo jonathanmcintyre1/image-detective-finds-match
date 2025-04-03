@@ -1,3 +1,4 @@
+
 interface WebEntity {
   entityId: string;
   score: number;
@@ -16,7 +17,7 @@ interface WebPage {
   score: number;
   pageTitle: string;
   platform?: string; 
-  pageType?: 'product' | 'category' | 'unknown';
+  pageType?: 'product' | 'category' | 'search' | 'unknown';
   matchingImages?: WebImage[];
 }
 
@@ -151,10 +152,11 @@ const identifyPlatform = (url: string): string => {
   }
 };
 
-const determinePageType = (url: string, title: string): 'product' | 'category' | 'unknown' => {
+const determinePageType = (url: string, title: string): 'product' | 'category' | 'search' | 'unknown' => {
   const urlLower = url.toLowerCase();
   const titleLower = title.toLowerCase();
   
+  // Check for product pages
   if (
     urlLower.includes('/product/') || 
     urlLower.includes('/item/') || 
@@ -163,23 +165,39 @@ const determinePageType = (url: string, title: string): 'product' | 'category' |
     urlLower.includes('/products/') ||
     titleLower.includes('buy') ||
     titleLower.includes('product') ||
-    titleLower.includes(' - $') ||
-    titleLower.includes(' | $')
+    titleLower.match(/ - \$\d+/) ||
+    titleLower.match(/ \| \$\d+/) ||
+    titleLower.match(/\$\d+\.\d+/)
   ) {
     return 'product';
   }
   
+  // Check for category pages
   else if (
     urlLower.includes('/category/') ||
     urlLower.includes('/collection/') ||
     urlLower.includes('/collections/') ||
     urlLower.includes('/shop/') ||
     urlLower.includes('/catalog/') ||
+    urlLower.includes('/department/') ||
     titleLower.includes('collection') ||
     titleLower.includes('category') ||
-    titleLower.includes('products')
+    (titleLower.includes('products') && !titleLower.includes('product page'))
   ) {
     return 'category';
+  }
+  
+  // Check for search pages
+  else if (
+    urlLower.includes('/search') ||
+    urlLower.includes('q=') ||
+    urlLower.includes('query=') ||
+    urlLower.includes('keyword=') ||
+    urlLower.includes('/find/') ||
+    titleLower.includes('search results') ||
+    titleLower.includes('search for')
+  ) {
+    return 'search';
   }
   
   return 'unknown';
@@ -189,47 +207,51 @@ const processResponse = (data: any): MatchResult => {
   const webDetection = data.responses[0]?.webDetection || {};
   console.log("Web Detection Data:", JSON.stringify(webDetection, null, 2));
 
-  const visuallySimilarImages = (webDetection.visuallySimilarImages || [])
-    .map((image: any) => {
-      const platform = identifyPlatform(image.url);
-      return {
-        url: image.url || '',
-        score: image.score || 0.7,
-        imageUrl: image.url || '',
-        platform
-      };
-    })
-    .filter((img: WebImage) => img.score >= 0.8);
-
+  // Process exact matching images - full matches
   const fullMatchingImages = (webDetection.fullMatchingImages || [])
     .map((image: any) => {
       const platform = identifyPlatform(image.url);
       return {
         url: image.url || '',
-        score: 0.95,
+        score: 1.0, // 100% match for full matches
         imageUrl: image.url || '',
         platform
       };
     });
 
+  // Process partial matching images - partial matches
   const partialMatchingImages = (webDetection.partialMatchingImages || [])
     .map((image: any) => {
       const platform = identifyPlatform(image.url);
       return {
         url: image.url || '',
-        score: 0.8,
+        score: 0.85, // 85% match for partial matches
+        imageUrl: image.url || '',
+        platform
+      };
+    });
+
+  // Process visually similar images - lower confidence
+  const visuallySimilarImages = (webDetection.visuallySimilarImages || [])
+    .map((image: any) => {
+      const platform = identifyPlatform(image.url);
+      return {
+        url: image.url || '',
+        score: image.score || 0.6, // Typical score range for similar images
         imageUrl: image.url || '',
         platform
       };
     })
-    .filter((img: WebImage) => img.score >= 0.8);
+    .filter((img: WebImage) => img.score >= 0.6);
 
+  // Combine all similar images
   const allSimilarImages = [
     ...fullMatchingImages,
     ...partialMatchingImages,
     ...visuallySimilarImages
-  ].filter((img: WebImage) => img.score >= 0.8);
+  ];
 
+  // Process pages with matching images
   const pagesWithMatchingImages = (webDetection.pagesWithMatchingImages || [])
     .map((page: any) => {
       const platform = identifyPlatform(page.url);
@@ -239,11 +261,10 @@ const processResponse = (data: any): MatchResult => {
       const pageMatchingImages = (page.fullMatchingImages || [])
         .map((img: any) => ({
           url: img.url,
-          score: 0.95,
+          score: 1.0,
           imageUrl: img.url,
           platform: identifyPlatform(img.url)
-        }))
-        .filter((img: WebImage) => img.score >= 0.8);
+        }));
       
       return {
         url: page.url || '',
@@ -267,7 +288,7 @@ const processResponse = (data: any): MatchResult => {
         page.url.includes('imgur.com') ||
         page.url.includes('postimg.cc');
       
-      return !isCDN && page.score >= 0.7;
+      return !isCDN && page.score >= 0.6;
     });
   
   return {

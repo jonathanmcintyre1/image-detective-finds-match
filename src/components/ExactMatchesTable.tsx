@@ -5,7 +5,7 @@ import {
 } from '@/components/ui/table';
 import { 
   ExternalLink, Copy, ChevronDown, ChevronUp,
-  Clock, FileText, Calendar
+  Clock, FileText, Calendar, ShoppingBag, Globe, Tag
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -29,7 +29,7 @@ interface WebPage {
   score: number;
   pageTitle: string;
   platform?: string;
-  pageType?: 'product' | 'category' | 'unknown';
+  pageType?: 'product' | 'category' | 'search' | 'unknown';
   matchingImages?: WebImage[];
   dateFound?: Date;
 }
@@ -67,6 +67,20 @@ const getWebsiteName = (url: string, platform?: string): string => {
     return domainParts[0].charAt(0).toUpperCase() + domainParts[0].slice(1);
   }
   return hostname;
+};
+
+// Get page type icon
+const getPageTypeIcon = (pageType?: string) => {
+  switch(pageType) {
+    case 'product':
+      return <ShoppingBag className="h-4 w-4" />;
+    case 'category':
+      return <Tag className="h-4 w-4" />;
+    case 'search':
+      return <Globe className="h-4 w-4" />;
+    default:
+      return <FileText className="h-4 w-4" />;
+  }
 };
 
 export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({ 
@@ -327,8 +341,11 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
                                         <ExternalLink className="ml-1 h-3 w-3 inline flex-shrink-0" />
                                       </a>
                                       <div className="flex items-center space-x-2">
-                                        <Badge variant="outline" className="text-xs">
-                                          {page.pageType === 'product' ? 'Product' : 'Page'}
+                                        <Badge variant="outline" className="text-xs flex items-center gap-1">
+                                          {getPageTypeIcon(page.pageType)}
+                                          <span>{page.pageType === 'product' ? 'Product' : 
+                                                page.pageType === 'category' ? 'Category' : 
+                                                page.pageType === 'search' ? 'Search' : 'Page'}</span>
                                         </Badge>
                                         {!compact && page.dateFound && (
                                           <span className="text-xs text-muted-foreground">

@@ -5,12 +5,11 @@ import ImageUploader from '@/components/ImageUploader';
 import ResultsDisplay from '@/components/ResultsDisplay';
 import ApiKeyInput from '@/components/ApiKeyInput';
 import { analyzeImage } from '@/services/googleVisionService';
+import { trackImageSearch } from '@/services/searchTrackingService';
 import { toast } from 'sonner';
 import { Loader2, Shield, Image as ImageIcon, AlertCircle, Upload, Sparkles, Search } from 'lucide-react';
-import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface WebEntity {
   entityId: string;
@@ -30,7 +29,8 @@ interface WebPage {
   score: number;
   pageTitle: string;
   platform?: string;
-  pageType?: 'product' | 'category' | 'unknown';
+  pageType?: 'product' | 'category' | 'search' | 'unknown';
+  matchingImages?: WebImage[];
 }
 
 interface MatchResult {
@@ -49,9 +49,16 @@ const Index = () => {
 
   // Initialize API key from localStorage on component mount
   useEffect(() => {
-    const savedApiKey = localStorage.getItem('gcv_api_key');
-    if (savedApiKey) {
-      setApiKey(savedApiKey);
+    // Try to load from env vars first, then localStorage
+    const envApiKey = import.meta.env.VITE_GOOGLE_VISION_API_KEY;
+    
+    if (envApiKey) {
+      setApiKey(envApiKey);
+    } else {
+      const savedApiKey = localStorage.getItem('gcv_api_key');
+      if (savedApiKey) {
+        setApiKey(savedApiKey);
+      }
     }
   }, []);
 
@@ -88,6 +95,14 @@ const Index = () => {
       setIsProcessing(true);
       const result = await analyzeImage(apiKey, image);
       setResults(result);
+      
+      // Track the search in Supabase
+      const totalResults = 
+        (result.visuallySimilarImages?.length || 0) + 
+        (result.pagesWithMatchingImages?.length || 0);
+      
+      await trackImageSearch(image, totalResults);
+      
     } catch (error) {
       console.error('Error analyzing image:', error);
       toast.error('Failed to analyze image. Please check your API key and try again.');
@@ -149,7 +164,6 @@ const Index = () => {
                         <div className="aspect-video flex items-center justify-center bg-gray-100 p-4">
                           <Alert variant="destructive">
                             <AlertCircle className="h-4 w-4" />
-                            <AlertTitle>Error loading image</AlertTitle>
                             <AlertDescription>
                               Unable to load image preview
                             </AlertDescription>
@@ -219,9 +233,9 @@ const Index = () => {
                   <p className="text-lg font-medium">Analyzing image...</p>
                   <div className="w-full max-w-xs mt-4">
                     <div className="space-y-2">
-                      <Skeleton className="h-2 w-full bg-gray-200" />
-                      <Skeleton className="h-2 w-4/5 bg-gray-200" />
-                      <Skeleton className="h-2 w-3/5 bg-gray-200" />
+                      <div className="h-2 w-full bg-gray-200 rounded animate-pulse"></div>
+                      <div className="h-2 w-4/5 bg-gray-200 rounded animate-pulse"></div>
+                      <div className="h-2 w-3/5 bg-gray-200 rounded animate-pulse"></div>
                     </div>
                     <p className="text-sm text-muted-foreground mt-2 text-center">Scanning web for matching images</p>
                   </div>
