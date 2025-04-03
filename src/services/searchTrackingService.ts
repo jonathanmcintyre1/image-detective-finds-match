@@ -69,9 +69,9 @@ export const trackImageSearch = async (image: File | string, resultCount: number
       .select('*', { count: 'exact', head: true })
       .eq('result_count', 0);
 
-    // Get average results per search - properly typed to handle the returned average value
+    // Get average results per search with proper typing
     const { data } = await supabase
-      .rpc('average_search_results');
+      .rpc<any, AverageSearchResult>('average_search_results');
     
     // Handle the case where data might be null or undefined
     const avgResultsPerSearch = data && data.average !== null 
@@ -107,9 +107,9 @@ export const getSearchAnalytics = async () => {
       .select('*', { count: 'exact', head: true })
       .eq('result_count', 0);
     
-    // Get average results per search
+    // Get average results per search with proper typing
     const { data } = await supabase
-      .rpc('average_search_results');
+      .rpc<any, AverageSearchResult>('average_search_results');
     
     // Handle the case where data might be null or undefined
     const avgResultsPerSearch = data && data.average !== null 
