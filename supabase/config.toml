@@ -1,5 +1,8 @@
 
 project_id = "plsidbybfxgzobsxknsf"
 
+[functions.vision-api]
+verify_jwt = false
+
 [functions.average_search_results]
 verify_jwt = false
