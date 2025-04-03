@@ -99,7 +99,7 @@ export const getSearchStats = async (): Promise<SearchStats> => {
       };
     }
     
-    const avgResultsPerSearch = data ? data.average : 0;
+    const avgResultsPerSearch = data && data.average ? data.average : 0;
 
     return {
       totalSearches: totalSearches || 0,
