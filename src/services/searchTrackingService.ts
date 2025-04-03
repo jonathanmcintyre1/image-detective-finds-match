@@ -20,7 +20,7 @@ interface SearchStats {
 
 // Define a proper interface for the RPC function return type
 interface AverageSearchResult {
-  average: number;
+  average: number | null;
 }
 
 /**
@@ -87,12 +87,12 @@ export const getSearchStats = async (): Promise<SearchStats> => {
       .eq('result_count', 0);
 
     // Get average results per search
-    // Fix: Provide both input and output type parameters to the RPC call
+    // Fix: Provide proper typing for the RPC call
     const { data, error } = await supabase
-      .rpc<AverageSearchResult, {}>('average_search_results');
+      .rpc<AverageSearchResult>('average_search_results', {});
     
-    // Fix: Handle the case where data might be null, undefined, or not have the expected structure
-    const avgResultsPerSearch = data && 'average' in data ? data.average : 0;
+    // Fix: Properly handle the case where data might be null or undefined
+    const avgResultsPerSearch = data && data.average !== null ? data.average : 0;
 
     return {
       totalSearches: totalSearches || 0,
