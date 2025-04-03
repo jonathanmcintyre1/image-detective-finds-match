@@ -16,6 +16,7 @@ const googleCredentials = Deno.env.get('GOOGLE_CREDENTIALS_JSON') ?? '';
 let credentials;
 try {
   credentials = JSON.parse(googleCredentials);
+  console.log("Google credentials loaded successfully");
 } catch (e) {
   console.error("Failed to parse Google credentials:", e);
 }
@@ -24,6 +25,8 @@ try {
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 serve(async (req: Request) => {
+  console.log("Vision API function called");
+  
   // Handle CORS for browser requests
   if (req.method === 'OPTIONS') {
     return new Response(null, {
@@ -48,6 +51,7 @@ serve(async (req: Request) => {
     }
 
     if (!credentials || !credentials.private_key) {
+      console.error('Google credentials not properly configured');
       return new Response(
         JSON.stringify({ error: 'Google credentials not properly configured' }),
         { status: 500, headers: { 'Content-Type': 'application/json' } }
@@ -101,6 +105,8 @@ serve(async (req: Request) => {
     // Combine to create JWT
     const token = `${headerBase64}.${payloadBase64}.${signatureBase64}`;
     
+    console.log("JWT token created successfully");
+    
     // Now use the token to authenticate with Google Vision API
     let requestBody;
     
@@ -132,6 +138,8 @@ serve(async (req: Request) => {
       };
     }
     
+    console.log("Making request to Google Vision API");
+    
     // Call Google Vision API with our JWT
     const response = await fetch('https://vision.googleapis.com/v1/images:annotate', {
       method: 'POST',
@@ -144,16 +152,18 @@ serve(async (req: Request) => {
     
     if (!response.ok) {
       const errorText = await response.text();
+      console.error(`Google Vision API error (${response.status}):`, errorText);
       throw new Error(`Google Vision API error (${response.status}): ${errorText}`);
     }
     
     const data = await response.json();
+    console.log("Received response from Google Vision API");
     
     // Track this search in our database
     try {
       const webDetection = data.responses[0]?.webDetection || {};
       const resultCount = (webDetection.visuallySimilarImages?.length || 0) + 
-                          (webDetection.pagesWithMatchingImages?.length || 0);
+                        (webDetection.pagesWithMatchingImages?.length || 0);
       
       await supabase
         .from('searches')
@@ -162,6 +172,8 @@ serve(async (req: Request) => {
           result_count: resultCount,
           search_type: typeof imageData === 'string' ? 'url' : 'file'
         });
+      
+      console.log("Search tracked in database");
     } catch (err) {
       console.error('Failed to track search:', err);
       // Don't fail the request if tracking fails

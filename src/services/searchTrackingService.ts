@@ -87,12 +87,14 @@ export const getSearchStats = async (): Promise<SearchStats> => {
       .eq('result_count', 0);
 
     // Get average results per search
-    // Fix: Provide proper typing for the RPC call
-    const { data, error } = await supabase
-      .rpc<AverageSearchResult>('average_search_results', {});
+    // Note: For Supabase JS v2, we don't need to specify the second type parameter
+    const { data } = await supabase
+      .rpc('average_search_results');
     
-    // Fix: Properly handle the case where data might be null or undefined
-    const avgResultsPerSearch = data && data.average !== null ? data.average : 0;
+    // Handle the case where data might be null or undefined
+    const avgResultsPerSearch = data && typeof data === 'object' && data !== null && 'average' in data && data.average !== null 
+      ? (data.average as number) 
+      : 0;
 
     return {
       totalSearches: totalSearches || 0,

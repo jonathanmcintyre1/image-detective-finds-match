@@ -119,30 +119,30 @@ const BetaSignupForm = ({ onSuccess, embedded = false }: BetaSignupFormProps) =>
     }
   };
 
-  // Define the gradient class based on whether the form is embedded or not
+  // Define the background class based on whether the form is embedded
   const containerClass = embedded 
     ? "bg-white border rounded-lg p-6 shadow-sm max-w-md w-full" 
-    : "bg-gradient-to-r from-[#b1081e] to-[#ea384c] border rounded-lg p-6 shadow-sm max-w-md w-full text-white";
+    : "bg-gradient-to-r from-[#b1081e] to-[#ea384c] rounded-lg p-6 shadow-md max-w-xl w-full text-white";
 
   return (
     <div className={containerClass}>
-      <div className="mb-4 text-center">
-        <h2 className={`text-lg font-semibold ${embedded ? 'text-brand-dark' : 'text-white'}`}>
+      <div className="mb-6 text-center">
+        <h2 className={`text-2xl font-bold ${embedded ? 'text-brand-dark' : 'text-white'}`}>
           Get Early Access
         </h2>
-        <p className={`text-sm ${embedded ? 'text-muted-foreground' : 'text-white/80'}`}>
+        <p className={`text-base mt-2 ${embedded ? 'text-muted-foreground' : 'text-white/90'}`}>
           Sign up for beta access to CopyProtect when we launch
         </p>
       </div>
       
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <FormField
             control={form.control}
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className={embedded ? '' : 'text-white'}>
+                <FormLabel className={`${embedded ? '' : 'text-white'} font-medium`}>
                   Email address *
                 </FormLabel>
                 <FormControl>
@@ -151,6 +151,7 @@ const BetaSignupForm = ({ onSuccess, embedded = false }: BetaSignupFormProps) =>
                     type="email"
                     disabled={loading}
                     required
+                    className="bg-white"
                     {...field} 
                   />
                 </FormControl>
@@ -164,7 +165,7 @@ const BetaSignupForm = ({ onSuccess, embedded = false }: BetaSignupFormProps) =>
             name="name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className={embedded ? '' : 'text-white'}>
+                <FormLabel className={`${embedded ? '' : 'text-white'} font-medium`}>
                   Full name (optional)
                 </FormLabel>
                 <FormControl>
@@ -172,6 +173,7 @@ const BetaSignupForm = ({ onSuccess, embedded = false }: BetaSignupFormProps) =>
                     placeholder="John Smith" 
                     type="text"
                     disabled={loading}
+                    className="bg-white"
                     {...field} 
                   />
                 </FormControl>
@@ -185,7 +187,7 @@ const BetaSignupForm = ({ onSuccess, embedded = false }: BetaSignupFormProps) =>
             name="company"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className={embedded ? '' : 'text-white'}>
+                <FormLabel className={`${embedded ? '' : 'text-white'} font-medium`}>
                   Company (optional)
                 </FormLabel>
                 <FormControl>
@@ -193,6 +195,7 @@ const BetaSignupForm = ({ onSuccess, embedded = false }: BetaSignupFormProps) =>
                     placeholder="Your Company, Inc." 
                     type="text"
                     disabled={loading}
+                    className="bg-white"
                     {...field} 
                   />
                 </FormControl>
@@ -206,7 +209,7 @@ const BetaSignupForm = ({ onSuccess, embedded = false }: BetaSignupFormProps) =>
             name="phone"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className={embedded ? '' : 'text-white'}>
+                <FormLabel className={`${embedded ? '' : 'text-white'} font-medium`}>
                   Phone number (optional)
                 </FormLabel>
                 <FormControl>
@@ -214,6 +217,7 @@ const BetaSignupForm = ({ onSuccess, embedded = false }: BetaSignupFormProps) =>
                     placeholder="+1 (555) 123-4567" 
                     type="tel"
                     disabled={loading}
+                    className="bg-white"
                     {...field} 
                   />
                 </FormControl>
@@ -224,7 +228,7 @@ const BetaSignupForm = ({ onSuccess, embedded = false }: BetaSignupFormProps) =>
           
           <Button 
             type="submit" 
-            className={`w-full ${embedded ? 'bg-brand-blue hover:bg-brand-blue/90' : 'bg-white text-red-600 hover:bg-white/90'}`}
+            className={`w-full mt-2 ${embedded ? 'bg-brand-blue hover:bg-brand-blue/90' : 'bg-white text-red-600 hover:bg-white/90 font-medium'}`}
             disabled={loading}
           >
             {loading ? (
@@ -240,7 +244,7 @@ const BetaSignupForm = ({ onSuccess, embedded = false }: BetaSignupFormProps) =>
             )}
           </Button>
           
-          <p className={`text-xs text-center ${embedded ? 'text-muted-foreground' : 'text-white/80'} pt-2`}>
+          <p className={`text-xs text-center ${embedded ? 'text-muted-foreground' : 'text-white/90'} pt-2`}>
             We respect your privacy and won't share your information with third parties.
           </p>
         </form>

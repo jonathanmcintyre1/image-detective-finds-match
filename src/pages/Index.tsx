@@ -10,7 +10,6 @@ import { toast } from 'sonner';
 import { Loader2, Shield, Image as ImageIcon, AlertCircle, Upload, Sparkles, Search } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { BetaSignupProvider } from '@/hooks/useBetaSignupPrompt';
 
@@ -50,11 +49,6 @@ const Index = () => {
   const [imageError, setImageError] = useState(false);
   const [showBetaSignup, setShowBetaSignup] = useState(false);
   const [hasPerformedSearch, setHasPerformedSearch] = useState(false);
-
-  useEffect(() => {
-    // Don't show beta signup on first load anymore
-    // We'll trigger it after search or export now
-  }, []);
 
   const handleBetaDialogClose = () => {
     setShowBetaSignup(false);
@@ -136,7 +130,7 @@ const Index = () => {
         <Header />
         
         <main className="flex-1 container py-8 space-y-8">
-          <div className="text-center max-w-2xl mx-auto space-y-4 mb-8">
+          <div className="text-center max-w-3xl mx-auto space-y-4 mb-8">
             <div className="flex items-center justify-center mb-2">
               <div className="relative h-16 w-16 mr-3">
                 <img 
@@ -149,10 +143,72 @@ const Index = () => {
                 CopyProtect
               </h1>
             </div>
-            <p className="text-lg text-muted-foreground">
+            <p className="text-xl text-muted-foreground mb-2">
               Discover unauthorized copies of your images across the web in seconds
             </p>
+            
+            {/* Benefits section - moved from bottom to top */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6 text-left">
+              <div className="bg-white rounded-lg p-4 shadow-sm">
+                <h3 className="font-medium mb-1 text-brand-dark">Detect Unauthorized Use</h3>
+                <p className="text-sm text-muted-foreground">
+                  Find where your images are being used across the internet without permission
+                </p>
+              </div>
+              <div className="bg-white rounded-lg p-4 shadow-sm">
+                <h3 className="font-medium mb-1 text-brand-dark">Monitor Marketplaces</h3>
+                <p className="text-sm text-muted-foreground">
+                  Track product images on marketplaces like Amazon, Etsy and more
+                </p>
+              </div>
+              <div className="bg-white rounded-lg p-4 shadow-sm">
+                <h3 className="font-medium mb-1 text-brand-dark">Preserve Value</h3>
+                <p className="text-sm text-muted-foreground">
+                  Maintain exclusivity and value of your digital content and products
+                </p>
+              </div>
+            </div>
           </div>
+          
+          {/* How It Works Section - Moved above results */}
+          <Card className="border-0 shadow-md mb-8">
+            <CardHeader className="bg-gray-50 border-b">
+              <CardTitle className="text-xl">How It Works</CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="flex flex-col items-center text-center">
+                  <div className="w-16 h-16 bg-brand-blue/10 rounded-full flex items-center justify-center mb-4">
+                    <Upload className="h-8 w-8 text-brand-blue" />
+                  </div>
+                  <h3 className="font-medium mb-2">1. Upload Your Image</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Upload an image or provide a URL that you want to protect
+                  </p>
+                </div>
+                
+                <div className="flex flex-col items-center text-center">
+                  <div className="w-16 h-16 bg-brand-blue/10 rounded-full flex items-center justify-center mb-4">
+                    <Search className="h-8 w-8 text-brand-blue" />
+                  </div>
+                  <h3 className="font-medium mb-2">2. AI-Powered Scan</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Our AI scans the web for exact or similar matches to your image
+                  </p>
+                </div>
+                
+                <div className="flex flex-col items-center text-center">
+                  <div className="w-16 h-16 bg-brand-blue/10 rounded-full flex items-center justify-center mb-4">
+                    <Sparkles className="h-8 w-8 text-brand-blue" />
+                  </div>
+                  <h3 className="font-medium mb-2">3. Review Results</h3>
+                  <p className="text-sm text-muted-foreground">
+                    See where your images appear and take action against unauthorized use
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
           
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-1 space-y-6">
@@ -194,54 +250,6 @@ const Index = () => {
                   )}
                 </CardContent>
               </Card>
-              
-              <Card className="border-0 shadow-md overflow-hidden">
-                <CardHeader className="bg-gray-50 border-b">
-                  <CardTitle className="text-base">How It Works</CardTitle>
-                </CardHeader>
-                <CardContent className="p-6 space-y-6">
-                  <div className="grid grid-cols-1 gap-6">
-                    <div className="flex flex-col items-center text-center">
-                      <div className="w-12 h-12 bg-brand-blue/10 rounded-full flex items-center justify-center mb-3">
-                        <Upload className="h-6 w-6 text-brand-blue" />
-                      </div>
-                      <h3 className="font-medium mb-1">Upload Your Image</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Upload an image or provide a URL that you want to protect
-                      </p>
-                    </div>
-                    
-                    <div className="flex flex-col items-center text-center">
-                      <div className="w-12 h-12 bg-brand-blue/10 rounded-full flex items-center justify-center mb-3">
-                        <Search className="h-6 w-6 text-brand-blue" />
-                      </div>
-                      <h3 className="font-medium mb-1">AI-Powered Scan</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Our AI scans the web for exact or similar matches to your image
-                      </p>
-                    </div>
-                    
-                    <div className="flex flex-col items-center text-center">
-                      <div className="w-12 h-12 bg-brand-blue/10 rounded-full flex items-center justify-center mb-3">
-                        <Sparkles className="h-6 w-6 text-brand-blue" />
-                      </div>
-                      <h3 className="font-medium mb-1">Review Results</h3>
-                      <p className="text-sm text-muted-foreground">
-                        See where your images appear and take action against unauthorized use
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card className="border-0 shadow-md overflow-hidden">
-                <CardHeader className="bg-gradient-to-r from-[#b1081e] to-[#ea384c] text-white">
-                  <CardTitle className="text-base">Get Early Access</CardTitle>
-                </CardHeader>
-                <CardContent className="p-6">
-                  <BetaSignupForm onSuccess={handleBetaSignupSuccess} />
-                </CardContent>
-              </Card>
             </div>
             
             <div className="lg:col-span-2">
@@ -279,38 +287,18 @@ const Index = () => {
               )}
             </div>
           </div>
-          
-          <Separator className="my-10" />
-          
-          <div className="text-center">
-            <h2 className="text-2xl font-bold text-brand-dark mb-6">Protect Your Digital Assets</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-              <div className="flex flex-col items-center p-6 rounded-lg border bg-white">
-                <Shield className="h-10 w-10 text-brand-blue mb-4" />
-                <h3 className="text-lg font-medium mb-2">Detect Unauthorized Use</h3>
-                <p className="text-sm text-muted-foreground">
-                  Find where your images are being used across the internet without permission
-                </p>
-              </div>
-              <div className="flex flex-col items-center p-6 rounded-lg border bg-white">
-                <AlertCircle className="h-10 w-10 text-brand-blue mb-4" />
-                <h3 className="text-lg font-medium mb-2">Monitor Marketplaces</h3>
-                <p className="text-sm text-muted-foreground">
-                  Track product images on marketplaces like Amazon, Etsy and more
-                </p>
-              </div>
-              <div className="flex flex-col items-center p-6 rounded-lg border bg-white">
-                <Sparkles className="h-10 w-10 text-brand-blue mb-4" />
-                <h3 className="text-lg font-medium mb-2">Preserve Value</h3>
-                <p className="text-sm text-muted-foreground">
-                  Maintain exclusivity and value of your digital content and products
-                </p>
-              </div>
-            </div>
-          </div>
         </main>
         
-        <footer className="border-t py-6 bg-gradient-to-r from-[#b1081e] to-[#ea384c] text-white">
+        {/* Full width early access section */}
+        <div className="w-full bg-gradient-to-r from-[#b1081e] to-[#ea384c] py-12">
+          <div className="container mx-auto">
+            <div className="max-w-xl mx-auto">
+              <BetaSignupForm onSuccess={handleBetaSignupSuccess} />
+            </div>
+          </div>
+        </div>
+        
+        <footer className="py-6 bg-[#2d2d2d] text-white">
           <div className="container text-center text-sm">
             <div className="flex items-center justify-center gap-2 mb-2">
               <img 
@@ -320,7 +308,7 @@ const Index = () => {
               />
               <span className="font-medium">CopyProtect</span>
             </div>
-            <p>Powered by Google Cloud Vision API</p>
+            <p>© CopyProtect LLC {new Date().getFullYear()}</p>
           </div>
         </footer>
         
