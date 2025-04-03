@@ -36,6 +36,11 @@ export const trackImageSearch = async (
   }
 };
 
+// Define interface for the average results type
+interface AverageSearchResult {
+  average: number;
+}
+
 /**
  * Get analytics about recent searches
  * @returns Promise with search analytics
@@ -60,14 +65,14 @@ export const getSearchAnalytics = async () => {
       .eq('result_count', 0);
 
     // Get average results per search
-    const { data: avgResults } = await supabase
-      .rpc('average_search_results');
+    const { data } = await supabase
+      .rpc<AverageSearchResult>('average_search_results');
 
     return {
       totalSearches,
       searchesWithResults,
       searchesWithoutResults,
-      avgResultsPerSearch: avgResults?.[0]?.average || 0
+      avgResultsPerSearch: data && data[0] ? data[0].average : 0
     };
   } catch (error) {
     console.error('Error getting search analytics:', error);

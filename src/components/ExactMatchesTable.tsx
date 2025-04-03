@@ -5,7 +5,7 @@ import {
 } from '@/components/ui/table';
 import { 
   ExternalLink, Copy, ChevronDown, ChevronUp,
-  Clock, FileText, Calendar, ShoppingBag, Globe, Tag
+  Clock, FileText, Calendar, ShoppingBag, Globe, Tag, Server
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -57,9 +57,60 @@ const getHostname = (url: string): string => {
   }
 };
 
+// Function to determine if a URL is from a CDN
+const isCdnUrl = (url: string): boolean => {
+  const cdnPatterns = [
+    'cloudfront.net', 'cdn.shopify', 'cloudinary', 'imgix', 
+    'fastly', 'akamaized', 'cdn.', 'ibb.co', 'imgur.com',
+    'postimg.cc', 'amazonaws.com', 's3.', 'media-amazon.com',
+    'staticflickr.com', 'cdninstagram.com', 'fbcdn.net',
+    'pinimg.com', 'twimg.com', 'assets.', 'static.'
+  ];
+  
+  const urlLower = url.toLowerCase();
+  return cdnPatterns.some(pattern => urlLower.includes(pattern));
+};
+
+// Function to get actual source website from image URL when possible
+const getSourceWebsite = (url: string): string | null => {
+  try {
+    // Check for common patterns in image URLs that indicate the source website
+    const hostname = getHostname(url);
+    
+    if (hostname.includes('media-amazon.com')) {
+      return 'Amazon';
+    } else if (hostname.includes('staticflickr.com')) {
+      return 'Flickr';
+    } else if (hostname.includes('cdninstagram.com') || hostname.includes('fbcdn.net')) {
+      return 'Instagram';
+    } else if (hostname.includes('pinimg.com')) {
+      return 'Pinterest';
+    } else if (hostname.includes('twimg.com')) {
+      return 'Twitter';
+    } else if (hostname.includes('wikimedia.org')) {
+      return 'Wikimedia';
+    } else if (hostname.includes('ytimg.com')) {
+      return 'YouTube';
+    }
+    
+    return null;
+  } catch {
+    return null;
+  }
+};
+
 // Function to get website name from hostname
 const getWebsiteName = (url: string, platform?: string): string => {
   if (platform) return platform;
+  
+  // Try to determine source website for CDN URLs
+  if (isCdnUrl(url)) {
+    const sourceWebsite = getSourceWebsite(url);
+    if (sourceWebsite) {
+      return sourceWebsite;
+    }
+    return 'CDN Hosted';
+  }
   
   const hostname = getHostname(url);
   const domainParts = hostname.split('.');
@@ -140,7 +191,16 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
     
     visibleMatches.forEach(match => {
       const hostname = getHostname(match.url);
-      const platform = match.platform || getWebsiteName(match.url);
+      let platform = match.platform || getWebsiteName(match.url);
+      
+      // Check if this is a CDN URL, and add more information
+      const isCdn = isCdnUrl(match.url);
+      if (isCdn) {
+        const sourceWebsite = getSourceWebsite(match.url);
+        if (sourceWebsite) {
+          platform = `${sourceWebsite} (CDN)`;
+        }
+      }
       
       if (!sites.has(hostname)) {
         sites.set(hostname, {
@@ -239,6 +299,7 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
                 <TableBody>
                   {group.matches.map((match, index) => {
                     const relatedPagesList = findRelatedPages(match.url);
+                    const isImageFromCdn = isCdnUrl(match.url);
                     
                     return (
                       <React.Fragment key={index}>
@@ -264,9 +325,19 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
                             </div>
                           </TableCell>
                           <TableCell>
-                            <div className="font-medium">{getWebsiteName(match.url, match.platform)}</div>
+                            <div className="font-medium flex items-center">
+                              {isImageFromCdn && <Server className="h-3 w-3 mr-1 text-gray-400" />}
+                              {getWebsiteName(match.url, match.platform)}
+                            </div>
                             <div className="text-xs text-muted-foreground">
-                              {match.platform ? `${match.platform} Marketplace` : getHostname(match.url)}
+                              {isImageFromCdn ? (
+                                <span className="flex items-center">
+                                  <span>CDN hosted on </span>
+                                  <span className="font-mono ml-1">{getHostname(match.url)}</span>
+                                </span>
+                              ) : (
+                                getHostname(match.url)
+                              )}
                             </div>
                             {relatedPagesList.length > 0 && (
                               <div className="text-xs mt-1 text-brand-blue">

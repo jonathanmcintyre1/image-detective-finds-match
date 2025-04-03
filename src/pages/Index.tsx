@@ -1,15 +1,17 @@
-
 import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import ImageUploader from '@/components/ImageUploader';
 import ResultsDisplay from '@/components/ResultsDisplay';
 import ApiKeyInput from '@/components/ApiKeyInput';
+import BetaSignupForm from '@/components/BetaSignupForm';
 import { analyzeImage } from '@/services/googleVisionService';
 import { trackImageSearch } from '@/services/searchTrackingService';
 import { toast } from 'sonner';
 import { Loader2, Shield, Image as ImageIcon, AlertCircle, Upload, Sparkles, Search } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Separator } from '@/components/ui/separator';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
 interface WebEntity {
   entityId: string;
@@ -46,10 +48,9 @@ const Index = () => {
   const [results, setResults] = useState<MatchResult | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [showBetaSignup, setShowBetaSignup] = useState(false);
 
-  // Initialize API key from localStorage on component mount
   useEffect(() => {
-    // Try to load from env vars first, then localStorage
     const envApiKey = import.meta.env.VITE_GOOGLE_VISION_API_KEY;
     
     if (envApiKey) {
@@ -60,9 +61,23 @@ const Index = () => {
         setApiKey(savedApiKey);
       }
     }
+
+    const hasSeenBetaSignup = localStorage.getItem('seen_beta_signup');
+    
+    if (!hasSeenBetaSignup) {
+      const timer = setTimeout(() => {
+        setShowBetaSignup(true);
+      }, 8000);
+      
+      return () => clearTimeout(timer);
+    }
   }, []);
 
-  // Update preview URL when selectedImage changes
+  const handleBetaDialogClose = () => {
+    setShowBetaSignup(false);
+    localStorage.setItem('seen_beta_signup', 'true');
+  };
+
   useEffect(() => {
     if (!selectedImage) {
       setPreviewUrl(null);
@@ -77,7 +92,6 @@ const Index = () => {
       const objectUrl = URL.createObjectURL(selectedImage);
       setPreviewUrl(objectUrl);
       
-      // Clean up preview URL when component unmounts or selectedImage changes
       return () => URL.revokeObjectURL(objectUrl);
     }
   }, [selectedImage]);
@@ -96,7 +110,6 @@ const Index = () => {
       const result = await analyzeImage(apiKey, image);
       setResults(result);
       
-      // Track the search in Supabase
       const totalResults = 
         (result.visuallySimilarImages?.length || 0) + 
         (result.pagesWithMatchingImages?.length || 0);
@@ -223,6 +236,15 @@ const Index = () => {
                 </div>
               </CardContent>
             </Card>
+            
+            <Card className="border-0 shadow-md overflow-hidden">
+              <CardHeader className="bg-brand-blue text-white">
+                <CardTitle className="text-base">Get Early Access</CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <BetaSignupForm />
+              </CardContent>
+            </Card>
           </div>
           
           <div className="lg:col-span-2">
@@ -260,6 +282,35 @@ const Index = () => {
             )}
           </div>
         </div>
+        
+        <Separator className="my-10" />
+        
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-brand-dark mb-6">Protect Your Digital Assets</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            <div className="flex flex-col items-center p-6 rounded-lg border bg-white">
+              <Shield className="h-10 w-10 text-brand-blue mb-4" />
+              <h3 className="text-lg font-medium mb-2">Detect Unauthorized Use</h3>
+              <p className="text-sm text-muted-foreground">
+                Find where your images are being used across the internet without permission
+              </p>
+            </div>
+            <div className="flex flex-col items-center p-6 rounded-lg border bg-white">
+              <AlertCircle className="h-10 w-10 text-brand-blue mb-4" />
+              <h3 className="text-lg font-medium mb-2">Monitor Marketplaces</h3>
+              <p className="text-sm text-muted-foreground">
+                Track product images on marketplaces like Amazon, Etsy and more
+              </p>
+            </div>
+            <div className="flex flex-col items-center p-6 rounded-lg border bg-white">
+              <Sparkles className="h-10 w-10 text-brand-blue mb-4" />
+              <h3 className="text-lg font-medium mb-2">Preserve Value</h3>
+              <p className="text-sm text-muted-foreground">
+                Maintain exclusivity and value of your digital content and products
+              </p>
+            </div>
+          </div>
+        </div>
       </main>
       
       <footer className="border-t py-6 bg-gradient-to-r from-brand-dark to-brand-blue/90 text-white">
@@ -275,6 +326,18 @@ const Index = () => {
           <p>Powered by Google Cloud Vision API</p>
         </div>
       </footer>
+      
+      <Dialog open={showBetaSignup} onOpenChange={handleBetaDialogClose}>
+        <DialogContent className="sm:max-w-md">
+          <DialogTitle>Join Our Exclusive Beta</DialogTitle>
+          <DialogDescription>
+            Be among the first to access CopyProtect when we launch.
+          </DialogDescription>
+          <div className="py-4">
+            <BetaSignupForm />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

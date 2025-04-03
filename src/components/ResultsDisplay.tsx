@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -60,7 +59,6 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
   
   if (!results) return null;
   
-  // Add mock dates if not provided (in a real app, these would come from the API)
   const processedResults = {
     ...results,
     visuallySimilarImages: results.visuallySimilarImages.map(img => ({
@@ -73,11 +71,9 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
     }))
   };
   
-  // Split matches by score: exact matches (90%+) vs partial matches (60-90%)
   const exactMatches = processedResults.visuallySimilarImages.filter(img => img.score >= 0.9);
-  const partialMatches = processedResults.visuallySimilarImages.filter(img => img.score >= 0.6 && img.score < 0.9);
+  const partialMatches = processedResults.visuallySimilarImages.filter(img => img.score >= 0.7 && img.score < 0.9);
   
-  // Split pages by type
   const allRelevantPages = processedResults.pagesWithMatchingImages.filter(page => page.score >= 0.6);
   const productPages = allRelevantPages.filter(page => page.pageType === 'product');
   const categoryPages = allRelevantPages.filter(page => page.pageType === 'category');
@@ -88,7 +84,6 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
     page.pageType !== 'search'
   );
 
-  // Get total potential issues
   const exactMatchCount = exactMatches.length;
   const partialMatchCount = partialMatches.length;
   const productPageCount = productPages.length;
@@ -98,13 +93,10 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
   const pageMatchCount = productPageCount + categoryPageCount + searchPageCount + otherPageCount;
   const totalMatchCount = exactMatchCount + partialMatchCount + pageMatchCount;
 
-  // Helper for exports
   const exportResults = (type: 'csv' | 'pdf') => {
     if (type === 'csv') {
-      // Create CSV content
       let csvContent = "Match Type,Domain,URL,Page Type,Confidence,Date Found\n";
       
-      // Add exact matches
       exactMatches.forEach(match => {
         let domain = "";
         try {
@@ -115,7 +107,6 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
         csvContent += `Exact Match,${domain},${match.url},Image,${(match.score * 100).toFixed(1)}%,${format(match.dateFound || new Date(), 'yyyy-MM-dd')}\n`;
       });
       
-      // Add partial matches
       partialMatches.forEach(match => {
         let domain = "";
         try {
@@ -126,7 +117,6 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
         csvContent += `Partial Match,${domain},${match.url},Image,${(match.score * 100).toFixed(1)}%,${format(match.dateFound || new Date(), 'yyyy-MM-dd')}\n`;
       });
       
-      // Add all pages
       allRelevantPages.forEach(page => {
         let domain = "";
         try {
@@ -137,7 +127,6 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
         csvContent += `Page with Image,${domain},${page.url},${page.pageType || 'Unknown'},${(page.score * 100).toFixed(1)}%,${format(page.dateFound || new Date(), 'yyyy-MM-dd')}\n`;
       });
 
-      // Create and download the CSV file
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -353,12 +342,6 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
                     <CardTitle className="text-lg">Exact Image Matches</CardTitle>
                     <span className="text-xs text-muted-foreground ml-2">(Confidence ≥ 90%)</span>
                   </div>
-                  <Alert variant="destructive" className="w-auto py-1 h-9 px-3">
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertDescription className="ml-2">
-                      High risk of infringement
-                    </AlertDescription>
-                  </Alert>
                 </div>
                 <CardDescription>
                   These are direct copies of your image found online
@@ -381,14 +364,8 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
                   <div className="flex items-center">
                     <Badge className="bg-amber-500 text-white mr-2">{partialMatchCount}</Badge>
                     <CardTitle className="text-lg">Partial Image Matches</CardTitle>
-                    <span className="text-xs text-muted-foreground ml-2">(Confidence 60-90%)</span>
+                    <span className="text-xs text-muted-foreground ml-2">(Confidence 70-90%)</span>
                   </div>
-                  <Alert variant="default" className="w-auto py-1 h-9 px-3 bg-amber-50 border-amber-200 text-amber-700">
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertDescription className="ml-2">
-                      Potential derivative works
-                    </AlertDescription>
-                  </Alert>
                 </div>
                 <CardDescription>
                   These images appear visually similar to yours
@@ -479,7 +456,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
         <div className="text-center py-12 bg-white shadow-sm border rounded-lg">
           <FileText className="h-16 w-16 text-brand-blue mx-auto mb-4" />
           <h2 className="text-xl font-medium mb-2">No matches found</h2>
-          <p className="text-muted-foreground">Your image appears to be unique or we couldn't find any similar images with confidence score ≥ 60%</p>
+          <p className="text-muted-foreground">Your image appears to be unique or we couldn't find any similar images with confidence score ≥ 70%</p>
         </div>
       )}
     </div>

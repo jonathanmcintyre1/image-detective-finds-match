@@ -27,9 +27,17 @@ interface MatchResult {
   pagesWithMatchingImages: WebPage[];
 }
 
+// Define constants for match thresholds
+const MIN_MATCH_THRESHOLD = 0.7; // Minimum threshold for any match to be shown
+const EXACT_MATCH_THRESHOLD = 0.9; // Threshold for exact matches
+const FULL_MATCH_SCORE = 0.98; // Score to assign to full matches
+const PARTIAL_MATCH_SCORE = 0.85; // Score to assign to partial matches
+
 export const analyzeImage = async (apiKey: string, imageData: string | File): Promise<MatchResult> => {
   try {
     let base64Image = '';
+    let response;
+    let data;
     
     if (typeof imageData === 'string' && imageData.startsWith('http')) {
       const requestBody = {
@@ -50,21 +58,8 @@ export const analyzeImage = async (apiKey: string, imageData: string | File): Pr
         ]
       };
       
-      const response = await fetch(`https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`, {
-        method: 'POST',
-        body: JSON.stringify(requestBody),
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      console.log("API Response:", JSON.stringify(data, null, 2)); // Log full API response
-      return processResponse(data);
+      response = await callGoogleVisionAPI(apiKey, requestBody);
+      data = await response.json();
       
     } else if (imageData instanceof File) {
       base64Image = await fileToBase64(imageData);
@@ -85,24 +80,14 @@ export const analyzeImage = async (apiKey: string, imageData: string | File): Pr
         ]
       };
       
-      const response = await fetch(`https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`, {
-        method: 'POST',
-        body: JSON.stringify(requestBody),
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      console.log("API Response:", JSON.stringify(data, null, 2)); // Log full API response
-      return processResponse(data);
+      response = await callGoogleVisionAPI(apiKey, requestBody);
+      data = await response.json();
+    } else {
+      throw new Error('Invalid image data provided');
     }
     
-    throw new Error('Invalid image data provided');
+    console.log("API Response:", JSON.stringify(data, null, 2)); // Log full API response
+    return processResponse(data);
     
   } catch (error) {
     console.error('Error analyzing image:', error);
@@ -110,46 +95,78 @@ export const analyzeImage = async (apiKey: string, imageData: string | File): Pr
   }
 };
 
+// Helper function to call Google Vision API
+const callGoogleVisionAPI = async (apiKey: string, requestBody: any): Promise<Response> => {
+  const response = await fetch(`https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`, {
+    method: 'POST',
+    body: JSON.stringify(requestBody),
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  });
+  
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Google Vision API error (${response.status}): ${errorText}`);
+  }
+  
+  return response;
+};
+
+// Platform identification using mapping approach
+const platformMapping: { [key: string]: string } = {
+  'amazon': 'Amazon',
+  'amzn': 'Amazon',
+  'aliexpress': 'AliExpress',
+  'etsy': 'Etsy',
+  'ebay': 'eBay',
+  'walmart': 'Walmart',
+  'shopify': 'Shopify Store',
+  'target': 'Target',
+  'wayfair': 'Wayfair',
+  'homedepot': 'Home Depot',
+  'bestbuy': 'Best Buy',
+  'ikea': 'IKEA',
+  'shopee': 'Shopee',
+  'lazada': 'Lazada',
+};
+
+// CDN detection patterns
+const cdnPatterns = [
+  'cloudfront.net',
+  'cdn.shopify',
+  'cloudinary',
+  'imgix',
+  'fastly',
+  'akamaized',
+  'cdn.',
+  'ibb.co',
+  'imgur.com',
+  'postimg.cc',
+  'amazonaws.com',
+  's3.',
+  'media-amazon.com',
+  'staticflickr.com'
+];
+
 const identifyPlatform = (url: string): string => {
   const urlLower = url.toLowerCase();
   
-  if (urlLower.includes('amazon') || urlLower.includes('amzn')) {
-    return 'Amazon';
-  } else if (urlLower.includes('aliexpress')) {
-    return 'AliExpress';
-  } else if (urlLower.includes('etsy')) {
-    return 'Etsy';
-  } else if (urlLower.includes('ebay')) {
-    return 'eBay';
-  } else if (urlLower.includes('walmart')) {
-    return 'Walmart';
-  } else if (urlLower.includes('shopify')) {
-    return 'Shopify Store';
-  } else if (urlLower.includes('target')) {
-    return 'Target';
-  } else if (urlLower.includes('wayfair')) {
-    return 'Wayfair';
-  } else if (urlLower.includes('homedepot')) {
-    return 'Home Depot';
-  } else if (urlLower.includes('bestbuy')) {
-    return 'Best Buy';
-  } else if (urlLower.includes('ikea')) {
-    return 'IKEA';
-  } else {
-    if (urlLower.includes('cloudfront.net') || 
-        urlLower.includes('cdn.shopify') || 
-        urlLower.includes('cloudinary') || 
-        urlLower.includes('imgix') ||
-        urlLower.includes('fastly') ||
-        urlLower.includes('akamaized') ||
-        urlLower.includes('cdn.') ||
-        urlLower.includes('ibb.co') ||
-        urlLower.includes('imgur.com') ||
-        urlLower.includes('postimg.cc')) {
+  // Check for platforms
+  for (const [key, value] of Object.entries(platformMapping)) {
+    if (urlLower.includes(key)) {
+      return value;
+    }
+  }
+  
+  // Check for CDNs
+  for (const pattern of cdnPatterns) {
+    if (urlLower.includes(pattern)) {
       return 'CDN Hosted';
     }
-    return '';
   }
+  
+  return '';
 };
 
 const determinePageType = (url: string, title: string): 'product' | 'category' | 'search' | 'unknown' => {
@@ -203,56 +220,51 @@ const determinePageType = (url: string, title: string): 'product' | 'category' |
   return 'unknown';
 };
 
-const processResponse = (data: any): MatchResult => {
-  const webDetection = data.responses[0]?.webDetection || {};
-  console.log("Web Detection Data:", JSON.stringify(webDetection, null, 2));
+// Process full matching images
+const processFullMatches = (images: any[]): WebImage[] => {
+  return (images || []).map((image: any) => {
+    const platform = identifyPlatform(image.url);
+    return {
+      url: image.url || '',
+      score: FULL_MATCH_SCORE,
+      imageUrl: image.url || '',
+      platform
+    };
+  });
+};
 
-  // Process exact matching images - full matches
-  const fullMatchingImages = (webDetection.fullMatchingImages || [])
+// Process partial matching images
+const processPartialMatches = (images: any[]): WebImage[] => {
+  return (images || []).map((image: any) => {
+    const platform = identifyPlatform(image.url);
+    return {
+      url: image.url || '',
+      score: PARTIAL_MATCH_SCORE,
+      imageUrl: image.url || '',
+      platform
+    };
+  });
+};
+
+// Process visually similar images
+const processSimilarImages = (images: any[]): WebImage[] => {
+  return (images || [])
     .map((image: any) => {
       const platform = identifyPlatform(image.url);
       return {
         url: image.url || '',
-        score: 1.0, // 100% match for full matches
-        imageUrl: image.url || '',
-        platform
-      };
-    });
-
-  // Process partial matching images - partial matches
-  const partialMatchingImages = (webDetection.partialMatchingImages || [])
-    .map((image: any) => {
-      const platform = identifyPlatform(image.url);
-      return {
-        url: image.url || '',
-        score: 0.85, // 85% match for partial matches
-        imageUrl: image.url || '',
-        platform
-      };
-    });
-
-  // Process visually similar images - lower confidence
-  const visuallySimilarImages = (webDetection.visuallySimilarImages || [])
-    .map((image: any) => {
-      const platform = identifyPlatform(image.url);
-      return {
-        url: image.url || '',
-        score: image.score || 0.6, // Typical score range for similar images
+        score: image.score || 0.65, // Use provided score or default
         imageUrl: image.url || '',
         platform
       };
     })
-    .filter((img: WebImage) => img.score >= 0.6);
+    // Filter out images below the minimum threshold
+    .filter((img: WebImage) => img.score >= MIN_MATCH_THRESHOLD);
+};
 
-  // Combine all similar images
-  const allSimilarImages = [
-    ...fullMatchingImages,
-    ...partialMatchingImages,
-    ...visuallySimilarImages
-  ];
-
-  // Process pages with matching images
-  const pagesWithMatchingImages = (webDetection.pagesWithMatchingImages || [])
+// Process pages with matching images
+const processPages = (pages: any[]): WebPage[] => {
+  return (pages || [])
     .map((page: any) => {
       const platform = identifyPlatform(page.url);
       const pageTitle = page.pageTitle || '';
@@ -261,7 +273,7 @@ const processResponse = (data: any): MatchResult => {
       const pageMatchingImages = (page.fullMatchingImages || [])
         .map((img: any) => ({
           url: img.url,
-          score: 1.0,
+          score: 0.95, // High confidence for page matches
           imageUrl: img.url,
           platform: identifyPlatform(img.url)
         }));
@@ -276,28 +288,44 @@ const processResponse = (data: any): MatchResult => {
       };
     })
     .filter((page: WebPage) => {
-      const isCDN = 
-        page.url.includes('cloudfront.net') || 
-        page.url.includes('cdn.shopify') || 
-        page.url.includes('cloudinary') || 
-        page.url.includes('imgix') ||
-        page.url.includes('fastly') ||
-        page.url.includes('akamaized') ||
-        page.url.includes('cdn.') ||
-        page.url.includes('ibb.co') ||
-        page.url.includes('imgur.com') ||
-        page.url.includes('postimg.cc');
+      // Check if URL is from a CDN
+      const isCDN = cdnPatterns.some(pattern => page.url.toLowerCase().includes(pattern));
       
-      return !isCDN && page.score >= 0.6;
+      // Only include pages with a score above the minimum threshold and not from CDNs
+      return !isCDN && page.score >= MIN_MATCH_THRESHOLD;
     });
+};
+
+const processResponse = (data: any): MatchResult => {
+  const webDetection = data.responses[0]?.webDetection || {};
+  console.log("Web Detection Data:", JSON.stringify(webDetection, null, 2));
+
+  // Process different types of image matches
+  const fullMatchingImages = processFullMatches(webDetection.fullMatchingImages);
+  const partialMatchingImages = processPartialMatches(webDetection.partialMatchingImages);
+  const visuallySimilarImages = processSimilarImages(webDetection.visuallySimilarImages);
+
+  // Combine all similar images
+  const allSimilarImages = [
+    ...fullMatchingImages,
+    ...partialMatchingImages,
+    ...visuallySimilarImages
+  ];
+
+  // Process pages with matching images
+  const pagesWithMatchingImages = processPages(webDetection.pagesWithMatchingImages);
   
-  return {
-    webEntities: webDetection.webEntities?.map((entity: any) => ({
+  // Process web entities
+  const webEntities = (webDetection.webEntities || [])
+    .map((entity: any) => ({
       entityId: entity.entityId || '',
       score: entity.score || 0,
       description: entity.description || 'Unknown Entity'
-    })) || [],
-    
+    }))
+    .filter((entity: WebEntity) => entity.score > 0.5 && entity.description !== 'Unknown Entity');
+  
+  return {
+    webEntities: webEntities || [],
     visuallySimilarImages: allSimilarImages,
     pagesWithMatchingImages
   };
