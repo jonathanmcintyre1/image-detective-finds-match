@@ -66,16 +66,13 @@ export const getSearchAnalytics = async () => {
 
     // Get average results per search with proper typing
     const { data: avgResults } = await supabase
-      .rpc<AverageSearchResult[]>('average_search_results');
+      .rpc<AverageSearchResult>('average_search_results');
 
     // Safely access average value with proper null checks
     const avgResultsPerSearch = 
       avgResults && 
-      Array.isArray(avgResults) && 
-      avgResults.length > 0 && 
-      avgResults[0] && 
-      typeof avgResults[0].average === 'number' 
-        ? avgResults[0].average 
+      typeof avgResults.average === 'number' 
+        ? avgResults.average 
         : 0;
 
     return {
