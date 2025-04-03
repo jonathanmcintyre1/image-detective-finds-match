@@ -1,4 +1,6 @@
 
+import { supabase } from '@/integrations/supabase/client';
+
 interface WebEntity {
   entityId: string;
   score: number;
@@ -135,6 +137,10 @@ const identifyPlatform = (url: string): string => {
     return 'Best Buy';
   } else if (urlLower.includes('ikea')) {
     return 'IKEA';
+  } else if (urlLower.includes('shopee')) {
+    return 'Shopee';
+  } else if (urlLower.includes('lazada')) {
+    return 'Lazada';
   } else {
     if (urlLower.includes('cloudfront.net') || 
         urlLower.includes('cdn.shopify') || 
@@ -156,15 +162,35 @@ const determinePageType = (url: string, title: string): 'product' | 'category' |
   const urlLower = url.toLowerCase();
   const titleLower = title.toLowerCase();
   
-  // Check for product pages
+  // Improved ecommerce category page detection
+  const categoryUrlPatterns = [
+    '/category/', '/categories/', '/collection/', '/collections/',
+    '/shop/', '/catalog/', '/department/', '/browse/',
+    '/c/', '/cat/', 'category=', 'departments/'
+  ];
+  
+  const categoryTitlePatterns = [
+    'collection', 'category', 'categories',
+    'shop', 'all ', 'best ', 'new ', 'featured',
+    'top ', 'trending', 'catalog'
+  ];
+  
+  const listingIndicators = [
+    'results for', 'items', 'products', 'listings',
+    'page', ' - page', 'found', 'showing'
+  ];
+  
+  // Check for product pages first (higher specificity)
   if (
     urlLower.includes('/product/') || 
     urlLower.includes('/item/') || 
     urlLower.includes('/dp/') || 
     urlLower.match(/\/p\/\d+/) ||
     urlLower.includes('/products/') ||
+    urlLower.includes('product-detail') ||
+    urlLower.includes('productdetails') ||
     titleLower.includes('buy') ||
-    titleLower.includes('product') ||
+    titleLower.includes('product details') ||
     titleLower.match(/ - \$\d+/) ||
     titleLower.match(/ \| \$\d+/) ||
     titleLower.match(/\$\d+\.\d+/)
@@ -173,22 +199,22 @@ const determinePageType = (url: string, title: string): 'product' | 'category' |
   }
   
   // Check for category pages
-  else if (
-    urlLower.includes('/category/') ||
-    urlLower.includes('/collection/') ||
-    urlLower.includes('/collections/') ||
-    urlLower.includes('/shop/') ||
-    urlLower.includes('/catalog/') ||
-    urlLower.includes('/department/') ||
-    titleLower.includes('collection') ||
-    titleLower.includes('category') ||
-    (titleLower.includes('products') && !titleLower.includes('product page'))
+  let isCategoryUrl = categoryUrlPatterns.some(pattern => urlLower.includes(pattern));
+  let isCategoryTitle = categoryTitlePatterns.some(pattern => titleLower.includes(pattern));
+  
+  // Additional category detection logic for ecommerce sites
+  if (
+    isCategoryUrl || 
+    isCategoryTitle || 
+    (titleLower.includes('products') && !titleLower.includes('product page')) ||
+    (listingIndicators.some(indicator => titleLower.includes(indicator)) && 
+      !urlLower.includes('search') && !urlLower.includes('query='))
   ) {
     return 'category';
   }
   
   // Check for search pages
-  else if (
+  if (
     urlLower.includes('/search') ||
     urlLower.includes('q=') ||
     urlLower.includes('query=') ||
@@ -207,19 +233,19 @@ const processResponse = (data: any): MatchResult => {
   const webDetection = data.responses[0]?.webDetection || {};
   console.log("Web Detection Data:", JSON.stringify(webDetection, null, 2));
 
-  // Process exact matching images - full matches
+  // Process exact matching images - full matches (95-100% confidence)
   const fullMatchingImages = (webDetection.fullMatchingImages || [])
     .map((image: any) => {
       const platform = identifyPlatform(image.url);
       return {
         url: image.url || '',
-        score: 1.0, // 100% match for full matches
+        score: 0.98, // 98% match for full matches
         imageUrl: image.url || '',
         platform
       };
     });
 
-  // Process partial matching images - partial matches
+  // Process partial matching images (70-95% confidence)
   const partialMatchingImages = (webDetection.partialMatchingImages || [])
     .map((image: any) => {
       const platform = identifyPlatform(image.url);
@@ -231,13 +257,13 @@ const processResponse = (data: any): MatchResult => {
       };
     });
 
-  // Process visually similar images - lower confidence
+  // Process visually similar images (60-70% confidence)
   const visuallySimilarImages = (webDetection.visuallySimilarImages || [])
     .map((image: any) => {
       const platform = identifyPlatform(image.url);
       return {
         url: image.url || '',
-        score: image.score || 0.6, // Typical score range for similar images
+        score: image.score || 0.65, // Typical score range for similar images
         imageUrl: image.url || '',
         platform
       };
@@ -251,7 +277,7 @@ const processResponse = (data: any): MatchResult => {
     ...visuallySimilarImages
   ];
 
-  // Process pages with matching images
+  // Process pages with matching images with improved category detection
   const pagesWithMatchingImages = (webDetection.pagesWithMatchingImages || [])
     .map((page: any) => {
       const platform = identifyPlatform(page.url);
@@ -261,7 +287,7 @@ const processResponse = (data: any): MatchResult => {
       const pageMatchingImages = (page.fullMatchingImages || [])
         .map((img: any) => ({
           url: img.url,
-          score: 1.0,
+          score: 0.95, // High confidence for page matches
           imageUrl: img.url,
           platform: identifyPlatform(img.url)
         }));
@@ -291,13 +317,17 @@ const processResponse = (data: any): MatchResult => {
       return !isCDN && page.score >= 0.6;
     });
   
-  return {
-    webEntities: webDetection.webEntities?.map((entity: any) => ({
+  // Use the improved web entity extraction logic
+  const webEntities = (webDetection.webEntities || [])
+    .map((entity: any) => ({
       entityId: entity.entityId || '',
       score: entity.score || 0,
       description: entity.description || 'Unknown Entity'
-    })) || [],
-    
+    }))
+    .filter((entity: WebEntity) => entity.score > 0.5 && entity.description !== 'Unknown Entity');
+  
+  return {
+    webEntities: webEntities || [],
     visuallySimilarImages: allSimilarImages,
     pagesWithMatchingImages
   };

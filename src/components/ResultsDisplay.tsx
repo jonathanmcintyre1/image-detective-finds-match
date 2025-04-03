@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { 
   AlertTriangle, AlertCircle, Link as LinkIcon, 
-  ShoppingBag, FileText, Shield, Clock, Download, Globe
+  ShoppingBag, FileText, Shield, Clock, Download, Globe, Tag
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ExactMatchesTable } from './ExactMatchesTable';
@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from 'date-fns';
+import { trackImageSearch } from '@/services/searchTrackingService';
 
 interface WebEntity {
   entityId: string;
@@ -52,11 +53,21 @@ interface MatchResult {
 
 interface ResultsDisplayProps {
   results: MatchResult | null;
+  searchedImage?: string | File;
 }
 
-const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
+const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results, searchedImage }) => {
   const [sortBy, setSortBy] = useState<'confidence' | 'date' | 'domain' | 'count'>('confidence');
   const [today] = useState(new Date());
+  
+  // Track search in Supabase when results are displayed
+  React.useEffect(() => {
+    if (results && searchedImage) {
+      const totalResults = (results.visuallySimilarImages?.length || 0) + 
+                          (results.pagesWithMatchingImages?.length || 0);
+      trackImageSearch(searchedImage, totalResults);
+    }
+  }, [results, searchedImage]);
   
   if (!results) return null;
   
@@ -73,9 +84,9 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
     }))
   };
   
-  // Split matches by score: exact matches (90%+) vs partial matches (60-90%)
-  const exactMatches = processedResults.visuallySimilarImages.filter(img => img.score >= 0.9);
-  const partialMatches = processedResults.visuallySimilarImages.filter(img => img.score >= 0.6 && img.score < 0.9);
+  // Split matches by score: exact matches (95%+) vs partial matches (60-95%)
+  const exactMatches = processedResults.visuallySimilarImages.filter(img => img.score >= 0.95);
+  const partialMatches = processedResults.visuallySimilarImages.filter(img => img.score >= 0.6 && img.score < 0.95);
   
   // Split pages by type
   const allRelevantPages = processedResults.pagesWithMatchingImages.filter(page => page.score >= 0.6);
@@ -275,7 +286,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
                   <div className="mb-8">
                     <h3 className="text-lg font-medium flex items-center mb-3">
                       <Badge className="bg-brand-red text-white mr-2">{exactMatchCount}</Badge>
-                      Exact Matches
+                      Exact Matches (95-100% match)
                     </h3>
                     <ExactMatchesTable 
                       matches={exactMatches}
@@ -290,7 +301,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
                   <div className="mb-8">
                     <h3 className="text-lg font-medium flex items-center mb-3">
                       <Badge className="bg-amber-500 text-white mr-2">{partialMatchCount}</Badge>
-                      Partial Matches
+                      Partial Matches (60-95% match)
                     </h3>
                     <ExactMatchesTable 
                       matches={partialMatches}
@@ -301,23 +312,25 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
                   </div>
                 )}
                 
-                {productPageCount > 0 && (
-                  <div className="mb-8">
-                    <h3 className="text-lg font-medium flex items-center mb-3">
-                      <Badge className="bg-brand-blue text-white mr-2">{productPageCount}</Badge>
-                      Product Pages
-                    </h3>
-                    <PagesMatchTable pages={productPages} sortBy={sortBy} compact />
-                  </div>
-                )}
-                
                 {categoryPageCount > 0 && (
                   <div className="mb-8">
                     <h3 className="text-lg font-medium flex items-center mb-3">
                       <Badge className="bg-green-500 text-white mr-2">{categoryPageCount}</Badge>
-                      Category Pages
+                      <Tag className="h-4 w-4 mr-2" />
+                      Ecommerce Category Pages
                     </h3>
                     <PagesMatchTable pages={categoryPages} sortBy={sortBy} compact />
+                  </div>
+                )}
+                
+                {productPageCount > 0 && (
+                  <div className="mb-8">
+                    <h3 className="text-lg font-medium flex items-center mb-3">
+                      <Badge className="bg-brand-blue text-white mr-2">{productPageCount}</Badge>
+                      <ShoppingBag className="h-4 w-4 mr-2" />
+                      Product Pages
+                    </h3>
+                    <PagesMatchTable pages={productPages} sortBy={sortBy} compact />
                   </div>
                 )}
                 
@@ -325,6 +338,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
                   <div className="mb-8">
                     <h3 className="text-lg font-medium flex items-center mb-3">
                       <Badge className="bg-purple-500 text-white mr-2">{searchPageCount}</Badge>
+                      <Globe className="h-4 w-4 mr-2" />
                       Search Results Pages
                     </h3>
                     <PagesMatchTable pages={searchPages} sortBy={sortBy} compact />
@@ -335,6 +349,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
                   <div className="mb-8">
                     <h3 className="text-lg font-medium flex items-center mb-3">
                       <Badge className="bg-gray-500 text-white mr-2">{otherPageCount}</Badge>
+                      <FileText className="h-4 w-4 mr-2" />
                       Other Pages
                     </h3>
                     <PagesMatchTable pages={otherPages} sortBy={sortBy} compact />
@@ -351,7 +366,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
                   <div className="flex items-center">
                     <Badge className="bg-brand-red text-white mr-2">{exactMatchCount}</Badge>
                     <CardTitle className="text-lg">Exact Image Matches</CardTitle>
-                    <span className="text-xs text-muted-foreground ml-2">(Confidence ≥ 90%)</span>
+                    <span className="text-xs text-muted-foreground ml-2">(Confidence ≥ 95%)</span>
                   </div>
                   <Alert variant="destructive" className="w-auto py-1 h-9 px-3">
                     <AlertTriangle className="h-4 w-4" />
@@ -381,7 +396,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
                   <div className="flex items-center">
                     <Badge className="bg-amber-500 text-white mr-2">{partialMatchCount}</Badge>
                     <CardTitle className="text-lg">Partial Image Matches</CardTitle>
-                    <span className="text-xs text-muted-foreground ml-2">(Confidence 60-90%)</span>
+                    <span className="text-xs text-muted-foreground ml-2">(Confidence 60-95%)</span>
                   </div>
                   <Alert variant="default" className="w-auto py-1 h-9 px-3 bg-amber-50 border-amber-200 text-amber-700">
                     <AlertTriangle className="h-4 w-4" />
@@ -410,7 +425,6 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
                     <Badge className="bg-brand-blue text-white mr-2">{pageMatchCount}</Badge>
-                    <ShoppingBag className="h-4 w-4 mr-2 text-brand-blue" />
                     <CardTitle className="text-lg">Pages with Image</CardTitle>
                   </div>
                 </div>
@@ -419,6 +433,17 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-4">
+                {categoryPageCount > 0 && (
+                  <div className="mb-8">
+                    <h3 className="text-lg font-medium flex items-center mb-3">
+                      <Badge className="bg-green-500 text-white mr-2">{categoryPageCount}</Badge>
+                      <Tag className="h-4 w-4 mr-2" />
+                      Ecommerce Category Pages
+                    </h3>
+                    <PagesMatchTable pages={categoryPages} sortBy={sortBy} />
+                  </div>
+                )}
+                
                 {productPageCount > 0 && (
                   <div className="mb-8">
                     <h3 className="text-lg font-medium flex items-center mb-3">
@@ -427,17 +452,6 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
                       Product Pages
                     </h3>
                     <PagesMatchTable pages={productPages} sortBy={sortBy} />
-                  </div>
-                )}
-                
-                {categoryPageCount > 0 && (
-                  <div className="mb-8">
-                    <h3 className="text-lg font-medium flex items-center mb-3">
-                      <Badge className="bg-green-500 text-white mr-2">{categoryPageCount}</Badge>
-                      <FileText className="h-4 w-4 mr-2" />
-                      Category Pages
-                    </h3>
-                    <PagesMatchTable pages={categoryPages} sortBy={sortBy} />
                   </div>
                 )}
                 
