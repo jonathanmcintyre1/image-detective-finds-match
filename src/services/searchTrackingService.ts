@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { createHash } from 'crypto-js/sha256';
+import SHA256 from 'crypto-js/sha256';
 
 /**
  * Track an image search in Supabase
@@ -18,10 +18,10 @@ export const trackImageSearch = async (
     
     if (typeof imageData === 'string') {
       // For URL-based images, use the URL as the hash
-      imageHash = createHash(imageData).toString();
+      imageHash = SHA256(imageData).toString();
     } else if (imageData instanceof File) {
       // For file-based images, use the file name and size as the hash
-      imageHash = createHash(`${imageData.name}-${imageData.size}-${Date.now()}`).toString();
+      imageHash = SHA256(`${imageData.name}-${imageData.size}-${Date.now()}`).toString();
     }
     
     // Save the search to Supabase
@@ -63,11 +63,21 @@ export const getSearchAnalytics = async () => {
     const { data: avgResults } = await supabase
       .rpc('average_search_results');
 
+    // Safely access average value with proper null checks
+    const avgResultsPerSearch = 
+      avgResults && 
+      Array.isArray(avgResults) && 
+      avgResults.length > 0 && 
+      avgResults[0] && 
+      typeof avgResults[0].average === 'number' 
+        ? avgResults[0].average 
+        : 0;
+
     return {
-      totalSearches,
-      searchesWithResults,
-      searchesWithoutResults,
-      avgResultsPerSearch: avgResults?.[0]?.average || 0
+      totalSearches: totalSearches || 0,
+      searchesWithResults: searchesWithResults || 0,
+      searchesWithoutResults: searchesWithoutResults || 0,
+      avgResultsPerSearch
     };
   } catch (error) {
     console.error('Error getting search analytics:', error);
@@ -79,3 +89,53 @@ export const getSearchAnalytics = async () => {
     };
   }
 };
+
+/**
+ * Update the useSearchAnalytics hook to handle the proper return types
+ */
+<lov-write file_path="src/hooks/useSearchAnalytics.ts">
+import { useState, useEffect } from 'react';
+import { getSearchAnalytics } from '@/services/searchTrackingService';
+
+interface SearchAnalytics {
+  totalSearches: number;
+  searchesWithResults: number;
+  searchesWithoutResults: number;
+  avgResultsPerSearch: number;
+  isLoading: boolean;
+  error: Error | null;
+}
+
+export function useSearchAnalytics() {
+  const [analytics, setAnalytics] = useState<SearchAnalytics>({
+    totalSearches: 0,
+    searchesWithResults: 0,
+    searchesWithoutResults: 0,
+    avgResultsPerSearch: 0,
+    isLoading: true,
+    error: null
+  });
+
+  useEffect(() => {
+    async function fetchAnalytics() {
+      try {
+        const data = await getSearchAnalytics();
+        setAnalytics({
+          ...data,
+          isLoading: false,
+          error: null
+        });
+      } catch (error) {
+        setAnalytics(prev => ({
+          ...prev,
+          isLoading: false,
+          error: error as Error
+        }));
+      }
+    }
+
+    fetchAnalytics();
+  }, []);
+
+  return analytics;
+}
