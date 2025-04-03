@@ -1,9 +1,11 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { KeyRound, Info } from 'lucide-react';
+import { toast } from 'sonner';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 interface ApiKeyInputProps {
   apiKey: string;
@@ -11,16 +13,44 @@ interface ApiKeyInputProps {
 }
 
 const ApiKeyInput = ({ apiKey, setApiKey }: ApiKeyInputProps) => {
-  const [open, setOpen] = useState(!apiKey);
+  const [open, setOpen] = useState(!apiKey); // Open dialog if no API key is set
   const [tempApiKey, setTempApiKey] = useState(apiKey || '');
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  
+  // Show API key dialog automatically if not set
+  useEffect(() => {
+    if (!apiKey) {
+      setOpen(true);
+      console.log("API key not set, showing dialog");
+    } else {
+      console.log("API key is set:", apiKey.substring(0, 5) + "...");
+    }
+  }, [apiKey]);
 
   const handleSave = () => {
     if (tempApiKey.trim()) {
       setApiKey(tempApiKey.trim());
       localStorage.setItem('gcv_api_key', tempApiKey.trim());
       console.log("API Key saved:", tempApiKey.substring(0, 5) + "...");
+      toast.success("API key saved successfully", {
+        description: "Your Google Cloud Vision API key has been saved"
+      });
       setOpen(false);
+    } else {
+      toast.error("Please enter a valid API key");
     }
+  };
+  
+  const handleClearApiKey = () => {
+    setTempApiKey('');
+    setApiKey('');
+    localStorage.removeItem('gcv_api_key');
+    toast.success("API key removed", {
+      description: "Your Google Cloud Vision API key has been removed"
+    });
+    setShowConfirmDialog(false);
+    // Reopen the set API key dialog
+    setTimeout(() => setOpen(true), 500);
   };
 
   return (
@@ -84,6 +114,15 @@ const ApiKeyInput = ({ apiKey, setApiKey }: ApiKeyInputProps) => {
           </div>
           
           <DialogFooter>
+            {apiKey && (
+              <Button 
+                variant="outline" 
+                onClick={() => setShowConfirmDialog(true)}
+                className="mr-auto"
+              >
+                Remove API Key
+              </Button>
+            )}
             <Button
               onClick={handleSave}
               disabled={!tempApiKey.trim()}
@@ -93,6 +132,22 @@ const ApiKeyInput = ({ apiKey, setApiKey }: ApiKeyInputProps) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      {/* Confirmation dialog for removing API key */}
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove API Key?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove your Google Cloud Vision API key. You'll need to enter it again to use the image detection features.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleClearApiKey}>Remove</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };

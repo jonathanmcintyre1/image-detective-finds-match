@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import ImageUploader from '@/components/ImageUploader';
@@ -51,7 +52,9 @@ const Index = () => {
   const [imageError, setImageError] = useState(false);
   const [showBetaSignup, setShowBetaSignup] = useState(false);
   const [hasPerformedSearch, setHasPerformedSearch] = useState(false);
+  const [showApiKeyReminder, setShowApiKeyReminder] = useState(false);
 
+  // Load API key from environment variable or local storage
   useEffect(() => {
     const envApiKey = import.meta.env.VITE_GOOGLE_VISION_API_KEY;
     
@@ -65,11 +68,9 @@ const Index = () => {
         console.log("Using API key from local storage");
       } else {
         console.log("No API key found");
+        setTimeout(() => setShowApiKeyReminder(true), 2000);
       }
     }
-
-    // Don't show beta signup on first load anymore
-    // We'll trigger it after search or export now
   }, []);
 
   const handleBetaDialogClose = () => {
@@ -109,6 +110,7 @@ const Index = () => {
     
     if (!apiKey) {
       toast.error('Please set your Google Cloud Vision API key first');
+      setShowApiKeyReminder(true);
       return;
     }
     
@@ -138,6 +140,11 @@ const Index = () => {
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const handleApiKeySet = (key: string) => {
+    setApiKey(key);
+    setShowApiKeyReminder(false);
   };
 
   const handleImageError = () => {
@@ -170,9 +177,21 @@ const Index = () => {
               Discover unauthorized copies of your images across the web in seconds
             </p>
             <div className="flex justify-center mt-4">
-              <ApiKeyInput apiKey={apiKey} setApiKey={setApiKey} />
+              <ApiKeyInput apiKey={apiKey} setApiKey={handleApiKeySet} />
             </div>
           </div>
+          
+          {/* Show API key reminder if no key is set */}
+          {showApiKeyReminder && !apiKey && (
+            <div className="mb-6">
+              <Alert className="bg-amber-50 border-amber-200">
+                <AlertCircle className="h-4 w-4 text-amber-600" />
+                <AlertDescription className="text-amber-800">
+                  You need to set a Google Cloud Vision API key to use this app. Click "Set API Key" above.
+                </AlertDescription>
+              </Alert>
+            </div>
+          )}
           
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-1 space-y-6">
