@@ -4,6 +4,7 @@ import Header from '@/components/Header';
 import ImageUploader from '@/components/ImageUploader';
 import ResultsDisplay from '@/components/ResultsDisplay';
 import BetaSignupForm from '@/components/BetaSignupForm';
+import ApiKeyInput from '@/components/ApiKeyInput';
 import { analyzeImage } from '@/services/googleVisionService';
 import { trackImageSearch } from '@/services/searchTrackingService';
 import { toast } from 'sonner';
@@ -12,6 +13,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { BetaSignupProvider } from '@/hooks/useBetaSignupPrompt';
+
+// Define interface for config options
+interface AppConfig {
+  showHeader: boolean;
+}
 
 interface WebEntity {
   entityId: string;
@@ -41,7 +47,15 @@ interface MatchResult {
   pagesWithMatchingImages: WebPage[];
 }
 
+// Default configuration
+const defaultConfig: AppConfig = {
+  showHeader: true
+};
+
 const Index = () => {
+  // App configuration
+  const [config, setConfig] = useState<AppConfig>(defaultConfig);
+  
   const [selectedImage, setSelectedImage] = useState<File | string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [results, setResults] = useState<MatchResult | null>(null);
@@ -49,6 +63,7 @@ const Index = () => {
   const [imageError, setImageError] = useState(false);
   const [showBetaSignup, setShowBetaSignup] = useState(false);
   const [hasPerformedSearch, setHasPerformedSearch] = useState(false);
+  const [apiKey, setApiKey] = useState<string>('');
 
   const handleBetaDialogClose = () => {
     setShowBetaSignup(false);
@@ -82,14 +97,27 @@ const Index = () => {
     }
   }, [selectedImage]);
 
+  const handleApiKeySubmit = (key: string) => {
+    setApiKey(key);
+    toast.success("API Key set successfully", {
+      description: "Your API key has been saved in your browser"
+    });
+  };
+
   const handleImageSelected = async (image: File | string) => {
     setSelectedImage(image);
     setResults(null);
     
+    if (!apiKey) {
+      toast.error("API Key Required", {
+        description: "Please set your Google Vision API key first"
+      });
+      return;
+    }
+    
     try {
       setIsProcessing(true);
-      // We no longer need to pass the API key since it's handled by our edge function
-      const result = await analyzeImage('', image);
+      const result = await analyzeImage(apiKey, image);
       setResults(result);
       setHasPerformedSearch(true);
       
@@ -110,7 +138,7 @@ const Index = () => {
     } catch (error) {
       console.error('Error analyzing image:', error);
       toast.error('Failed to analyze image', {
-        description: 'Please check your internet connection and try again.'
+        description: 'Please check your API key and internet connection and try again.'
       });
     } finally {
       setIsProcessing(false);
@@ -124,10 +152,28 @@ const Index = () => {
     });
   };
 
+  // For demonstration, this function would be called from a settings component
+  const toggleHeader = () => {
+    setConfig(prevConfig => ({
+      ...prevConfig,
+      showHeader: !prevConfig.showHeader
+    }));
+  };
+
+  // Expose toggle function to window for easy access
+  useEffect(() => {
+    (window as any).toggleHeader = toggleHeader;
+    
+    // Clean up when component unmounts
+    return () => {
+      delete (window as any).toggleHeader;
+    };
+  }, []);
+
   return (
     <BetaSignupProvider initialValue={showBetaSignup} onChange={setShowBetaSignup}>
       <div className="min-h-screen flex flex-col bg-gray-50 font-sans">
-        <Header />
+        {config.showHeader && <Header />}
         
         <main className="flex-1 container py-8 space-y-8">
           <div className="text-center max-w-3xl mx-auto space-y-4 mb-8">
@@ -146,69 +192,7 @@ const Index = () => {
             <p className="text-xl text-muted-foreground mb-2">
               Discover unauthorized copies of your images across the web in seconds
             </p>
-            
-            {/* Benefits section - moved from bottom to top */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6 text-left">
-              <div className="bg-white rounded-lg p-4 shadow-sm">
-                <h3 className="font-medium mb-1 text-brand-dark">Detect Unauthorized Use</h3>
-                <p className="text-sm text-muted-foreground">
-                  Find where your images are being used across the internet without permission
-                </p>
-              </div>
-              <div className="bg-white rounded-lg p-4 shadow-sm">
-                <h3 className="font-medium mb-1 text-brand-dark">Monitor Marketplaces</h3>
-                <p className="text-sm text-muted-foreground">
-                  Track product images on marketplaces like Amazon, Etsy and more
-                </p>
-              </div>
-              <div className="bg-white rounded-lg p-4 shadow-sm">
-                <h3 className="font-medium mb-1 text-brand-dark">Preserve Value</h3>
-                <p className="text-sm text-muted-foreground">
-                  Maintain exclusivity and value of your digital content and products
-                </p>
-              </div>
-            </div>
           </div>
-          
-          {/* How It Works Section - Moved above results */}
-          <Card className="border-0 shadow-md mb-8">
-            <CardHeader className="bg-gray-50 border-b">
-              <CardTitle className="text-xl">How It Works</CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div className="flex flex-col items-center text-center">
-                  <div className="w-16 h-16 bg-brand-blue/10 rounded-full flex items-center justify-center mb-4">
-                    <Upload className="h-8 w-8 text-brand-blue" />
-                  </div>
-                  <h3 className="font-medium mb-2">1. Upload Your Image</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Upload an image or provide a URL that you want to protect
-                  </p>
-                </div>
-                
-                <div className="flex flex-col items-center text-center">
-                  <div className="w-16 h-16 bg-brand-blue/10 rounded-full flex items-center justify-center mb-4">
-                    <Search className="h-8 w-8 text-brand-blue" />
-                  </div>
-                  <h3 className="font-medium mb-2">2. AI-Powered Scan</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Our AI scans the web for exact or similar matches to your image
-                  </p>
-                </div>
-                
-                <div className="flex flex-col items-center text-center">
-                  <div className="w-16 h-16 bg-brand-blue/10 rounded-full flex items-center justify-center mb-4">
-                    <Sparkles className="h-8 w-8 text-brand-blue" />
-                  </div>
-                  <h3 className="font-medium mb-2">3. Review Results</h3>
-                  <p className="text-sm text-muted-foreground">
-                    See where your images appear and take action against unauthorized use
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
           
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-1 space-y-6">
@@ -220,6 +204,10 @@ const Index = () => {
                   </div>
                 </CardHeader>
                 <CardContent className="p-6">
+                  <div className="mb-6">
+                    <ApiKeyInput onApiKeySubmit={handleApiKeySubmit} isProcessing={isProcessing} />
+                  </div>
+                
                   <ImageUploader onImageSelected={handleImageSelected} isProcessing={isProcessing} />
                   
                   {previewUrl && (
@@ -253,6 +241,46 @@ const Index = () => {
             </div>
             
             <div className="lg:col-span-2">
+              {/* How It Works Section - Moved to right column above results */}
+              <Card className="border-0 shadow-md mb-8">
+                <CardHeader className="bg-gray-50 border-b">
+                  <CardTitle className="text-xl">How It Works</CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="flex flex-col items-center text-center">
+                      <div className="w-12 h-12 bg-brand-blue/10 rounded-full flex items-center justify-center mb-3">
+                        <Upload className="h-5 w-5 text-brand-blue" />
+                      </div>
+                      <h3 className="font-medium mb-1 text-sm">1. Upload Your Image</h3>
+                      <p className="text-xs text-muted-foreground">
+                        Upload an image you want to protect
+                      </p>
+                    </div>
+                    
+                    <div className="flex flex-col items-center text-center">
+                      <div className="w-12 h-12 bg-brand-blue/10 rounded-full flex items-center justify-center mb-3">
+                        <Search className="h-5 w-5 text-brand-blue" />
+                      </div>
+                      <h3 className="font-medium mb-1 text-sm">2. AI-Powered Scan</h3>
+                      <p className="text-xs text-muted-foreground">
+                        Our AI scans the web for matches
+                      </p>
+                    </div>
+                    
+                    <div className="flex flex-col items-center text-center">
+                      <div className="w-12 h-12 bg-brand-blue/10 rounded-full flex items-center justify-center mb-3">
+                        <Sparkles className="h-5 w-5 text-brand-blue" />
+                      </div>
+                      <h3 className="font-medium mb-1 text-sm">3. Review Results</h3>
+                      <p className="text-xs text-muted-foreground">
+                        See where your images appear online
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
               {isProcessing && (
                 <Card className="border-0 shadow-md h-64">
                   <CardContent className="p-6 h-full flex flex-col items-center justify-center">
@@ -273,6 +301,18 @@ const Index = () => {
               {!isProcessing && results && (
                 <div>
                   <ResultsDisplay results={results} />
+                  
+                  {/* Get Early Access - Moved below results with updated styling */}
+                  <div className="mt-8">
+                    <Card className="border-0 shadow-md">
+                      <CardHeader className="bg-primary/10 border-b">
+                        <CardTitle>Get Early Access</CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-6">
+                        <BetaSignupForm onSuccess={handleBetaSignupSuccess} embedded={true} />
+                      </CardContent>
+                    </Card>
+                  </div>
                 </div>
               )}
               
@@ -288,15 +328,6 @@ const Index = () => {
             </div>
           </div>
         </main>
-        
-        {/* Full width early access section */}
-        <div className="w-full bg-gradient-to-r from-[#b1081e] to-[#ea384c] py-12">
-          <div className="container mx-auto">
-            <div className="max-w-xl mx-auto">
-              <BetaSignupForm onSuccess={handleBetaSignupSuccess} />
-            </div>
-          </div>
-        </div>
         
         <footer className="py-6 bg-[#2d2d2d] text-white">
           <div className="container text-center text-sm">

@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/form";
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { Loader2 } from 'lucide-react';
 
 // Create schema for form validation
 const formSchema = z.object({
@@ -119,18 +120,13 @@ const BetaSignupForm = ({ onSuccess, embedded = false }: BetaSignupFormProps) =>
     }
   };
 
-  // Define the background class based on whether the form is embedded
-  const containerClass = embedded 
-    ? "bg-white border rounded-lg p-6 shadow-sm max-w-md w-full" 
-    : "bg-gradient-to-r from-[#b1081e] to-[#ea384c] rounded-lg p-6 shadow-md max-w-xl w-full text-white";
-
   return (
-    <div className={containerClass}>
+    <div className="bg-card rounded-lg p-6 shadow-sm max-w-md w-full border">
       <div className="mb-6 text-center">
-        <h2 className={`text-2xl font-bold ${embedded ? 'text-brand-dark' : 'text-white'}`}>
+        <h2 className="text-2xl font-bold text-card-foreground">
           Get Early Access
         </h2>
-        <p className={`text-base mt-2 ${embedded ? 'text-muted-foreground' : 'text-white/90'}`}>
+        <p className="text-base mt-2 text-muted-foreground">
           Sign up for beta access to CopyProtect when we launch
         </p>
       </div>
@@ -142,7 +138,7 @@ const BetaSignupForm = ({ onSuccess, embedded = false }: BetaSignupFormProps) =>
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className={`${embedded ? '' : 'text-white'} font-medium`}>
+                <FormLabel className="font-medium">
                   Email address *
                 </FormLabel>
                 <FormControl>
@@ -151,7 +147,6 @@ const BetaSignupForm = ({ onSuccess, embedded = false }: BetaSignupFormProps) =>
                     type="email"
                     disabled={loading}
                     required
-                    className="bg-white"
                     {...field} 
                   />
                 </FormControl>
@@ -165,7 +160,7 @@ const BetaSignupForm = ({ onSuccess, embedded = false }: BetaSignupFormProps) =>
             name="name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className={`${embedded ? '' : 'text-white'} font-medium`}>
+                <FormLabel className="font-medium">
                   Full name (optional)
                 </FormLabel>
                 <FormControl>
@@ -173,7 +168,6 @@ const BetaSignupForm = ({ onSuccess, embedded = false }: BetaSignupFormProps) =>
                     placeholder="John Smith" 
                     type="text"
                     disabled={loading}
-                    className="bg-white"
                     {...field} 
                   />
                 </FormControl>
@@ -187,7 +181,7 @@ const BetaSignupForm = ({ onSuccess, embedded = false }: BetaSignupFormProps) =>
             name="company"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className={`${embedded ? '' : 'text-white'} font-medium`}>
+                <FormLabel className="font-medium">
                   Company (optional)
                 </FormLabel>
                 <FormControl>
@@ -195,7 +189,6 @@ const BetaSignupForm = ({ onSuccess, embedded = false }: BetaSignupFormProps) =>
                     placeholder="Your Company, Inc." 
                     type="text"
                     disabled={loading}
-                    className="bg-white"
                     {...field} 
                   />
                 </FormControl>
@@ -209,7 +202,7 @@ const BetaSignupForm = ({ onSuccess, embedded = false }: BetaSignupFormProps) =>
             name="phone"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className={`${embedded ? '' : 'text-white'} font-medium`}>
+                <FormLabel className="font-medium">
                   Phone number (optional)
                 </FormLabel>
                 <FormControl>
@@ -217,7 +210,6 @@ const BetaSignupForm = ({ onSuccess, embedded = false }: BetaSignupFormProps) =>
                     placeholder="+1 (555) 123-4567" 
                     type="tel"
                     disabled={loading}
-                    className="bg-white"
                     {...field} 
                   />
                 </FormControl>
@@ -228,15 +220,12 @@ const BetaSignupForm = ({ onSuccess, embedded = false }: BetaSignupFormProps) =>
           
           <Button 
             type="submit" 
-            className={`w-full mt-2 ${embedded ? 'bg-brand-blue hover:bg-brand-blue/90' : 'bg-white text-red-600 hover:bg-white/90 font-medium'}`}
+            className="w-full mt-2"
             disabled={loading}
           >
             {loading ? (
               <span className="flex items-center">
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
+                <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4" />
                 Processing...
               </span>
             ) : (
@@ -244,7 +233,7 @@ const BetaSignupForm = ({ onSuccess, embedded = false }: BetaSignupFormProps) =>
             )}
           </Button>
           
-          <p className={`text-xs text-center ${embedded ? 'text-muted-foreground' : 'text-white/90'} pt-2`}>
+          <p className="text-xs text-center text-muted-foreground pt-2">
             We respect your privacy and won't share your information with third parties.
           </p>
         </form>
