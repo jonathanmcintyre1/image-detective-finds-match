@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import ImageUploader from '@/components/ImageUploader';
@@ -192,16 +193,16 @@ const Index = () => {
             </div>
           )}
           
-          {/* How It Works Section - Moved under header with full width */}
+          {/* How It Works Section - Full width with updated styling */}
           <Card className="border-0 shadow-md overflow-hidden mb-8">
-            <CardHeader className="bg-gradient-to-r from-brand-blue to-brand-blue/80 text-white border-b">
+            <CardHeader className="bg-[#1F2937] text-white border-b">
               <CardTitle className="text-xl">How It Works</CardTitle>
             </CardHeader>
             <CardContent className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="flex flex-col items-center text-center">
-                  <div className="w-12 h-12 bg-brand-blue/10 rounded-full flex items-center justify-center mb-3">
-                    <Upload className="h-6 w-6 text-brand-blue" />
+                  <div className="w-12 h-12 bg-[#CC121E]/10 rounded-full flex items-center justify-center mb-3">
+                    <Upload className="h-6 w-6 text-[#CC121E]" />
                   </div>
                   <h3 className="font-medium mb-1">Upload Your Image</h3>
                   <p className="text-sm text-muted-foreground">
@@ -210,8 +211,8 @@ const Index = () => {
                 </div>
                 
                 <div className="flex flex-col items-center text-center">
-                  <div className="w-12 h-12 bg-brand-blue/10 rounded-full flex items-center justify-center mb-3">
-                    <Search className="h-6 w-6 text-brand-blue" />
+                  <div className="w-12 h-12 bg-[#CC121E]/10 rounded-full flex items-center justify-center mb-3">
+                    <Search className="h-6 w-6 text-[#CC121E]" />
                   </div>
                   <h3 className="font-medium mb-1">AI-Powered Scan</h3>
                   <p className="text-sm text-muted-foreground">
@@ -220,8 +221,8 @@ const Index = () => {
                 </div>
                 
                 <div className="flex flex-col items-center text-center">
-                  <div className="w-12 h-12 bg-brand-blue/10 rounded-full flex items-center justify-center mb-3">
-                    <Sparkles className="h-6 w-6 text-brand-blue" />
+                  <div className="w-12 h-12 bg-[#CC121E]/10 rounded-full flex items-center justify-center mb-3">
+                    <Sparkles className="h-6 w-6 text-[#CC121E]" />
                   </div>
                   <h3 className="font-medium mb-1">Review Results</h3>
                   <p className="text-sm text-muted-foreground">
@@ -233,7 +234,7 @@ const Index = () => {
           </Card>
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Image Upload Card - Now takes 50% width */}
+            {/* Image Upload Card - Takes 50% width */}
             <Card className="border-0 shadow-md overflow-hidden">
               <CardHeader className="bg-gradient-to-r from-brand-dark to-brand-blue/90 text-white">
                 <div className="flex items-center">
@@ -273,9 +274,9 @@ const Index = () => {
               </CardContent>
             </Card>
             
-            {/* Get Early Access Card - Now on same row as Upload Image */}
+            {/* Get Early Access Card - On same row as Upload Image */}
             <Card className="border-0 shadow-md overflow-hidden">
-              <CardHeader className="bg-brand-blue text-white">
+              <CardHeader className="bg-gradient-to-r from-[#CC121E] to-[#CC121E]/80 text-white">
                 <CardTitle className="text-base">Get Early Access</CardTitle>
               </CardHeader>
               <CardContent className="p-6">
@@ -288,7 +289,7 @@ const Index = () => {
             {isProcessing && (
               <Card className="border-0 shadow-md h-64">
                 <CardContent className="p-6 h-full flex flex-col items-center justify-center">
-                  <Loader2 className="h-12 w-12 text-brand-blue animate-spin mb-4" />
+                  <Loader2 className="h-12 w-12 text-[#CC121E] animate-spin mb-4" />
                   <p className="text-lg font-medium">Analyzing image...</p>
                   <div className="w-full max-w-xs mt-4">
                     <div className="space-y-2">

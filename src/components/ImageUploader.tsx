@@ -48,12 +48,12 @@ const ImageUploader = ({ onImageSelected, isProcessing }: ImageUploaderProps) =>
     <div className="w-full max-w-2xl mx-auto space-y-6">
       <div 
         {...getRootProps()} 
-        className={`dropzone ${isDragActive ? 'dropzone-active' : 'border-muted-foreground/30 hover:border-primary/50'}`}
+        className={`dropzone ${isDragActive ? 'dropzone-active' : 'border-muted-foreground/30 hover:border-[#CC121E]/50'}`}
       >
         <input {...getInputProps()} />
         <div className="text-center space-y-4">
-          <div className="mx-auto bg-primary/10 p-4 rounded-full">
-            <Upload className="h-8 w-8 text-primary mx-auto" />
+          <div className="mx-auto bg-[#CC121E]/10 p-4 rounded-full">
+            <Upload className="h-8 w-8 text-[#CC121E] mx-auto" />
           </div>
           <div>
             <p className="font-medium text-lg">Drag & drop image here</p>
@@ -83,6 +83,7 @@ const ImageUploader = ({ onImageSelected, isProcessing }: ImageUploaderProps) =>
         <Button 
           type="submit"
           disabled={isProcessing}
+          className="bg-[#CC121E] hover:bg-[#CC121E]/90"
         >
           {isProcessing ? (
             <>

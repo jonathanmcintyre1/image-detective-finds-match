@@ -208,7 +208,7 @@ const BetaSignupForm = ({ onSuccess }: BetaSignupFormProps) => {
           
           <Button 
             type="submit" 
-            className="w-full bg-brand-blue hover:bg-brand-blue/90"
+            className="w-full bg-[#CC121E] hover:bg-[#CC121E]/90"
             disabled={loading}
           >
             {loading ? (
