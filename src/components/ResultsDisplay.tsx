@@ -3,7 +3,7 @@ import React, { useState, useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { 
   AlertTriangle, AlertCircle, Link as LinkIcon, 
-  ShoppingBag, FileText, Shield, Clock, Download, Globe
+  ShoppingBag, FileText, Shield, Clock, Download, Globe, Image as ImageIcon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ExactMatchesTable } from './ExactMatchesTable';
@@ -185,13 +185,20 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
     }
   };
 
+  const scrollToImageUpload = () => {
+    const uploadElement = document.querySelector('[data-upload-section]');
+    if (uploadElement) {
+      uploadElement.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
     <div className="space-y-8">
       <Card className="border-0 shadow-md">
         <CardHeader className="bg-gradient-to-r from-brand-dark to-brand-blue/90 text-white rounded-t-lg">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <Shield className="h-5 w-5" />
+              <ImageIcon className="h-5 w-5" />
               <CardTitle>Image Search Results</CardTitle>
             </div>
             <div className="flex items-center gap-2">
@@ -199,7 +206,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
                 <Download className="h-4 w-4 mr-1" />
                 Export CSV
               </Button>
-              <Button variant="secondary" size="sm" className="flex items-center gap-2">
+              <Button variant="secondary" size="sm" className="flex items-center gap-2" onClick={scrollToImageUpload}>
                 <LinkIcon className="h-4 w-4" />
                 Search another image
               </Button>

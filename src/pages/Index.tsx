@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import Header from '@/components/Header';
 import ImageUploader from '@/components/ImageUploader';
@@ -67,7 +66,6 @@ const Index = () => {
         console.log("Using API key from local storage");
       } else {
         console.log("No API key found");
-        // Use setTimeout to prevent state update during render
         const timer = setTimeout(() => setShowApiKeyReminder(true), 2000);
         return () => clearTimeout(timer);
       }
@@ -130,7 +128,6 @@ const Index = () => {
       
       const hasSeenBetaSignup = localStorage.getItem('seen_beta_signup');
       if (!hasSeenBetaSignup) {
-        // Use setTimeout to prevent state update during render
         const timer = setTimeout(() => {
           setShowBetaSignup(true);
         }, 2000);
@@ -235,7 +232,7 @@ const Index = () => {
           </Card>
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <Card className="border-0 shadow-md overflow-hidden">
+            <Card className="border-0 shadow-md overflow-hidden" data-upload-section>
               <CardHeader className="bg-gradient-to-r from-brand-dark to-brand-blue/90 text-white">
                 <div className="flex items-center">
                   <ImageIcon className="mr-2 h-5 w-5" />
