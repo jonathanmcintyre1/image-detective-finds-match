@@ -9,6 +9,7 @@ interface SearchAnalytics {
   avgResultsPerSearch: number;
   isLoading: boolean;
   error: Error | null;
+  searchesByDay?: { date: string; count: number; }[];
 }
 
 export function useSearchAnalytics() {
@@ -30,6 +31,7 @@ export function useSearchAnalytics() {
           searchesWithResults: data.searchesWithResults,
           searchesWithoutResults: data.searchesWithoutResults,
           avgResultsPerSearch: data.avgResultsPerSearch,
+          searchesByDay: data.searchesByDay,
           isLoading: false,
           error: null
         });
