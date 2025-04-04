@@ -38,7 +38,7 @@ export function useSearchAnalytics() {
         setAnalytics(prev => ({
           ...prev,
           isLoading: false,
-          error: error as Error
+          error: error instanceof Error ? error : new Error('Unknown error occurred')
         }));
       }
     }

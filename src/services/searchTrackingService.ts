@@ -92,7 +92,7 @@ export const getSearchStats = async (): Promise<{
     
     return {
       totalSearches: totalSearches || 0,
-      averageResults: avgData?.[0]?.average_result || 0,
+      averageResults: avgData && avgData[0] ? avgData[0].average_result : 0,
       searchesByType
     };
   } catch (error) {
@@ -101,6 +101,71 @@ export const getSearchStats = async (): Promise<{
       totalSearches: 0,
       averageResults: 0,
       searchesByType: []
+    };
+  }
+};
+
+/**
+ * Get search analytics data
+ * @returns Promise with search analytics data
+ */
+export const getSearchAnalytics = async (): Promise<{
+  totalSearches: number;
+  searchesWithResults: number;
+  searchesNoResults: number;
+  avgResultsPerSearch: number;
+}> => {
+  try {
+    // Get total searches count
+    const { count: totalSearches, error: countError } = await supabase
+      .from('searches')
+      .select('*', { count: 'exact', head: true });
+    
+    if (countError) {
+      throw countError;
+    }
+
+    // Get searches with results
+    const { count: searchesWithResults, error: withResultsError } = await supabase
+      .from('searches')
+      .select('*', { count: 'exact', head: true })
+      .gt('result_count', 0);
+    
+    if (withResultsError) {
+      throw withResultsError;
+    }
+
+    // Get searches with no results
+    const { count: searchesNoResults, error: noResultsError } = await supabase
+      .from('searches')
+      .select('*', { count: 'exact', head: true })
+      .eq('result_count', 0);
+    
+    if (noResultsError) {
+      throw noResultsError;
+    }
+
+    // Get average results per search
+    const { data: avgData, error: avgError } = await supabase
+      .rpc('average_search_results');
+    
+    if (avgError) {
+      throw avgError;
+    }
+
+    return {
+      totalSearches: totalSearches || 0,
+      searchesWithResults: searchesWithResults || 0,
+      searchesNoResults: searchesNoResults || 0,
+      avgResultsPerSearch: avgData && avgData[0] ? avgData[0].average_result : 0
+    };
+  } catch (error) {
+    console.error('Error getting search analytics:', error);
+    return {
+      totalSearches: 0,
+      searchesWithResults: 0,
+      searchesNoResults: 0,
+      avgResultsPerSearch: 0
     };
   }
 };
