@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useCallback } from 'react';
 import Header from '@/components/Header';
 import ImageUploader from '@/components/ImageUploader';
 import ResultsDisplay from '@/components/ResultsDisplay';
@@ -66,23 +67,25 @@ const Index = () => {
         console.log("Using API key from local storage");
       } else {
         console.log("No API key found");
-        setTimeout(() => setShowApiKeyReminder(true), 2000);
+        // Use setTimeout to prevent state update during render
+        const timer = setTimeout(() => setShowApiKeyReminder(true), 2000);
+        return () => clearTimeout(timer);
       }
     }
   }, []);
 
-  const handleBetaDialogClose = () => {
+  const handleBetaDialogClose = useCallback(() => {
     setShowBetaSignup(false);
     localStorage.setItem('seen_beta_signup', 'true');
-  };
+  }, []);
 
-  const handleBetaSignupSuccess = () => {
+  const handleBetaSignupSuccess = useCallback(() => {
     setShowBetaSignup(false);
     localStorage.setItem('seen_beta_signup', 'true');
     toast.success("Thanks for signing up for the beta!", {
       description: "You'll be notified when CopyProtect launches."
     });
-  };
+  }, []);
 
   useEffect(() => {
     if (!selectedImage) {
@@ -102,7 +105,7 @@ const Index = () => {
     }
   }, [selectedImage]);
 
-  const handleImageSelected = async (image: File | string) => {
+  const handleImageSelected = useCallback(async (image: File | string) => {
     setSelectedImage(image);
     setResults(null);
     
@@ -127,9 +130,11 @@ const Index = () => {
       
       const hasSeenBetaSignup = localStorage.getItem('seen_beta_signup');
       if (!hasSeenBetaSignup) {
-        setTimeout(() => {
+        // Use setTimeout to prevent state update during render
+        const timer = setTimeout(() => {
           setShowBetaSignup(true);
         }, 2000);
+        return () => clearTimeout(timer);
       }
       
     } catch (error) {
@@ -138,19 +143,19 @@ const Index = () => {
     } finally {
       setIsProcessing(false);
     }
-  };
+  }, [apiKey]);
 
-  const handleApiKeySet = (key: string) => {
+  const handleApiKeySet = useCallback((key: string) => {
     setApiKey(key);
     setShowApiKeyReminder(false);
-  };
+  }, []);
 
-  const handleImageError = () => {
+  const handleImageError = useCallback(() => {
     setImageError(true);
     toast.error("Failed to load image preview", { 
       description: "The image URL might be invalid or inaccessible"
     });
-  };
+  }, []);
 
   return (
     <BetaSignupProvider initialValue={showBetaSignup} onChange={setShowBetaSignup}>

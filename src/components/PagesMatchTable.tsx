@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
 } from '@/components/ui/table';
@@ -130,8 +131,8 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({
   compact = false,
   initialItemsToShow = 5
 }) => {
-  const filteredPages = pages.filter(page => !isLikelySpam(page.url, page.score));
-  const spamCount = pages.length - filteredPages.length;
+  const filteredPages = useMemo(() => pages.filter(page => !isLikelySpam(page.url, page.score)), [pages]);
+  const spamCount = useMemo(() => pages.length - filteredPages.length, [pages, filteredPages]);
   
   const sortedPages = useMemo(() => {
     let sorted = [...filteredPages];
@@ -162,13 +163,14 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({
     }
   }, [filteredPages, sortBy]);
 
-  const [visiblePages, setVisiblePages] = useState<WebPage[]>(sortedPages.slice(0, initialItemsToShow));
-  const [loadMoreVisible, setLoadMoreVisible] = useState(sortedPages.length > initialItemsToShow);
+  const [visiblePages, setVisiblePages] = useState<WebPage[]>([]);
+  const [loadMoreVisible, setLoadMoreVisible] = useState(false);
   const [groupedState, setGroupedState] = useState<Record<string, boolean>>({});
   const [selectedImage, setSelectedImage] = useState<WebImage | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
-  useMemo(() => {
+  // Update visible pages when sortedPages or initialItemsToShow change
+  useEffect(() => {
     setVisiblePages(sortedPages.slice(0, initialItemsToShow));
     setLoadMoreVisible(sortedPages.length > initialItemsToShow);
   }, [sortedPages, initialItemsToShow]);

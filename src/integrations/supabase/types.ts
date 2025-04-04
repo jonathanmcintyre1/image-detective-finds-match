@@ -71,7 +71,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      average_search_results: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never

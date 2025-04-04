@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { 
   AlertTriangle, AlertCircle, Link as LinkIcon, 
@@ -64,8 +64,9 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
   const { showBetaSignup, setShowBetaSignup } = useBetaSignupPrompt();
   
   if (!results) return null;
-  
-  const processedResults = {
+
+  // Using useMemo to prevent unnecessary recalculations
+  const processedResults = useMemo(() => ({
     ...results,
     visuallySimilarImages: results.visuallySimilarImages.map(img => ({
       ...img,
@@ -75,21 +76,49 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
       ...page,
       dateFound: page.dateFound || new Date(today.getTime() - Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000)
     }))
-  };
+  }), [results, today]);
   
-  const exactMatches = processedResults.visuallySimilarImages.filter(img => img.score >= 0.9);
-  const partialMatches = processedResults.visuallySimilarImages.filter(img => img.score >= 0.7 && img.score < 0.9);
+  // Using useMemo for all derived values to avoid recalculations during renders
+  const exactMatches = useMemo(() => 
+    processedResults.visuallySimilarImages.filter(img => img.score >= 0.9),
+    [processedResults.visuallySimilarImages]
+  );
   
-  const allRelevantPages = processedResults.pagesWithMatchingImages.filter(page => page.score >= 0.6);
-  const productPages = allRelevantPages.filter(page => page.pageType === 'product');
-  const categoryPages = allRelevantPages.filter(page => page.pageType === 'category');
-  const searchPages = allRelevantPages.filter(page => page.pageType === 'search');
-  const otherPages = allRelevantPages.filter(page => 
-    page.pageType !== 'product' && 
-    page.pageType !== 'category' && 
-    page.pageType !== 'search'
+  const partialMatches = useMemo(() => 
+    processedResults.visuallySimilarImages.filter(img => img.score >= 0.7 && img.score < 0.9),
+    [processedResults.visuallySimilarImages]
+  );
+  
+  const allRelevantPages = useMemo(() => 
+    processedResults.pagesWithMatchingImages.filter(page => page.score >= 0.6),
+    [processedResults.pagesWithMatchingImages]
+  );
+  
+  const productPages = useMemo(() => 
+    allRelevantPages.filter(page => page.pageType === 'product'),
+    [allRelevantPages]
+  );
+  
+  const categoryPages = useMemo(() => 
+    allRelevantPages.filter(page => page.pageType === 'category'),
+    [allRelevantPages]
+  );
+  
+  const searchPages = useMemo(() => 
+    allRelevantPages.filter(page => page.pageType === 'search'),
+    [allRelevantPages]
+  );
+  
+  const otherPages = useMemo(() => 
+    allRelevantPages.filter(page => 
+      page.pageType !== 'product' && 
+      page.pageType !== 'category' && 
+      page.pageType !== 'search'
+    ),
+    [allRelevantPages]
   );
 
+  // Count calculations
   const exactMatchCount = exactMatches.length;
   const partialMatchCount = partialMatches.length;
   const productPageCount = productPages.length;
