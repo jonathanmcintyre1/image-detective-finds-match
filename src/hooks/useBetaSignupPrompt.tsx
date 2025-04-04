@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, ReactNode, useCallback, useMemo, useRef, useEffect } from 'react';
 
 interface BetaSignupContextType {
@@ -15,8 +14,14 @@ export const BetaSignupProvider: React.FC<{
 }> = ({ children, initialValue = false, onChange }) => {
   const [showBetaSignup, setInternalShowBetaSignup] = useState(initialValue);
   const isInitialMount = useRef(true);
+  const onChangeRef = useRef(onChange);
   
-  // Handle initialValue changes properly
+  // Keep the onChange reference updated
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
+  
+  // Handle initialValue changes properly with useRef to avoid infinite loops
   useEffect(() => {
     if (isInitialMount.current) {
       isInitialMount.current = false;
@@ -34,11 +39,12 @@ export const BetaSignupProvider: React.FC<{
     if (value !== showBetaSignup) {
       setInternalShowBetaSignup(value);
       
-      if (onChange) {
-        onChange(value);
+      // Use ref to access the latest onChange callback
+      if (onChangeRef.current) {
+        onChangeRef.current(value);
       }
     }
-  }, [onChange, showBetaSignup]);
+  }, [showBetaSignup]);
   
   // Memoize the context value to prevent unnecessary rerenders
   const contextValue = useMemo(() => ({

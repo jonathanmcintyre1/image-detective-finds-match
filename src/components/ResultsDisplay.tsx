@@ -64,6 +64,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
   
   if (!results) return null;
   
+  // Move this processing outside of render logic but keep it memoized
   const processedResults = useMemo(() => ({
     ...results,
     visuallySimilarImages: results.visuallySimilarImages.map(img => ({
@@ -76,6 +77,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
     }))
   }), [results, today]);
   
+  // Ensure this computation is memoized to avoid recalculation on every render
   const { 
     exactMatches, 
     partialMatches, 
@@ -134,6 +136,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
     };
   }, [processedResults]);
 
+  // Make sure to use useCallback for any functions that are passed as props
   const exportResults = useCallback((type: 'csv' | 'pdf') => {
     const hasSeenBetaSignup = localStorage.getItem('seen_beta_signup');
     

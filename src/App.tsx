@@ -7,7 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { BetaSignupProvider } from "@/hooks/useBetaSignupPrompt";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback } from "react";
 
 // Create the QueryClient outside of the component to prevent re-creation on each render
 const queryClient = new QueryClient();
@@ -15,18 +15,10 @@ const queryClient = new QueryClient();
 const App = () => {
   const [betaSignupVisible, setBetaSignupVisible] = useState(false);
   
-  // Properly memoize the callback to prevent it from causing re-renders
+  // Simple onChange handler with proper dependency
   const handleBetaSignupChange = useCallback((value: boolean) => {
-    if (value !== betaSignupVisible) {
-      setBetaSignupVisible(value);
-    }
-  }, [betaSignupVisible]);
-  
-  // Memoize the BetaSignupProvider props to prevent unnecessary re-renders
-  const betaSignupProviderProps = useMemo(() => ({
-    initialValue: betaSignupVisible,
-    onChange: handleBetaSignupChange
-  }), [betaSignupVisible, handleBetaSignupChange]);
+    setBetaSignupVisible(value);
+  }, []);
   
   return (
     <QueryClientProvider client={queryClient}>
@@ -34,8 +26,8 @@ const App = () => {
         <Toaster />
         <Sonner />
         <BetaSignupProvider 
-          initialValue={betaSignupProviderProps.initialValue} 
-          onChange={betaSignupProviderProps.onChange}
+          initialValue={betaSignupVisible} 
+          onChange={handleBetaSignupChange}
         >
           <BrowserRouter>
             <Routes>

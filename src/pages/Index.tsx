@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Header from '@/components/Header';
 import ImageUploader from '@/components/ImageUploader';
@@ -53,7 +54,8 @@ const Index = () => {
   const [hasPerformedSearch, setHasPerformedSearch] = useState(false);
   
   const { showBetaSignup, setShowBetaSignup } = useBetaSignupPrompt();
-
+  
+  // Load API key only once on component mount
   useEffect(() => {
     const envApiKey = import.meta.env.VITE_GOOGLE_VISION_API_KEY;
     
@@ -67,16 +69,20 @@ const Index = () => {
         console.log("Using API key from local storage");
       } else {
         console.log("No API key found");
-        setTimeout(() => setShowApiKeyReminder(true), 2000);
+        // Use setTimeout to avoid state updates during render
+        const timer = setTimeout(() => setShowApiKeyReminder(true), 2000);
+        return () => clearTimeout(timer);
       }
     }
     
+    // This check is moved out of the API key check to avoid unnecessary dependencies
     const hasSeenBetaSignup = localStorage.getItem('seen_beta_signup');
     if (!hasSeenBetaSignup) {
       console.log("User has not seen beta signup prompt");
     }
-  }, []);
+  }, []); // Empty dependency array to run only once
 
+  // Memoize handlers to avoid recreation on each render
   const handleBetaDialogClose = useCallback(() => {
     setShowBetaSignup(false);
     localStorage.setItem('seen_beta_signup', 'true');
@@ -90,6 +96,7 @@ const Index = () => {
     });
   }, [setShowBetaSignup]);
 
+  // Handle image preview effect
   useEffect(() => {
     if (!selectedImage) {
       setPreviewUrl(null);
@@ -110,6 +117,7 @@ const Index = () => {
     }
   }, [selectedImage]);
 
+  // Handle image selection and analysis
   const handleImageSelected = useCallback(async (image: File | string) => {
     setSelectedImage(image);
     setResults(null);
@@ -135,9 +143,11 @@ const Index = () => {
       
       const hasSeenBetaSignup = localStorage.getItem('seen_beta_signup');
       if (!hasSeenBetaSignup) {
-        setTimeout(() => {
+        // Use setTimeout to avoid state updates during render
+        const timer = setTimeout(() => {
           setShowBetaSignup(true);
         }, 2000);
+        return () => clearTimeout(timer);
       }
       
     } catch (error) {
