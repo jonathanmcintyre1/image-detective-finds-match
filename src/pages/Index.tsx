@@ -75,7 +75,7 @@ const Index = () => {
   const [hasPerformedSearch, setHasPerformedSearch] = useState(false);
   // New state to control tracking so it happens only once per image.
   const [hasTracked, setHasTracked] = useState(false);
-  // Store the total result count to pass to trackImageSearch.
+  // State to store the total result count.
   const [trackingResults, setTrackingResults] = useState<number | null>(null);
 
   const { showBetaSignup, setShowBetaSignup } = useBetaSignupPrompt();
@@ -159,7 +159,11 @@ const Index = () => {
     if (selectedImage && trackingResults !== null && !hasTracked) {
       trackImageSearch(selectedImage, trackingResults)
         .then(() => setHasTracked(true))
-        .catch((err) => console.error('Tracking error:', err));
+        .catch((err) => {
+          console.error('Tracking error:', err);
+          // Even if tracking fails, set the flag to prevent continuous retries.
+          setHasTracked(true);
+        });
     }
   }, [selectedImage, trackingResults, hasTracked]);
 
