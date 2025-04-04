@@ -28,7 +28,7 @@ export function useSearchAnalytics() {
         setAnalytics({
           totalSearches: data.totalSearches,
           searchesWithResults: data.searchesWithResults,
-          searchesWithoutResults: data.searchesNoResults,
+          searchesWithoutResults: data.searchesWithoutResults,
           avgResultsPerSearch: data.avgResultsPerSearch,
           isLoading: false,
           error: null
