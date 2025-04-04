@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import ImageUploader from '@/components/ImageUploader';
@@ -160,7 +159,7 @@ const Index = () => {
         <Header />
         
         <main className="flex-1 container py-8 space-y-8">
-          <div className="text-center max-w-2xl mx-auto space-y-4 mb-8">
+          <div className="text-center max-w-2xl mx-auto space-y-4">
             <div className="flex items-center justify-center mb-2">
               <div className="relative h-16 w-16 mr-3">
                 <img 
@@ -193,159 +192,131 @@ const Index = () => {
             </div>
           )}
           
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-1 space-y-6">
-              <Card className="border-0 shadow-md overflow-hidden">
-                <CardHeader className="bg-gradient-to-r from-brand-dark to-brand-blue/90 text-white">
-                  <div className="flex items-center">
-                    <ImageIcon className="mr-2 h-5 w-5" />
-                    <CardTitle>Upload Image</CardTitle>
+          {/* How It Works Section - Moved under header with full width */}
+          <Card className="border-0 shadow-md overflow-hidden mb-8">
+            <CardHeader className="bg-gradient-to-r from-brand-blue to-brand-blue/80 text-white border-b">
+              <CardTitle className="text-xl">How It Works</CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="flex flex-col items-center text-center">
+                  <div className="w-12 h-12 bg-brand-blue/10 rounded-full flex items-center justify-center mb-3">
+                    <Upload className="h-6 w-6 text-brand-blue" />
                   </div>
-                </CardHeader>
-                <CardContent className="p-6">
-                  <ImageUploader onImageSelected={handleImageSelected} isProcessing={isProcessing} />
-                  
-                  {previewUrl && (
-                    <div className="mt-6">
-                      <p className="text-sm font-medium mb-2 text-brand-dark">Image Preview:</p>
-                      <div className="border rounded-lg overflow-hidden shadow-sm bg-gray-100">
-                        {imageError ? (
-                          <div className="aspect-video flex items-center justify-center bg-gray-100 p-4">
-                            <Alert variant="destructive">
-                              <AlertCircle className="h-4 w-4" />
-                              <AlertDescription>
-                                Unable to load image preview
-                              </AlertDescription>
-                            </Alert>
-                          </div>
-                        ) : (
-                          <div className="p-4 flex justify-center items-center bg-gray-50 max-h-60">
-                            <img 
-                              src={previewUrl}
-                              alt="Preview"
-                              className="max-h-52 max-w-full object-contain"
-                              onError={handleImageError}
-                            />
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-              
-              <Card className="border-0 shadow-md overflow-hidden">
-                <CardHeader className="bg-gray-50 border-b">
-                  <CardTitle className="text-base">How It Works</CardTitle>
-                </CardHeader>
-                <CardContent className="p-6 space-y-6">
-                  <div className="grid grid-cols-1 gap-6">
-                    <div className="flex flex-col items-center text-center">
-                      <div className="w-12 h-12 bg-brand-blue/10 rounded-full flex items-center justify-center mb-3">
-                        <Upload className="h-6 w-6 text-brand-blue" />
-                      </div>
-                      <h3 className="font-medium mb-1">Upload Your Image</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Upload an image or provide a URL that you want to protect
-                      </p>
-                    </div>
-                    
-                    <div className="flex flex-col items-center text-center">
-                      <div className="w-12 h-12 bg-brand-blue/10 rounded-full flex items-center justify-center mb-3">
-                        <Search className="h-6 w-6 text-brand-blue" />
-                      </div>
-                      <h3 className="font-medium mb-1">AI-Powered Scan</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Our AI scans the web for exact or similar matches to your image
-                      </p>
-                    </div>
-                    
-                    <div className="flex flex-col items-center text-center">
-                      <div className="w-12 h-12 bg-brand-blue/10 rounded-full flex items-center justify-center mb-3">
-                        <Sparkles className="h-6 w-6 text-brand-blue" />
-                      </div>
-                      <h3 className="font-medium mb-1">Review Results</h3>
-                      <p className="text-sm text-muted-foreground">
-                        See where your images appear and take action against unauthorized use
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card className="border-0 shadow-md overflow-hidden">
-                <CardHeader className="bg-brand-blue text-white">
-                  <CardTitle className="text-base">Get Early Access</CardTitle>
-                </CardHeader>
-                <CardContent className="p-6">
-                  <BetaSignupForm onSuccess={handleBetaSignupSuccess} />
-                </CardContent>
-              </Card>
-            </div>
-            
-            <div className="lg:col-span-2">
-              {isProcessing && (
-                <Card className="border-0 shadow-md h-64">
-                  <CardContent className="p-6 h-full flex flex-col items-center justify-center">
-                    <Loader2 className="h-12 w-12 text-brand-blue animate-spin mb-4" />
-                    <p className="text-lg font-medium">Analyzing image...</p>
-                    <div className="w-full max-w-xs mt-4">
-                      <div className="space-y-2">
-                        <div className="h-2 w-full bg-gray-200 rounded animate-pulse"></div>
-                        <div className="h-2 w-4/5 bg-gray-200 rounded animate-pulse"></div>
-                        <div className="h-2 w-3/5 bg-gray-200 rounded animate-pulse"></div>
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-2 text-center">Scanning web for matching images</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-              
-              {!isProcessing && results && (
-                <div>
-                  <ResultsDisplay results={results} />
+                  <h3 className="font-medium mb-1">Upload Your Image</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Upload an image or provide a URL that you want to protect
+                  </p>
                 </div>
-              )}
-              
-              {!isProcessing && !results && !selectedImage && (
-                <Card className="border-0 shadow-md h-64">
-                  <CardContent className="p-6 h-full flex flex-col items-center justify-center">
-                    <ImageIcon className="h-12 w-12 text-gray-300 mb-4" />
-                    <p className="text-lg font-medium text-brand-dark">No image selected</p>
-                    <p className="text-sm text-muted-foreground">Upload an image to analyze matches</p>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
+                
+                <div className="flex flex-col items-center text-center">
+                  <div className="w-12 h-12 bg-brand-blue/10 rounded-full flex items-center justify-center mb-3">
+                    <Search className="h-6 w-6 text-brand-blue" />
+                  </div>
+                  <h3 className="font-medium mb-1">AI-Powered Scan</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Our AI scans the web for exact or similar matches to your image
+                  </p>
+                </div>
+                
+                <div className="flex flex-col items-center text-center">
+                  <div className="w-12 h-12 bg-brand-blue/10 rounded-full flex items-center justify-center mb-3">
+                    <Sparkles className="h-6 w-6 text-brand-blue" />
+                  </div>
+                  <h3 className="font-medium mb-1">Review Results</h3>
+                  <p className="text-sm text-muted-foreground">
+                    See where your images appear and take action against unauthorized use
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Image Upload Card - Now takes 50% width */}
+            <Card className="border-0 shadow-md overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-brand-dark to-brand-blue/90 text-white">
+                <div className="flex items-center">
+                  <ImageIcon className="mr-2 h-5 w-5" />
+                  <CardTitle>Upload Image</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6">
+                <ImageUploader onImageSelected={handleImageSelected} isProcessing={isProcessing} />
+                
+                {previewUrl && (
+                  <div className="mt-6">
+                    <p className="text-sm font-medium mb-2 text-brand-dark">Image Preview:</p>
+                    <div className="border rounded-lg overflow-hidden shadow-sm bg-gray-100">
+                      {imageError ? (
+                        <div className="aspect-video flex items-center justify-center bg-gray-100 p-4">
+                          <Alert variant="destructive">
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertDescription>
+                              Unable to load image preview
+                            </AlertDescription>
+                          </Alert>
+                        </div>
+                      ) : (
+                        <div className="p-4 flex justify-center items-center bg-gray-50 max-h-60">
+                          <img 
+                            src={previewUrl}
+                            alt="Preview"
+                            className="max-h-52 max-w-full object-contain"
+                            onError={handleImageError}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+            
+            {/* Get Early Access Card - Now on same row as Upload Image */}
+            <Card className="border-0 shadow-md overflow-hidden">
+              <CardHeader className="bg-brand-blue text-white">
+                <CardTitle className="text-base">Get Early Access</CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <BetaSignupForm onSuccess={handleBetaSignupSuccess} />
+              </CardContent>
+            </Card>
           </div>
           
-          <Separator className="my-10" />
-          
-          <div className="text-center">
-            <h2 className="text-2xl font-bold text-brand-dark mb-6">Protect Your Digital Assets</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-              <div className="flex flex-col items-center p-6 rounded-lg border bg-white">
-                <Shield className="h-10 w-10 text-brand-blue mb-4" />
-                <h3 className="text-lg font-medium mb-2">Detect Unauthorized Use</h3>
-                <p className="text-sm text-muted-foreground">
-                  Find where your images are being used across the internet without permission
-                </p>
+          <div className="lg:col-span-2">
+            {isProcessing && (
+              <Card className="border-0 shadow-md h-64">
+                <CardContent className="p-6 h-full flex flex-col items-center justify-center">
+                  <Loader2 className="h-12 w-12 text-brand-blue animate-spin mb-4" />
+                  <p className="text-lg font-medium">Analyzing image...</p>
+                  <div className="w-full max-w-xs mt-4">
+                    <div className="space-y-2">
+                      <div className="h-2 w-full bg-gray-200 rounded animate-pulse"></div>
+                      <div className="h-2 w-4/5 bg-gray-200 rounded animate-pulse"></div>
+                      <div className="h-2 w-3/5 bg-gray-200 rounded animate-pulse"></div>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-2 text-center">Scanning web for matching images</p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            
+            {!isProcessing && results && (
+              <div>
+                <ResultsDisplay results={results} />
               </div>
-              <div className="flex flex-col items-center p-6 rounded-lg border bg-white">
-                <AlertCircle className="h-10 w-10 text-brand-blue mb-4" />
-                <h3 className="text-lg font-medium mb-2">Monitor Marketplaces</h3>
-                <p className="text-sm text-muted-foreground">
-                  Track product images on marketplaces like Amazon, Etsy and more
-                </p>
-              </div>
-              <div className="flex flex-col items-center p-6 rounded-lg border bg-white">
-                <Sparkles className="h-10 w-10 text-brand-blue mb-4" />
-                <h3 className="text-lg font-medium mb-2">Preserve Value</h3>
-                <p className="text-sm text-muted-foreground">
-                  Maintain exclusivity and value of your digital content and products
-                </p>
-              </div>
-            </div>
+            )}
+            
+            {!isProcessing && !results && !selectedImage && (
+              <Card className="border-0 shadow-md h-64">
+                <CardContent className="p-6 h-full flex flex-col items-center justify-center">
+                  <ImageIcon className="h-12 w-12 text-gray-300 mb-4" />
+                  <p className="text-lg font-medium text-brand-dark">No image selected</p>
+                  <p className="text-sm text-muted-foreground">Upload an image to analyze matches</p>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </main>
         
