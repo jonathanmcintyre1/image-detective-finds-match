@@ -70,6 +70,11 @@ const Index = () => {
         setTimeout(() => setShowApiKeyReminder(true), 2000);
       }
     }
+    
+    const hasSeenBetaSignup = localStorage.getItem('seen_beta_signup');
+    if (!hasSeenBetaSignup) {
+      console.log("User has not seen beta signup prompt");
+    }
   }, []);
 
   const handleBetaDialogClose = () => {

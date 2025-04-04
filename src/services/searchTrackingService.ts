@@ -1,148 +1,135 @@
 
-// Import statements
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from "@/integrations/supabase/client";
+
+interface SearchLogEntry {
+  id?: number;
+  image_hash: string;
+  search_time: string;
+  results_count: number;
+}
+
+interface SearchAnalytics {
+  totalSearches: number;
+  avgResults: number;
+  searchesByDay: {
+    date: string;
+    count: number;
+  }[];
+}
 
 /**
- * Track an image search in the database
- * 
- * @param image The image that was searched (File or URL)
- * @param resultsCount The number of results found
+ * Generates a simple hash for an image to use as an identifier
+ */
+const generateImageHash = async (image: File | string): Promise<string> => {
+  let hashSource = '';
+  
+  if (typeof image === 'string') {
+    // If image is a URL, use the URL as the hash source
+    hashSource = image;
+  } else {
+    // If image is a File, use filename and last modified date
+    hashSource = `${image.name}-${image.lastModified}`;
+  }
+  
+  // Create a simple hash
+  let hash = 0;
+  for (let i = 0; i < hashSource.length; i++) {
+    const char = hashSource.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  
+  return Math.abs(hash).toString(16);
+};
+
+/**
+ * Records a search in the database
  */
 export const trackImageSearch = async (image: File | string, resultsCount: number): Promise<void> => {
   try {
-    // Get image metadata
-    let imageType: string;
-    let imageName: string | null = null;
-    let imageSize: number | null = null;
+    // Generate a unique identifier for the image
+    const imageHash = await generateImageHash(image);
     
-    if (typeof image === 'string') {
-      imageType = 'url';
-      // Extract domain from URL
-      try {
-        const url = new URL(image);
-        imageName = url.hostname;
-      } catch (e) {
-        imageName = 'invalid-url';
-      }
-    } else {
-      imageType = 'file';
-      imageName = image.name;
-      imageSize = image.size;
-    }
-    
-    // Insert search record into database
+    // Record the search in Supabase
     const { error } = await supabase
-      .from('searches')
+      .from('image_searches')
       .insert({
-        image_hash: imageName || 'unknown',  // Ensure we always have a string value
-        result_count: resultsCount,
-        created_at: new Date().toISOString(),
+        image_hash: imageHash,
+        search_time: new Date().toISOString(),
+        results_count: resultsCount
       });
     
     if (error) {
-      console.error('Error tracking search:', error);
+      console.error('Error recording search:', error);
     }
-  } catch (error) {
-    console.error('Error tracking search:', error);
+  } catch (err) {
+    console.error('Failed to track search:', err);
+    // Don't throw error to prevent affecting user experience
   }
 };
 
 /**
- * Get search statistics
- * @returns Promise with search statistics
+ * Retrieves analytics data for searches
  */
-export const getSearchStats = async (): Promise<{
-  totalSearches: number;
-  averageResults: number;
-  searchesByType: { type: string; count: number }[];
-}> => {
+export const getSearchAnalytics = async (): Promise<SearchAnalytics> => {
   try {
-    // Get total search count
-    const { count: totalSearches, error: countError } = await supabase
-      .from('searches')
-      .select('*', { count: 'exact', head: true });
+    // Get total number of searches
+    const { data: totalData, error: totalError } = await supabase
+      .from('image_searches')
+      .select('id', { count: 'exact' });
     
-    if (countError) {
-      throw countError;
+    if (totalError) {
+      console.error('Error fetching total searches:', totalError);
+      return { totalSearches: 0, avgResults: 0, searchesByDay: [] };
     }
     
-    // Get average results count
+    // Get average number of results
     const { data: avgData, error: avgError } = await supabase
       .rpc('average_search_results');
     
     if (avgError) {
-      throw avgError;
+      console.error('Error fetching average results:', avgError);
+      return { totalSearches: totalData?.length || 0, avgResults: 0, searchesByDay: [] };
     }
     
-    // Get searches by type
-    const { data: typeData, error: typeError } = await supabase
-      .from('searches')
-      .select('image_hash, count')
-      .order('count', { ascending: false });
+    // Get searches by day for the last 30 days
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     
-    if (typeError) {
-      throw typeError;
+    const { data: dayData, error: dayError } = await supabase
+      .from('image_searches')
+      .select('search_time')
+      .gte('search_time', thirtyDaysAgo.toISOString());
+    
+    if (dayError) {
+      console.error('Error fetching searches by day:', dayError);
+      return { 
+        totalSearches: totalData?.length || 0, 
+        avgResults: avgData !== null ? Number(avgData) : 0,
+        searchesByDay: [] 
+      };
     }
     
-    // Map the grouped data
-    const searchesByType = typeData?.map(item => ({
-      type: item.image_hash || 'unknown',
-      count: parseInt(String(item.count) || '0', 10)
-    })) || [];
+    // Process day data
+    const searchesByDay: { [key: string]: number } = {};
+    dayData.forEach(item => {
+      const date = new Date(item.search_time).toISOString().split('T')[0];
+      searchesByDay[date] = (searchesByDay[date] || 0) + 1;
+    });
+    
+    // Convert to array format
+    const searchesByDayArray = Object.keys(searchesByDay).map(date => ({
+      date,
+      count: searchesByDay[date]
+    }));
     
     return {
-      totalSearches: totalSearches || 0,
-      averageResults: avgData?.[0]?.average_result || 0,  // Added null check
-      searchesByType
+      totalSearches: totalData?.length || 0,
+      avgResults: avgData !== null ? Number(avgData) : 0,
+      searchesByDay: searchesByDayArray
     };
-  } catch (error) {
-    console.error('Error getting search stats:', error);
-    return {
-      totalSearches: 0,
-      averageResults: 0,
-      searchesByType: []
-    };
-  }
-};
-
-/**
- * Get search analytics data
- * Compatible with the useSearchAnalytics hook
- */
-export const getSearchAnalytics = async (): Promise<{
-  totalSearches: number;
-  searchesWithResults: number;
-  searchesNoResults: number;
-  avgResultsPerSearch: number;
-}> => {
-  try {
-    const stats = await getSearchStats();
-    
-    // Calculate searches with and without results
-    let searchesWithResults = 0;
-    let searchesNoResults = 0;
-    
-    // We can get this information from the database in the future
-    // For now, we'll estimate based on average results
-    if (stats.totalSearches > 0) {
-      // Estimate: about 80% of searches have results, 20% don't
-      searchesWithResults = Math.floor(stats.totalSearches * 0.8);
-      searchesNoResults = stats.totalSearches - searchesWithResults;
-    }
-    
-    return {
-      totalSearches: stats.totalSearches,
-      searchesWithResults,
-      searchesNoResults,
-      avgResultsPerSearch: stats.averageResults
-    };
-  } catch (error) {
-    console.error('Error getting search analytics:', error);
-    return {
-      totalSearches: 0,
-      searchesWithResults: 0,
-      searchesNoResults: 0,
-      avgResultsPerSearch: 0
-    };
+  } catch (err) {
+    console.error('Failed to get search analytics:', err);
+    return { totalSearches: 0, avgResults: 0, searchesByDay: [] };
   }
 };

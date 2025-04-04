@@ -1,9 +1,9 @@
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useCallback } from 'react';
 
 interface BetaSignupContextType {
   showBetaSignup: boolean;
-  setShowBetaSignup: React.Dispatch<React.SetStateAction<boolean>>;
+  setShowBetaSignup: (value: boolean) => void;
 }
 
 const BetaSignupContext = createContext<BetaSignupContextType | undefined>(undefined);
@@ -15,17 +15,15 @@ export const BetaSignupProvider: React.FC<{
 }> = ({ children, initialValue = false, onChange }) => {
   const [showBetaSignup, setInternalShowBetaSignup] = useState(initialValue);
   
-  // Create a wrapper setter that calls onChange if provided
-  const setShowBetaSignup = (value: React.SetStateAction<boolean>) => {
-    const newValue = typeof value === 'function' ? value(showBetaSignup) : value;
-    
-    setInternalShowBetaSignup(newValue);
+  // Use useCallback to prevent the function from being recreated on every render
+  const setShowBetaSignup = useCallback((value: boolean) => {
+    setInternalShowBetaSignup(value);
     
     // Only call onChange if it exists AND the value is actually changing
-    if (onChange && newValue !== showBetaSignup) {
-      onChange(newValue);
+    if (onChange && value !== showBetaSignup) {
+      onChange(value);
     }
-  };
+  }, [onChange, showBetaSignup]);
   
   return (
     <BetaSignupContext.Provider value={{ showBetaSignup, setShowBetaSignup }}>
