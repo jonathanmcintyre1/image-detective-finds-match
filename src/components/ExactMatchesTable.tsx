@@ -1,5 +1,4 @@
-
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { 
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
 } from '@/components/ui/table';
@@ -51,7 +50,6 @@ type GroupedMatch = {
   sourceWebsite?: string;
 };
 
-// Function to get hostname from URL
 const getHostname = (url: string): string => {
   try {
     return new URL(url).hostname.replace('www.', '');
@@ -60,7 +58,6 @@ const getHostname = (url: string): string => {
   }
 };
 
-// Function to determine if a URL is from a CDN
 const isCdnUrl = (url: string): boolean => {
   const cdnPatterns = [
     'cloudfront.net', 'cdn.shopify', 'cloudinary', 'imgix', 
@@ -74,10 +71,8 @@ const isCdnUrl = (url: string): boolean => {
   return cdnPatterns.some(pattern => urlLower.includes(pattern));
 };
 
-// Function to get actual source website from image URL when possible
 const getSourceWebsite = (url: string, relatedPages?: WebPage[]): string | null => {
   try {
-    // First, check if there are related pages for this image
     if (relatedPages && relatedPages.length) {
       const relatedPage = relatedPages.find(page => 
         page.matchingImages?.some(img => img.url === url || img.imageUrl === url)
@@ -88,7 +83,6 @@ const getSourceWebsite = (url: string, relatedPages?: WebPage[]): string | null 
       }
     }
     
-    // Check for common patterns in image URLs that indicate the source website
     const hostname = getHostname(url);
     
     if (hostname.includes('media-amazon.com')) {
@@ -113,7 +107,6 @@ const getSourceWebsite = (url: string, relatedPages?: WebPage[]): string | null 
   }
 };
 
-// Function to extract CDN info
 const getCdnInfo = (url: string): string => {
   const hostname = getHostname(url);
   
@@ -133,7 +126,6 @@ const getCdnInfo = (url: string): string => {
   return hostname;
 };
 
-// Function to get website name from hostname
 const getWebsiteName = (url: string, platform?: string): string => {
   if (platform) return platform;
   
@@ -145,7 +137,6 @@ const getWebsiteName = (url: string, platform?: string): string => {
   return hostname;
 };
 
-// Get page type icon
 const getPageTypeIcon = (pageType?: string) => {
   switch(pageType) {
     case 'product':
@@ -172,7 +163,6 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
   const [selectedImage, setSelectedImage] = useState<WebImage | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
-  // Sort matches based on sortBy prop
   const sortedMatches = useMemo(() => {
     let sorted = [...matches];
     
@@ -192,7 +182,6 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
           return domainA.localeCompare(domainB);
         });
       case 'count':
-        // Sort by number of matches from same domain
         return sorted.sort((a, b) => {
           const hostnameA = getHostname(a.url);
           const hostnameB = getHostname(b.url);
@@ -205,13 +194,11 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
     }
   }, [matches, sortBy]);
 
-  // Update visible matches when sorting changes
-  useMemo(() => {
+  useEffect(() => {
     setVisibleMatches(sortedMatches.slice(0, initialItemsToShow));
     setLoadMoreVisible(sortedMatches.length > initialItemsToShow);
   }, [sortedMatches, initialItemsToShow]);
 
-  // Group visible matches by site
   const groupedMatches = useMemo(() => {
     const sites = new Map<string, GroupedMatch>();
     
@@ -221,7 +208,6 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
       const sourceWebsite = getSourceWebsite(match.url, relatedPages);
       let platform = match.platform || sourceWebsite || (isCdn ? "CDN Content" : getWebsiteName(match.url));
       
-      // If this is a CDN URL and we've found the actual source website
       const cdnInfo = isCdn ? getCdnInfo(match.url) : undefined;
       
       if (!sites.has(hostname)) {
@@ -229,51 +215,54 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
           site: hostname,
           platform: platform,
           matches: [match],
-          expanded: groupedState[hostname] ?? true, // Default to expanded
+          expanded: groupedState[hostname] ?? true,
           cdnInfo: cdnInfo,
           sourceWebsite: sourceWebsite
         });
       } else {
-        sites.get(hostname)?.matches.push(match);
+        const existingGroup = sites.get(hostname);
+        if (existingGroup) {
+          existingGroup.matches.push(match);
+        }
       }
     });
     
     return Array.from(sites.values());
   }, [visibleMatches, groupedState, relatedPages]);
 
-  const loadMore = () => {
+  const loadMore = useCallback(() => {
     const nextBatch = sortedMatches.slice(visibleMatches.length, visibleMatches.length + initialItemsToShow);
     setVisibleMatches(prev => [...prev, ...nextBatch]);
     
     if (visibleMatches.length + initialItemsToShow >= sortedMatches.length) {
       setLoadMoreVisible(false);
     }
-  };
+  }, [sortedMatches, visibleMatches, initialItemsToShow]);
 
-  const handleCopyUrl = (url: string) => {
+  const handleCopyUrl = useCallback((url: string) => {
     navigator.clipboard.writeText(url);
     toast.success("URL copied to clipboard");
-  };
+  }, []);
 
-  const toggleExpand = (site: string) => {
+  const toggleExpand = useCallback((site: string) => {
     setGroupedState(prev => ({
       ...prev,
       [site]: !prev[site]
     }));
-  };
+  }, []);
 
-  const handleImageClick = (image: WebImage) => {
+  const handleImageClick = useCallback((image: WebImage) => {
     setSelectedImage(image);
     setModalOpen(true);
-  };
+  }, []);
 
-  const findRelatedPages = (imageUrl: string): WebPage[] => {
+  const findRelatedPages = useCallback((imageUrl: string): WebPage[] => {
     return relatedPages.filter(page => 
       page.matchingImages?.some(img => 
         img.url === imageUrl || img.imageUrl === imageUrl
       )
     );
-  };
+  }, [relatedPages]);
 
   return (
     <div className="space-y-4">

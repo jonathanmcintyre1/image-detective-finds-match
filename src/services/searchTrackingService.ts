@@ -1,7 +1,8 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 interface SearchLogEntry {
-  id?: number;
+  id?: string;
   image_hash: string;
   created_at: string;
   result_count: number;
@@ -71,7 +72,7 @@ export const getSearchAnalytics = async (): Promise<SearchAnalytics> => {
   try {
     // Get total number of searches
     const { data: totalData, error: totalError } = await supabase
-      .from<SearchLogEntry>('searches')
+      .from('searches')
       .select('id', { count: 'exact' });
     if (totalError) {
       console.error('Error fetching total searches:', totalError);
@@ -86,13 +87,13 @@ export const getSearchAnalytics = async (): Promise<SearchAnalytics> => {
 
     // Get searches with and without results
     const { count: withResultsCount, error: withResultsError } = await supabase
-      .from<SearchLogEntry>('searches')
+      .from('searches')
       .select('*', { count: 'exact', head: true })
       .gt('result_count', 0);
     const searchesWithResults = withResultsCount || 0;
 
     const { count: noResultsCount, error: noResultsError } = await supabase
-      .from<SearchLogEntry>('searches')
+      .from('searches')
       .select('*', { count: 'exact', head: true })
       .eq('result_count', 0);
     const searchesWithoutResults = noResultsCount || 0;
@@ -107,11 +108,13 @@ export const getSearchAnalytics = async (): Promise<SearchAnalytics> => {
     // Get searches by day for the last 30 days
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    // Explicitly type the result as an array of objects with created_at
+    
+    // Fixed: Use proper typing for the result
     const { data: dayData, error: dayError } = await supabase
-      .from<Pick<SearchLogEntry, 'created_at'>>('searches')
+      .from('searches')
       .select('created_at')
       .gte('created_at', thirtyDaysAgo.toISOString());
+    
     if (dayError) {
       console.error('Error fetching searches by day:', dayError);
       return {
@@ -133,6 +136,7 @@ export const getSearchAnalytics = async (): Promise<SearchAnalytics> => {
         }
       });
     }
+    
     // Convert to array format
     const searchesByDayArray = Object.keys(searchesByDay).map(date => ({
       date,

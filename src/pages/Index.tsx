@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Header from '@/components/Header';
 import ImageUploader from '@/components/ImageUploader';
 import ResultsDisplay from '@/components/ResultsDisplay';
@@ -77,18 +77,18 @@ const Index = () => {
     }
   }, []);
 
-  const handleBetaDialogClose = () => {
+  const handleBetaDialogClose = useCallback(() => {
     setShowBetaSignup(false);
     localStorage.setItem('seen_beta_signup', 'true');
-  };
+  }, [setShowBetaSignup]);
 
-  const handleBetaSignupSuccess = () => {
+  const handleBetaSignupSuccess = useCallback(() => {
     setShowBetaSignup(false);
     localStorage.setItem('seen_beta_signup', 'true');
     toast.success("Thanks for signing up for the beta!", {
       description: "You'll be notified when CopyProtect launches."
     });
-  };
+  }, [setShowBetaSignup]);
 
   useEffect(() => {
     if (!selectedImage) {
@@ -104,11 +104,13 @@ const Index = () => {
       const objectUrl = URL.createObjectURL(selectedImage);
       setPreviewUrl(objectUrl);
       
-      return () => URL.revokeObjectURL(objectUrl);
+      return () => {
+        URL.revokeObjectURL(objectUrl);
+      };
     }
   }, [selectedImage]);
 
-  const handleImageSelected = async (image: File | string) => {
+  const handleImageSelected = useCallback(async (image: File | string) => {
     setSelectedImage(image);
     setResults(null);
     
@@ -144,19 +146,19 @@ const Index = () => {
     } finally {
       setIsProcessing(false);
     }
-  };
+  }, [apiKey, setShowBetaSignup]);
 
-  const handleApiKeySet = (key: string) => {
+  const handleApiKeySet = useCallback((key: string) => {
     setApiKey(key);
     setShowApiKeyReminder(false);
-  };
+  }, []);
 
-  const handleImageError = () => {
+  const handleImageError = useCallback(() => {
     setImageError(true);
     toast.error("Failed to load image preview", { 
       description: "The image URL might be invalid or inaccessible"
     });
-  };
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 font-sans">

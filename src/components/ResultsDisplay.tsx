@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { 
   AlertTriangle, AlertCircle, Link as LinkIcon, 
@@ -64,7 +64,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
   
   if (!results) return null;
   
-  const processedResults = {
+  const processedResults = useMemo(() => ({
     ...results,
     visuallySimilarImages: results.visuallySimilarImages.map(img => ({
       ...img,
@@ -74,32 +74,67 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
       ...page,
       dateFound: page.dateFound || new Date(today.getTime() - Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000)
     }))
-  };
+  }), [results, today]);
   
-  const exactMatches = processedResults.visuallySimilarImages.filter(img => img.score >= 0.9);
-  const partialMatches = processedResults.visuallySimilarImages.filter(img => img.score >= 0.7 && img.score < 0.9);
-  
-  const allRelevantPages = processedResults.pagesWithMatchingImages.filter(page => page.score >= 0.6);
-  const productPages = allRelevantPages.filter(page => page.pageType === 'product');
-  const categoryPages = allRelevantPages.filter(page => page.pageType === 'category');
-  const searchPages = allRelevantPages.filter(page => page.pageType === 'search');
-  const otherPages = allRelevantPages.filter(page => 
-    page.pageType !== 'product' && 
-    page.pageType !== 'category' && 
-    page.pageType !== 'search'
-  );
+  const { 
+    exactMatches, 
+    partialMatches, 
+    allRelevantPages,
+    productPages,
+    categoryPages,
+    searchPages,
+    otherPages,
+    exactMatchCount,
+    partialMatchCount,
+    productPageCount,
+    categoryPageCount,
+    searchPageCount,
+    otherPageCount,
+    pageMatchCount,
+    totalMatchCount
+  } = useMemo(() => {
+    const exactMatches = processedResults.visuallySimilarImages.filter(img => img.score >= 0.9);
+    const partialMatches = processedResults.visuallySimilarImages.filter(img => img.score >= 0.7 && img.score < 0.9);
+    
+    const allRelevantPages = processedResults.pagesWithMatchingImages.filter(page => page.score >= 0.6);
+    const productPages = allRelevantPages.filter(page => page.pageType === 'product');
+    const categoryPages = allRelevantPages.filter(page => page.pageType === 'category');
+    const searchPages = allRelevantPages.filter(page => page.pageType === 'search');
+    const otherPages = allRelevantPages.filter(page => 
+      page.pageType !== 'product' && 
+      page.pageType !== 'category' && 
+      page.pageType !== 'search'
+    );
 
-  const exactMatchCount = exactMatches.length;
-  const partialMatchCount = partialMatches.length;
-  const productPageCount = productPages.length;
-  const categoryPageCount = categoryPages.length;
-  const searchPageCount = searchPages.length;
-  const otherPageCount = otherPages.length;
-  const pageMatchCount = productPageCount + categoryPageCount + searchPageCount + otherPageCount;
-  const totalMatchCount = exactMatchCount + partialMatchCount + pageMatchCount;
+    const exactMatchCount = exactMatches.length;
+    const partialMatchCount = partialMatches.length;
+    const productPageCount = productPages.length;
+    const categoryPageCount = categoryPages.length;
+    const searchPageCount = searchPages.length;
+    const otherPageCount = otherPages.length;
+    const pageMatchCount = productPageCount + categoryPageCount + searchPageCount + otherPageCount;
+    const totalMatchCount = exactMatchCount + partialMatchCount + pageMatchCount;
+
+    return {
+      exactMatches,
+      partialMatches,
+      allRelevantPages,
+      productPages,
+      categoryPages,
+      searchPages,
+      otherPages,
+      exactMatchCount,
+      partialMatchCount,
+      productPageCount,
+      categoryPageCount,
+      searchPageCount,
+      otherPageCount,
+      pageMatchCount,
+      totalMatchCount
+    };
+  }, [processedResults]);
 
   const exportResults = useCallback((type: 'csv' | 'pdf') => {
-    // Check if user has signed up for beta
     const hasSeenBetaSignup = localStorage.getItem('seen_beta_signup');
     
     if (!hasSeenBetaSignup) {
@@ -153,7 +188,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
     } else {
       alert('PDF export coming soon');
     }
-  }, [setShowBetaSignup]);
+  }, [exactMatches, partialMatches, allRelevantPages, setShowBetaSignup]);
 
   return (
     <div className="space-y-8">
@@ -477,4 +512,4 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
   );
 };
 
-export default ResultsDisplay;
+export default React.memo(ResultsDisplay);
