@@ -34,7 +34,7 @@ export const trackImageSearch = async (image: File | string, resultsCount: numbe
     const { error } = await supabase
       .from('searches')
       .insert({
-        image_hash: imageName,
+        image_hash: imageName || 'unknown',  // Ensure we always have a string value
         result_count: resultsCount,
         created_at: new Date().toISOString(),
       });
@@ -92,7 +92,7 @@ export const getSearchStats = async (): Promise<{
     
     return {
       totalSearches: totalSearches || 0,
-      averageResults: avgData?.[0]?.average_result || 0,
+      averageResults: avgData?.[0]?.average_result || 0,  // Added null check
       searchesByType
     };
   } catch (error) {

@@ -17,13 +17,14 @@ export const BetaSignupProvider: React.FC<{
   
   // Create a wrapper setter that calls onChange if provided
   const setShowBetaSignup = (value: React.SetStateAction<boolean>) => {
-    setInternalShowBetaSignup(prevValue => {
-      const newValue = typeof value === 'function' ? value(prevValue) : value;
-      if (onChange && newValue !== prevValue) {
-        onChange(newValue);
-      }
-      return newValue;
-    });
+    const newValue = typeof value === 'function' ? value(showBetaSignup) : value;
+    
+    setInternalShowBetaSignup(newValue);
+    
+    // Only call onChange if it exists AND the value is actually changing
+    if (onChange && newValue !== showBetaSignup) {
+      onChange(newValue);
+    }
   };
   
   return (

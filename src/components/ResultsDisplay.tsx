@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { 
   AlertTriangle, AlertCircle, Link as LinkIcon, 
@@ -99,7 +98,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
   const pageMatchCount = productPageCount + categoryPageCount + searchPageCount + otherPageCount;
   const totalMatchCount = exactMatchCount + partialMatchCount + pageMatchCount;
 
-  const exportResults = (type: 'csv' | 'pdf') => {
+  const exportResults = useCallback((type: 'csv' | 'pdf') => {
     // Check if user has signed up for beta
     const hasSeenBetaSignup = localStorage.getItem('seen_beta_signup');
     
@@ -154,7 +153,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
     } else {
       alert('PDF export coming soon');
     }
-  };
+  }, [setShowBetaSignup]);
 
   return (
     <div className="space-y-8">

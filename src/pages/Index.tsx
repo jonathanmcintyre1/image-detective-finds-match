@@ -153,7 +153,7 @@ const Index = () => {
   };
 
   return (
-    <BetaSignupProvider initialValue={showBetaSignup} onChange={setShowBetaSignup}>
+    <BetaSignupProvider initialValue={showBetaSignup}>
       <div className="min-h-screen flex flex-col bg-gray-50 font-sans">
         <Header />
         
