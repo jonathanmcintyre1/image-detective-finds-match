@@ -1,8 +1,9 @@
-import React, { createContext, useContext, useState, ReactNode, useCallback, useMemo, useRef, useEffect } from 'react';
+
+import React, { createContext, useContext, useState, ReactNode } from 'react';
 
 interface BetaSignupContextType {
   showBetaSignup: boolean;
-  setShowBetaSignup: (value: boolean) => void;
+  setShowBetaSignup: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const BetaSignupContext = createContext<BetaSignupContextType | undefined>(undefined);
@@ -13,47 +14,20 @@ export const BetaSignupProvider: React.FC<{
   onChange?: (value: boolean) => void;
 }> = ({ children, initialValue = false, onChange }) => {
   const [showBetaSignup, setInternalShowBetaSignup] = useState(initialValue);
-  const isInitialMount = useRef(true);
-  const onChangeRef = useRef(onChange);
   
-  // Keep the onChange reference updated
-  useEffect(() => {
-    onChangeRef.current = onChange;
-  }, [onChange]);
-  
-  // Handle initialValue changes properly with useRef to avoid infinite loops
-  useEffect(() => {
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      return;
-    }
-    
-    // Only update if the initialValue changes after the first render
-    if (initialValue !== showBetaSignup) {
-      setInternalShowBetaSignup(initialValue);
-    }
-  }, [initialValue, showBetaSignup]);
-  
-  // Create the setShowBetaSignup function with useCallback to prevent recreation
-  const setShowBetaSignup = useCallback((value: boolean) => {
-    if (value !== showBetaSignup) {
-      setInternalShowBetaSignup(value);
-      
-      // Use ref to access the latest onChange callback
-      if (onChangeRef.current) {
-        onChangeRef.current(value);
+  // Create a wrapper setter that calls onChange if provided
+  const setShowBetaSignup = (value: React.SetStateAction<boolean>) => {
+    setInternalShowBetaSignup(prevValue => {
+      const newValue = typeof value === 'function' ? value(prevValue) : value;
+      if (onChange && newValue !== prevValue) {
+        onChange(newValue);
       }
-    }
-  }, [showBetaSignup]);
-  
-  // Memoize the context value to prevent unnecessary rerenders
-  const contextValue = useMemo(() => ({
-    showBetaSignup,
-    setShowBetaSignup,
-  }), [showBetaSignup, setShowBetaSignup]);
+      return newValue;
+    });
+  };
   
   return (
-    <BetaSignupContext.Provider value={contextValue}>
+    <BetaSignupContext.Provider value={{ showBetaSignup, setShowBetaSignup }}>
       {children}
     </BetaSignupContext.Provider>
   );
