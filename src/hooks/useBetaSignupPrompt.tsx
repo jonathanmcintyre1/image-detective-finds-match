@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useCallback, useMemo } from 'react';
 
 interface BetaSignupContextType {
   showBetaSignup: boolean;
@@ -17,16 +17,25 @@ export const BetaSignupProvider: React.FC<{
   
   // Use useCallback to prevent the function from being recreated on every render
   const setShowBetaSignup = useCallback((value: boolean) => {
-    setInternalShowBetaSignup(value);
-    
-    // Only call onChange if it exists AND the value is actually changing
-    if (onChange && value !== showBetaSignup) {
-      onChange(value);
+    // Only update state and call onChange if the value is actually changing
+    if (value !== showBetaSignup) {
+      setInternalShowBetaSignup(value);
+      
+      // Only call onChange if it exists
+      if (onChange) {
+        onChange(value);
+      }
     }
   }, [onChange, showBetaSignup]);
   
+  // Memoize the context value to prevent unnecessary rerenders of consumers
+  const contextValue = useMemo(() => ({
+    showBetaSignup,
+    setShowBetaSignup,
+  }), [showBetaSignup, setShowBetaSignup]);
+  
   return (
-    <BetaSignupContext.Provider value={{ showBetaSignup, setShowBetaSignup }}>
+    <BetaSignupContext.Provider value={contextValue}>
       {children}
     </BetaSignupContext.Provider>
   );

@@ -139,8 +139,12 @@ export const getSearchAnalytics = async (): Promise<SearchAnalytics> => {
     const searchesByDay: { [key: string]: number } = {};
     if (dayData) {
       dayData.forEach(item => {
-        const date = new Date(item.created_at || '').toISOString().split('T')[0];
-        searchesByDay[date] = (searchesByDay[date] || 0) + 1;
+        // Use optional chaining and type assertion to safely access created_at
+        const dateStr = (item as any).created_at;
+        if (dateStr) {
+          const date = new Date(dateStr).toISOString().split('T')[0];
+          searchesByDay[date] = (searchesByDay[date] || 0) + 1;
+        }
       });
     }
     

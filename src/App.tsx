@@ -7,8 +7,9 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { BetaSignupProvider } from "@/hooks/useBetaSignupPrompt";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 
+// Create the QueryClient outside of the component to prevent re-creation on each render
 const queryClient = new QueryClient();
 
 const App = () => {
