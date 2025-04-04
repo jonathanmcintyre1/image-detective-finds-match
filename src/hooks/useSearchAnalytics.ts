@@ -9,7 +9,7 @@ interface SearchAnalytics {
   avgResultsPerSearch: number;
   isLoading: boolean;
   error: Error | null;
-  searchesByDay?: { date: string; count: number; }[];
+  searchesByDay: { date: string; count: number; }[];
 }
 
 export function useSearchAnalytics() {
@@ -19,7 +19,8 @@ export function useSearchAnalytics() {
     searchesWithoutResults: 0,
     avgResultsPerSearch: 0,
     isLoading: true,
-    error: null
+    error: null,
+    searchesByDay: []
   });
 
   useEffect(() => {

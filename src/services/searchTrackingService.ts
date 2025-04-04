@@ -137,12 +137,12 @@ export const getSearchAnalytics = async (): Promise<SearchAnalytics> => {
     
     // Process day data
     const searchesByDay: { [key: string]: number } = {};
-    if (dayData) {
-      dayData.forEach(item => {
-        // Use optional chaining and type assertion to safely access created_at
-        const dateStr = (item as any).created_at;
-        if (dateStr) {
-          const date = new Date(dateStr).toISOString().split('T')[0];
+    
+    // Type the dayData correctly to avoid the "never" type error
+    if (dayData && Array.isArray(dayData)) {
+      dayData.forEach((item: { created_at?: string }) => {
+        if (item && item.created_at) {
+          const date = new Date(item.created_at).toISOString().split('T')[0];
           searchesByDay[date] = (searchesByDay[date] || 0) + 1;
         }
       });
