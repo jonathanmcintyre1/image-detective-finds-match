@@ -1,39 +1,17 @@
 import React, { useState, useEffect } from 'react';
-
 import Header from '@/components/Header';
 import ImageUploader from '@/components/ImageUploader';
 import ResultsDisplay from '@/components/ResultsDisplay';
 import ApiKeyInput from '@/components/ApiKeyInput';
 import BetaSignupForm from '@/components/BetaSignupForm';
-
 import { analyzeImage } from '@/services/googleVisionService';
 import { trackImageSearch } from '@/services/searchTrackingService';
 import { toast } from 'sonner';
-import {
-  Loader2,
-  Shield,
-  Image as ImageIcon,
-  AlertCircle,
-  Upload,
-  Sparkles,
-  Search,
-  UserPlus,
-} from 'lucide-react';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from '@/components/ui/card';
+import { Loader2, Shield, Image as ImageIcon, AlertCircle, Upload, Sparkles, Search, UserPlus } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useBetaSignupPrompt } from '@/hooks/useBetaSignupPrompt';
 
 interface WebEntity {
@@ -73,111 +51,31 @@ const Index = () => {
   const [imageError, setImageError] = useState(false);
   const [showApiKeyReminder, setShowApiKeyReminder] = useState(false);
   const [hasPerformedSearch, setHasPerformedSearch] = useState(false);
-  // New state to control tracking so it happens only once per image.
-  const [hasTracked, setHasTracked] = useState(false);
-  // State to store the total result count.
-  const [trackingResults, setTrackingResults] = useState<number | null>(null);
-
+  
   const { showBetaSignup, setShowBetaSignup } = useBetaSignupPrompt();
 
-  // Retrieve API key on mount.
   useEffect(() => {
     const envApiKey = import.meta.env.VITE_GOOGLE_VISION_API_KEY;
+    
     if (envApiKey) {
       setApiKey(envApiKey);
-      console.log('Using API key from environment variables');
+      console.log("Using API key from environment variables");
     } else {
       const savedApiKey = localStorage.getItem('gcv_api_key');
       if (savedApiKey) {
         setApiKey(savedApiKey);
-        console.log('Using API key from local storage');
+        console.log("Using API key from local storage");
       } else {
-        console.log('No API key found');
+        console.log("No API key found");
         setTimeout(() => setShowApiKeyReminder(true), 2000);
       }
     }
-
+    
     const hasSeenBetaSignup = localStorage.getItem('seen_beta_signup');
     if (!hasSeenBetaSignup) {
-      console.log('User has not seen beta signup prompt');
+      console.log("User has not seen beta signup prompt");
     }
   }, []);
-
-  // Update image preview when selectedImage changes.
-  useEffect(() => {
-    if (!selectedImage) {
-      setPreviewUrl(null);
-      return;
-    }
-    setImageError(false);
-    if (typeof selectedImage === 'string') {
-      setPreviewUrl(selectedImage);
-    } else {
-      const objectUrl = URL.createObjectURL(selectedImage);
-      setPreviewUrl(objectUrl);
-      return () => URL.revokeObjectURL(objectUrl);
-    }
-  }, [selectedImage]);
-
-  // Handle image selection from the uploader.
-  const handleImageSelected = async (image: File | string) => {
-    setSelectedImage(image);
-    setResults(null);
-    setHasTracked(false); // Reset tracking flag for new image.
-    setTrackingResults(null);
-    if (!apiKey) {
-      toast.error('Please set your Google Cloud Vision API key first');
-      setShowApiKeyReminder(true);
-      return;
-    }
-    try {
-      console.log('Starting image analysis with API key:', apiKey.substring(0, 5) + '...');
-      setIsProcessing(true);
-      const result = await analyzeImage(apiKey, image);
-      setResults(result);
-      setHasPerformedSearch(true);
-      const totalResults =
-        (result.visuallySimilarImages?.length || 0) +
-        (result.pagesWithMatchingImages?.length || 0);
-      setTrackingResults(totalResults);
-      const hasSeenBetaSignup = localStorage.getItem('seen_beta_signup');
-      if (!hasSeenBetaSignup) {
-        setTimeout(() => {
-          setShowBetaSignup(true);
-        }, 2000);
-      }
-    } catch (error) {
-      console.error('Error analyzing image:', error);
-      toast.error('Failed to analyze image. Please check your API key and try again.');
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  // useEffect to trigger tracking once per image selection.
-  useEffect(() => {
-    if (selectedImage && trackingResults !== null && !hasTracked) {
-      trackImageSearch(selectedImage, trackingResults)
-        .then(() => setHasTracked(true))
-        .catch((err) => {
-          console.error('Tracking error:', err);
-          // Even if tracking fails, set the flag to prevent continuous retries.
-          setHasTracked(true);
-        });
-    }
-  }, [selectedImage, trackingResults, hasTracked]);
-
-  const handleApiKeySet = (key: string) => {
-    setApiKey(key);
-    setShowApiKeyReminder(false);
-  };
-
-  const handleImageError = () => {
-    setImageError(true);
-    toast.error('Failed to load image preview', {
-      description: 'The image URL might be invalid or inaccessible',
-    });
-  };
 
   const handleBetaDialogClose = () => {
     setShowBetaSignup(false);
@@ -187,25 +85,96 @@ const Index = () => {
   const handleBetaSignupSuccess = () => {
     setShowBetaSignup(false);
     localStorage.setItem('seen_beta_signup', 'true');
-    toast.success('Thanks for signing up for the beta!', {
-      description: "You'll be notified when CopyProtect launches.",
+    toast.success("Thanks for signing up for the beta!", {
+      description: "You'll be notified when CopyProtect launches."
+    });
+  };
+
+  useEffect(() => {
+    if (!selectedImage) {
+      setPreviewUrl(null);
+      return;
+    }
+
+    setImageError(false);
+    
+    if (typeof selectedImage === 'string') {
+      setPreviewUrl(selectedImage);
+    } else {
+      const objectUrl = URL.createObjectURL(selectedImage);
+      setPreviewUrl(objectUrl);
+      
+      return () => URL.revokeObjectURL(objectUrl);
+    }
+  }, [selectedImage]);
+
+  const handleImageSelected = async (image: File | string) => {
+    setSelectedImage(image);
+    setResults(null);
+    
+    if (!apiKey) {
+      toast.error('Please set your Google Cloud Vision API key first');
+      setShowApiKeyReminder(true);
+      return;
+    }
+    
+    try {
+      console.log("Starting image analysis with API key:", apiKey.substring(0, 5) + "...");
+      setIsProcessing(true);
+      const result = await analyzeImage(apiKey, image);
+      setResults(result);
+      setHasPerformedSearch(true);
+      
+      const totalResults = 
+        (result.visuallySimilarImages?.length || 0) + 
+        (result.pagesWithMatchingImages?.length || 0);
+      
+      await trackImageSearch(image, totalResults);
+      
+      const hasSeenBetaSignup = localStorage.getItem('seen_beta_signup');
+      if (!hasSeenBetaSignup) {
+        setTimeout(() => {
+          setShowBetaSignup(true);
+        }, 2000);
+      }
+      
+    } catch (error) {
+      console.error('Error analyzing image:', error);
+      toast.error('Failed to analyze image. Please check your API key and try again.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleApiKeySet = (key: string) => {
+    setApiKey(key);
+    setShowApiKeyReminder(false);
+  };
+
+  const handleImageError = () => {
+    setImageError(true);
+    toast.error("Failed to load image preview", { 
+      description: "The image URL might be invalid or inaccessible"
     });
   };
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 font-sans">
       <Header />
+      
       <main className="flex-1 md:max-w-[75%] lg:max-w-[75%] mx-auto py-8 px-4 space-y-8">
         <div className="text-center max-w-2xl mx-auto space-y-4">
           <div className="flex items-center justify-center mb-2">
             <div className="relative h-16 w-16 mr-3">
-              <img
-                src="/lovable-uploads/02ba20bb-b85e-440c-9a4d-865ee5336758.png"
-                alt="CopyProtect Logo"
+              <img 
+                src="/lovable-uploads/02ba20bb-b85e-440c-9a4d-865ee5336758.png" 
+                alt="CopyProtect Logo" 
                 className="h-full w-full object-contain drop-shadow-lg"
               />
             </div>
-            <h1 className="text-4xl font-bold text-brand-dark">CopyProtect</h1>
+            <h1 className="text-4xl font-bold text-brand-dark">
+              CopyProtect
+            </h1>
           </div>
           <p className="text-lg text-muted-foreground">
             Discover unauthorized copies of your images across the web in seconds
@@ -214,6 +183,7 @@ const Index = () => {
             <ApiKeyInput apiKey={apiKey} setApiKey={handleApiKeySet} />
           </div>
         </div>
+        
         {showApiKeyReminder && !apiKey && (
           <div className="mb-6">
             <Alert className="bg-amber-50 border-amber-200">
@@ -224,6 +194,7 @@ const Index = () => {
             </Alert>
           </div>
         )}
+        
         <Card className="border-0 shadow-md overflow-hidden mb-8">
           <CardHeader className="bg-[#1F2937] text-white border-b">
             <CardTitle className="text-xl">How It Works</CardTitle>
@@ -239,6 +210,7 @@ const Index = () => {
                   Upload an image or provide a URL that you want to protect
                 </p>
               </div>
+              
               <div className="flex flex-col items-center text-center">
                 <div className="w-12 h-12 bg-[#CC121E]/10 rounded-full flex items-center justify-center mb-3">
                   <Search className="h-6 w-6 text-[#CC121E]" />
@@ -248,6 +220,7 @@ const Index = () => {
                   Our AI scans the web for exact or similar matches to your image
                 </p>
               </div>
+              
               <div className="flex flex-col items-center text-center">
                 <div className="w-12 h-12 bg-[#CC121E]/10 rounded-full flex items-center justify-center mb-3">
                   <Sparkles className="h-6 w-6 text-[#CC121E]" />
@@ -260,6 +233,7 @@ const Index = () => {
             </div>
           </CardContent>
         </Card>
+        
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <Card className="border-0 shadow-md overflow-hidden">
             <CardHeader className="bg-gradient-to-r from-brand-dark to-brand-blue/90 text-white">
@@ -270,6 +244,7 @@ const Index = () => {
             </CardHeader>
             <CardContent className="p-6">
               <ImageUploader onImageSelected={handleImageSelected} isProcessing={isProcessing} />
+              
               {previewUrl && (
                 <div className="mt-6">
                   <p className="text-sm font-medium mb-2 text-brand-dark">Image Preview:</p>
@@ -278,12 +253,14 @@ const Index = () => {
                       <div className="aspect-video flex items-center justify-center bg-gray-100 p-4">
                         <Alert variant="destructive">
                           <AlertCircle className="h-4 w-4" />
-                          <AlertDescription>Unable to load image preview</AlertDescription>
+                          <AlertDescription>
+                            Unable to load image preview
+                          </AlertDescription>
                         </Alert>
                       </div>
                     ) : (
                       <div className="p-4 flex justify-center items-center bg-gray-50 max-h-60">
-                        <img
+                        <img 
                           src={previewUrl}
                           alt="Preview"
                           className="max-h-52 max-w-full object-contain"
@@ -296,6 +273,7 @@ const Index = () => {
               )}
             </CardContent>
           </Card>
+          
           <Card className="border-0 shadow-md overflow-hidden">
             <CardHeader className="bg-gradient-to-r from-[#9B1B30] to-[#E82C45] text-white">
               <div className="flex items-center">
@@ -308,6 +286,7 @@ const Index = () => {
             </CardContent>
           </Card>
         </div>
+        
         <div className="lg:col-span-2">
           {isProcessing && (
             <Card className="border-0 shadow-md h-64">
@@ -320,18 +299,18 @@ const Index = () => {
                     <div className="h-2 w-4/5 bg-gray-200 rounded animate-pulse"></div>
                     <div className="h-2 w-3/5 bg-gray-200 rounded animate-pulse"></div>
                   </div>
-                  <p className="text-sm text-muted-foreground mt-2 text-center">
-                    Scanning web for matching images
-                  </p>
+                  <p className="text-sm text-muted-foreground mt-2 text-center">Scanning web for matching images</p>
                 </div>
               </CardContent>
             </Card>
           )}
+          
           {!isProcessing && results && (
             <div>
               <ResultsDisplay results={results} />
             </div>
           )}
+          
           {!isProcessing && !results && !selectedImage && (
             <Card className="border-0 shadow-md h-64">
               <CardContent className="p-6 h-full flex flex-col items-center justify-center">
@@ -343,12 +322,13 @@ const Index = () => {
           )}
         </div>
       </main>
+      
       <footer className="border-t py-6 bg-gradient-to-r from-brand-dark to-brand-blue/90 text-white">
         <div className="container max-w-[75%] mx-auto text-center text-sm">
           <div className="flex items-center justify-center gap-2 mb-2">
-            <img
-              src="/lovable-uploads/02ba20bb-b85e-440c-9a4d-865ee5336758.png"
-              alt="CopyProtect Logo"
+            <img 
+              src="/lovable-uploads/02ba20bb-b85e-440c-9a4d-865ee5336758.png" 
+              alt="CopyProtect Logo" 
               className="h-5 w-5"
             />
             <span className="font-medium">CopyProtect</span>
@@ -356,6 +336,7 @@ const Index = () => {
           <p>Powered by Google Cloud Vision API</p>
         </div>
       </footer>
+      
       <Dialog open={showBetaSignup} onOpenChange={handleBetaDialogClose}>
         <DialogContent className="sm:max-w-md">
           <DialogTitle>Join Our Exclusive Beta</DialogTitle>
