@@ -15,7 +15,7 @@ const queryClient = new QueryClient();
 const App = () => {
   const [betaSignupVisible, setBetaSignupVisible] = useState(false);
   
-  // Fix: Add proper dependency array to useCallback
+  // Properly memoize the callback with an empty dependency array as it doesn't use any external values
   const handleBetaSignupChange = useCallback((value: boolean) => {
     setBetaSignupVisible(value);
   }, []);

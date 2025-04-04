@@ -24,29 +24,43 @@ export function useSearchAnalytics() {
   });
 
   useEffect(() => {
+    let isMounted = true;
+    
     async function fetchAnalytics() {
       try {
         const data = await getSearchAnalytics();
-        setAnalytics({
-          totalSearches: data.totalSearches,
-          searchesWithResults: data.searchesWithResults || 0,
-          searchesWithoutResults: data.searchesWithoutResults || 0,
-          avgResultsPerSearch: data.avgResultsPerSearch || 0,
-          searchesByDay: data.searchesByDay,
-          isLoading: false,
-          error: null
-        });
+        
+        // Only update state if component is still mounted
+        if (isMounted) {
+          setAnalytics({
+            totalSearches: data.totalSearches,
+            searchesWithResults: data.searchesWithResults || 0,
+            searchesWithoutResults: data.searchesWithoutResults || 0,
+            avgResultsPerSearch: data.avgResultsPerSearch || 0,
+            searchesByDay: data.searchesByDay,
+            isLoading: false,
+            error: null
+          });
+        }
       } catch (error) {
-        console.error("Error fetching analytics:", error);
-        setAnalytics(prev => ({
-          ...prev,
-          isLoading: false,
-          error: error as Error
-        }));
+        // Only update state if component is still mounted
+        if (isMounted) {
+          console.error("Error fetching analytics:", error);
+          setAnalytics(prev => ({
+            ...prev,
+            isLoading: false,
+            error: error as Error
+          }));
+        }
       }
     }
 
     fetchAnalytics();
+    
+    // Cleanup function to prevent state updates after unmounting
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   return analytics;

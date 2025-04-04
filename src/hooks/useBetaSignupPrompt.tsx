@@ -15,21 +15,19 @@ export const BetaSignupProvider: React.FC<{
 }> = ({ children, initialValue = false, onChange }) => {
   const [showBetaSignup, setInternalShowBetaSignup] = useState(initialValue);
   
-  // Use useCallback to prevent the function from being recreated on every render
-  // Fixed the infinite loop by properly using dependencies array
+  // Create the setShowBetaSignup function with useCallback to prevent recreation
+  // and include onChange in dependencies
   const setShowBetaSignup = useCallback((value: boolean) => {
-    // Only update state and call onChange if the value is actually changing
     if (value !== showBetaSignup) {
       setInternalShowBetaSignup(value);
       
-      // Only call onChange if it exists
       if (onChange) {
         onChange(value);
       }
     }
   }, [onChange, showBetaSignup]);
   
-  // Memoize the context value to prevent unnecessary rerenders of consumers
+  // Memoize the context value to prevent unnecessary rerenders
   const contextValue = useMemo(() => ({
     showBetaSignup,
     setShowBetaSignup,
