@@ -29,9 +29,9 @@ export function useSearchAnalytics() {
         const data = await getSearchAnalytics();
         setAnalytics({
           totalSearches: data.totalSearches,
-          searchesWithResults: data.searchesWithResults,
-          searchesWithoutResults: data.searchesWithoutResults,
-          avgResultsPerSearch: data.avgResultsPerSearch,
+          searchesWithResults: data.searchesWithResults || 0,
+          searchesWithoutResults: data.searchesWithoutResults || 0,
+          avgResultsPerSearch: data.avgResultsPerSearch || 0,
           searchesByDay: data.searchesByDay,
           isLoading: false,
           error: null
