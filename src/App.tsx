@@ -7,12 +7,16 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { BetaSignupProvider } from "@/hooks/useBetaSignupPrompt";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 
 const queryClient = new QueryClient();
 
 const App = () => {
   const [betaSignupVisible, setBetaSignupVisible] = useState(false);
+  
+  const handleBetaSignupChange = useCallback((value: boolean) => {
+    setBetaSignupVisible(value);
+  }, []);
   
   return (
     <QueryClientProvider client={queryClient}>
@@ -21,7 +25,7 @@ const App = () => {
         <Sonner />
         <BetaSignupProvider 
           initialValue={betaSignupVisible} 
-          onChange={setBetaSignupVisible}
+          onChange={handleBetaSignupChange}
         >
           <BrowserRouter>
             <Routes>

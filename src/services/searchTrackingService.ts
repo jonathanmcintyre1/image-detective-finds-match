@@ -4,8 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 interface SearchLogEntry {
   id?: number;
   image_hash: string;
-  search_time: string;
-  results_count: number;
+  created_at: string;
+  result_count: number;
 }
 
 interface SearchAnalytics {
@@ -92,22 +92,20 @@ export const getSearchAnalytics = async (): Promise<SearchAnalytics> => {
     }
 
     // Get searches with and without results
-    const { data: withResultsData, error: withResultsError } = await supabase
+    const { count: withResultsCount, error: withResultsError } = await supabase
       .from('searches')
-      .select('id')
-      .gt('result_count', 0)
-      .count();
+      .select('*', { count: 'exact', head: true })
+      .gt('result_count', 0);
 
-    const searchesWithResults = withResultsData || 0;
+    const searchesWithResults = withResultsCount || 0;
     
     // Count searches with no results
-    const { data: noResultsData, error: noResultsError } = await supabase
+    const { count: noResultsCount, error: noResultsError } = await supabase
       .from('searches')
-      .select('id')
-      .eq('result_count', 0)
-      .count();
+      .select('*', { count: 'exact', head: true })
+      .eq('result_count', 0);
       
-    const searchesWithoutResults = noResultsData || 0;
+    const searchesWithoutResults = noResultsCount || 0;
     
     // Get average number of results
     const { data: avgData, error: avgError } = await supabase
@@ -130,8 +128,8 @@ export const getSearchAnalytics = async (): Promise<SearchAnalytics> => {
       console.error('Error fetching searches by day:', dayError);
       return { 
         totalSearches: totalData?.length || 0, 
-        searchesWithResults: searchesWithResults as number,
-        searchesWithoutResults: searchesWithoutResults as number,
+        searchesWithResults: searchesWithResults,
+        searchesWithoutResults: searchesWithoutResults,
         avgResultsPerSearch: avgData !== null ? Number(avgData) : 0,
         searchesByDay: [] 
       };
@@ -154,8 +152,8 @@ export const getSearchAnalytics = async (): Promise<SearchAnalytics> => {
     
     return {
       totalSearches: totalData?.length || 0,
-      searchesWithResults: searchesWithResults as number,
-      searchesWithoutResults: searchesWithoutResults as number,
+      searchesWithResults: searchesWithResults,
+      searchesWithoutResults: searchesWithoutResults,
       avgResultsPerSearch: avgData !== null ? Number(avgData) : 0,
       searchesByDay: searchesByDayArray
     };
