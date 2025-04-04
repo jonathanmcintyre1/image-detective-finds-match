@@ -1,11 +1,10 @@
-
 import React, { useState, useMemo } from 'react';
 import { 
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
 } from '@/components/ui/table';
 import { 
   ExternalLink, Copy, ChevronDown, ChevronUp,
-  Calendar, FileText, ShoppingBag, Globe, Tag, Eye, Server
+  Calendar, FileText, ShoppingBag, Globe, Tag, Eye, Server, AlertTriangle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,6 +14,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { toast } from 'sonner';
 import ImageModal from './ImageModal';
 import { format } from 'date-fns';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface WebImage {
   url: string;
@@ -48,7 +48,6 @@ type GroupedPage = {
   expanded: boolean;
 };
 
-// Function to get hostname from URL
 const getHostname = (url: string): string => {
   try {
     return new URL(url).hostname.replace('www.', '');
@@ -57,7 +56,6 @@ const getHostname = (url: string): string => {
   }
 };
 
-// Function to determine if a URL is from a CDN
 const isCdnUrl = (url: string): boolean => {
   const cdnPatterns = [
     'cloudfront.net', 'cdn.shopify', 'cloudinary', 'imgix', 
@@ -71,7 +69,6 @@ const isCdnUrl = (url: string): boolean => {
   return cdnPatterns.some(pattern => urlLower.includes(pattern));
 };
 
-// Function to get CDN info from URL
 const getCdnInfo = (url: string): string | null => {
   const hostname = getHostname(url);
   
@@ -91,7 +88,6 @@ const getCdnInfo = (url: string): string | null => {
   return null;
 };
 
-// Function to get website name from hostname
 const getWebsiteName = (url: string, platform?: string): string => {
   if (platform) return platform;
   
@@ -103,15 +99,42 @@ const getWebsiteName = (url: string, platform?: string): string => {
   return hostname;
 };
 
+const isLikelySpam = (url: string, score: number): boolean => {
+  const spamPatterns = [
+    'ebb.rs', 'goo.gl', 'bit.ly', 't.co', 'tinyurl.com', 'is.gd',
+    'buff.ly', 'adf.ly', 'j.mp', 'ow.ly', 'soo.gd', 'cutt.ly'
+  ];
+  
+  const isShortURL = spamPatterns.some(pattern => url.includes(pattern));
+  
+  if (isShortURL && score < 0.8) {
+    return true;
+  }
+  
+  try {
+    const urlObj = new URL(url);
+    const params = urlObj.searchParams;
+    if (params.has('ref') || params.has('affiliate') || params.has('e') || 
+        params.has('track') || params.has('campaign')) {
+      return score < 0.85;
+    }
+  } catch (e) {
+  }
+  
+  return false;
+};
+
 export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({ 
   pages,
   sortBy = 'confidence',
   compact = false,
   initialItemsToShow = 5
 }) => {
-  // Sort pages based on sortBy prop
+  const filteredPages = pages.filter(page => !isLikelySpam(page.url, page.score));
+  const spamCount = pages.length - filteredPages.length;
+  
   const sortedPages = useMemo(() => {
-    let sorted = [...pages];
+    let sorted = [...filteredPages];
     
     switch(sortBy) {
       case 'confidence':
@@ -129,7 +152,6 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({
           return domainA.localeCompare(domainB);
         });
       case 'count':
-        // Sort by number of matching images
         return sorted.sort((a, b) => {
           const countA = a.matchingImages?.length || 0;
           const countB = b.matchingImages?.length || 0;
@@ -138,7 +160,7 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({
       default:
         return sorted;
     }
-  }, [pages, sortBy]);
+  }, [filteredPages, sortBy]);
 
   const [visiblePages, setVisiblePages] = useState<WebPage[]>(sortedPages.slice(0, initialItemsToShow));
   const [loadMoreVisible, setLoadMoreVisible] = useState(sortedPages.length > initialItemsToShow);
@@ -146,13 +168,11 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({
   const [selectedImage, setSelectedImage] = useState<WebImage | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
-  // Update visible pages when sorting changes
   useMemo(() => {
     setVisiblePages(sortedPages.slice(0, initialItemsToShow));
     setLoadMoreVisible(sortedPages.length > initialItemsToShow);
   }, [sortedPages, initialItemsToShow]);
 
-  // Group pages by hostname
   const groupedPages = useMemo(() => {
     const sites = new Map<string, GroupedPage>();
     
@@ -205,8 +225,7 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({
       setLoadMoreVisible(false);
     }
   };
-  
-  // Get page type icon
+
   const getPageTypeIcon = (pageType?: string) => {
     switch(pageType) {
       case 'product':
@@ -239,6 +258,15 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({
 
   return (
     <div className="space-y-4">
+      {spamCount > 0 && (
+        <Alert className="bg-yellow-50 border-yellow-200 mb-4">
+          <AlertTriangle className="h-4 w-4 text-yellow-600" />
+          <AlertDescription className="text-yellow-800">
+            {spamCount} potential spam page{spamCount !== 1 ? 's' : ''} filtered out from results.
+          </AlertDescription>
+        </Alert>
+      )}
+      
       {groupedPages.length > 0 ? (
         groupedPages.map((group) => (
           <Collapsible 
@@ -284,7 +312,6 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({
                   </TableHeader>
                   <TableBody>
                     {group.pages.map((page, index) => {
-                      // Check if image is from CDN
                       let cdnInfo = null;
                       let isFromCdn = false;
                       

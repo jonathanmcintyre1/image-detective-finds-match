@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import ImageUploader from '@/components/ImageUploader';
@@ -8,8 +7,8 @@ import BetaSignupForm from '@/components/BetaSignupForm';
 import { analyzeImage } from '@/services/googleVisionService';
 import { trackImageSearch } from '@/services/searchTrackingService';
 import { toast } from 'sonner';
-import { Loader2, Shield, Image as ImageIcon, AlertCircle, Upload, Sparkles, Search } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Loader2, Shield, Image as ImageIcon, AlertCircle, Upload, Sparkles, Search, UserPlus } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -54,7 +53,6 @@ const Index = () => {
   const [hasPerformedSearch, setHasPerformedSearch] = useState(false);
   const [showApiKeyReminder, setShowApiKeyReminder] = useState(false);
 
-  // Load API key from environment variable or local storage
   useEffect(() => {
     const envApiKey = import.meta.env.VITE_GOOGLE_VISION_API_KEY;
     
@@ -159,7 +157,7 @@ const Index = () => {
       <div className="min-h-screen flex flex-col bg-gray-50 font-sans">
         <Header />
         
-        <main className="flex-1 container py-8 space-y-8">
+        <main className="flex-1 md:max-w-[75%] lg:max-w-[75%] mx-auto py-8 px-4 space-y-8">
           <div className="text-center max-w-2xl mx-auto space-y-4">
             <div className="flex items-center justify-center mb-2">
               <div className="relative h-16 w-16 mr-3">
@@ -181,7 +179,6 @@ const Index = () => {
             </div>
           </div>
           
-          {/* Show API key reminder if no key is set */}
           {showApiKeyReminder && !apiKey && (
             <div className="mb-6">
               <Alert className="bg-amber-50 border-amber-200">
@@ -193,7 +190,6 @@ const Index = () => {
             </div>
           )}
           
-          {/* How It Works Section - Full width with updated styling */}
           <Card className="border-0 shadow-md overflow-hidden mb-8">
             <CardHeader className="bg-[#1F2937] text-white border-b">
               <CardTitle className="text-xl">How It Works</CardTitle>
@@ -234,7 +230,6 @@ const Index = () => {
           </Card>
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Image Upload Card - Takes 50% width */}
             <Card className="border-0 shadow-md overflow-hidden">
               <CardHeader className="bg-gradient-to-r from-brand-dark to-brand-blue/90 text-white">
                 <div className="flex items-center">
@@ -274,10 +269,12 @@ const Index = () => {
               </CardContent>
             </Card>
             
-            {/* Get Early Access Card - On same row as Upload Image */}
             <Card className="border-0 shadow-md overflow-hidden">
-              <CardHeader className="bg-gradient-to-r from-[#CC121E] to-[#CC121E]/80 text-white">
-                <CardTitle className="text-base">Get Early Access</CardTitle>
+              <CardHeader className="bg-gradient-to-r from-[#9B1B30] to-[#E82C45] text-white">
+                <div className="flex items-center">
+                  <UserPlus className="mr-2 h-5 w-5" />
+                  <CardTitle>Get Early Access</CardTitle>
+                </div>
               </CardHeader>
               <CardContent className="p-6">
                 <BetaSignupForm onSuccess={handleBetaSignupSuccess} />
@@ -322,7 +319,7 @@ const Index = () => {
         </main>
         
         <footer className="border-t py-6 bg-gradient-to-r from-brand-dark to-brand-blue/90 text-white">
-          <div className="container text-center text-sm">
+          <div className="container max-w-[75%] mx-auto text-center text-sm">
             <div className="flex items-center justify-center gap-2 mb-2">
               <img 
                 src="/lovable-uploads/02ba20bb-b85e-440c-9a4d-865ee5336758.png" 

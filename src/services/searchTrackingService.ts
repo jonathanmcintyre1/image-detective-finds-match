@@ -1,7 +1,6 @@
 
 // Import statements
 import { supabase } from '@/integrations/supabase/client';
-import { PostgrestError } from '@supabase/supabase-js';
 
 /**
  * Track an image search in the database
@@ -33,15 +32,11 @@ export const trackImageSearch = async (image: File | string, resultsCount: numbe
     
     // Insert search record into database
     const { error } = await supabase
-      .from('image_searches')
+      .from('searches')
       .insert({
-        image_type: imageType,
-        image_name: imageName,
-        image_size: imageSize,
-        results_count: resultsCount,
-        search_timestamp: new Date().toISOString(),
-        user_agent: navigator.userAgent,
-        referrer: document.referrer || null,
+        image_hash: imageName,
+        result_count: resultsCount,
+        created_at: new Date().toISOString(),
       });
     
     if (error) {
@@ -64,7 +59,7 @@ export const getSearchStats = async (): Promise<{
   try {
     // Get total search count
     const { count: totalSearches, error: countError } = await supabase
-      .from('image_searches')
+      .from('searches')
       .select('*', { count: 'exact', head: true });
     
     if (countError) {
@@ -73,7 +68,7 @@ export const getSearchStats = async (): Promise<{
     
     // Get average results count
     const { data: avgData, error: avgError } = await supabase
-      .rpc<{ average: number }>('average_search_results', {});
+      .rpc('average_search_results');
     
     if (avgError) {
       throw avgError;
@@ -81,11 +76,9 @@ export const getSearchStats = async (): Promise<{
     
     // Get searches by type
     const { data: typeData, error: typeError } = await supabase
-      .from('image_searches')
-      .select('image_type, count')
-      .select('image_type')
-      .select('*', { count: 'exact', groupBy: 'image_type' })
-      .groupBy('image_type');
+      .from('searches')
+      .select('image_hash, count')
+      .order('count', { ascending: false });
     
     if (typeError) {
       throw typeError;
@@ -93,13 +86,13 @@ export const getSearchStats = async (): Promise<{
     
     // Map the grouped data
     const searchesByType = typeData?.map(item => ({
-      type: item.image_type,
-      count: parseInt(item.count || '0', 10)
+      type: item.image_hash || 'unknown',
+      count: parseInt(String(item.count) || '0', 10)
     })) || [];
     
     return {
       totalSearches: totalSearches || 0,
-      averageResults: avgData?.[0]?.average || 0,
+      averageResults: avgData?.[0]?.average_result || 0,
       searchesByType
     };
   } catch (error) {

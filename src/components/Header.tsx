@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 const Header = () => {
   return (
     <header className="border-b py-3 bg-gradient-to-r from-brand-dark to-brand-blue/90 shadow-md">
-      <div className="container flex items-center justify-between">
+      <div className="container max-w-[75%] mx-auto flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <img 
             src="/lovable-uploads/02ba20bb-b85e-440c-9a4d-865ee5336758.png" 
