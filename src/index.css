@@ -114,3 +114,23 @@
 .dropzone-active {
   @apply border-primary bg-primary/5;
 }
+
+.icon-container {
+  @apply flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-b from-gray-200 to-gray-100 shadow-md border border-gray-200 transition-all duration-300 hover:shadow-lg;
+}
+
+.btn-brand {
+  @apply bg-gradient-to-r from-[#FF4141] to-[#FF7070] text-white hover:from-[#FF2F2F] hover:to-[#FF5A5A] shadow-md;
+}
+
+.btn-brand-dark {
+  @apply bg-[#333] text-white hover:bg-[#444] shadow-md;
+}
+
+.card-gradient-red {
+  @apply bg-gradient-to-r from-[#FF4141] to-[#FF7070];
+}
+
+.card-gradient-dark {
+  @apply bg-gradient-to-r from-brand-dark to-brand-blue/90;
+}

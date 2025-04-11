@@ -8,7 +8,7 @@ import BetaSignupForm from '@/components/BetaSignupForm';
 import { analyzeImage } from '@/services/googleVisionService';
 import { trackImageSearch } from '@/services/searchTrackingService';
 import { toast } from 'sonner';
-import { Loader2, Shield, Image as ImageIcon, AlertCircle, Upload, Sparkles, Search, UserPlus } from 'lucide-react';
+import { Loader2, Shield, Image as ImageIcon, AlertCircle, Upload, Sparkles, Search, UserPlus, Info } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
@@ -194,13 +194,16 @@ const Index = () => {
           )}
           
           <Card className="border-0 shadow-md overflow-hidden mb-8">
-            <CardHeader className="bg-[#1F2937] text-white border-b">
-              <CardTitle className="text-xl">How It Works</CardTitle>
+            <CardHeader className="bg-gradient-to-r from-[#FF4141] to-[#FF7070] text-white border-b">
+              <div className="flex items-center">
+                <Info className="mr-2 h-5 w-5" />
+                <CardTitle className="text-xl font-semibold">How It Works</CardTitle>
+              </div>
             </CardHeader>
             <CardContent className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="flex flex-col items-center text-center">
-                  <div className="w-12 h-12 bg-gradient-to-b from-gray-50 to-gray-100 rounded-full flex items-center justify-center mb-3 shadow-md border border-gray-200">
+                  <div className="w-12 h-12 bg-gradient-to-b from-gray-200 to-gray-100 rounded-full flex items-center justify-center mb-3 shadow-md border border-gray-200">
                     <Upload className="h-6 w-6 text-[#333]" />
                   </div>
                   <h3 className="font-medium mb-1">Upload Your Image</h3>
@@ -210,7 +213,7 @@ const Index = () => {
                 </div>
                 
                 <div className="flex flex-col items-center text-center">
-                  <div className="w-12 h-12 bg-gradient-to-b from-gray-50 to-gray-100 rounded-full flex items-center justify-center mb-3 shadow-md border border-gray-200">
+                  <div className="w-12 h-12 bg-gradient-to-b from-gray-200 to-gray-100 rounded-full flex items-center justify-center mb-3 shadow-md border border-gray-200">
                     <Search className="h-6 w-6 text-[#333]" />
                   </div>
                   <h3 className="font-medium mb-1">AI-Powered Scan</h3>
@@ -220,7 +223,7 @@ const Index = () => {
                 </div>
                 
                 <div className="flex flex-col items-center text-center">
-                  <div className="w-12 h-12 bg-gradient-to-b from-gray-50 to-gray-100 rounded-full flex items-center justify-center mb-3 shadow-md border border-gray-200">
+                  <div className="w-12 h-12 bg-gradient-to-b from-gray-200 to-gray-100 rounded-full flex items-center justify-center mb-3 shadow-md border border-gray-200">
                     <Sparkles className="h-6 w-6 text-[#333]" />
                   </div>
                   <h3 className="font-medium mb-1">Review Results</h3>
@@ -273,14 +276,16 @@ const Index = () => {
             </Card>
             
             <Card className="border-0 shadow-md overflow-hidden w-full">
-              <CardHeader className="bg-gradient-to-r from-[#333] to-[#555] text-white">
+              <CardHeader className="bg-gradient-to-r from-[#FF4141] to-[#FF7070] text-white">
                 <div className="flex items-center">
                   <UserPlus className="mr-2 h-5 w-5" />
                   <CardTitle>Get Early Access</CardTitle>
                 </div>
               </CardHeader>
               <CardContent className="p-6 flex justify-center">
-                <BetaSignupForm onSuccess={handleBetaSignupSuccess} />
+                <div className="w-full max-w-md">
+                  <BetaSignupForm onSuccess={handleBetaSignupSuccess} />
+                </div>
               </CardContent>
             </Card>
           </div>
