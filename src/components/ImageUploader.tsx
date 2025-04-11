@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Upload, Image as ImageIcon, Loader2, AlertCircle, XCircle } from 'lucide-react';
@@ -9,14 +10,15 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 interface ImageUploaderProps {
   onImageSelected: (image: File | string) => void;
   isProcessing: boolean;
+  maxMb?: number; // Add maxMb as an optional prop
 }
 
-const ImageUploader = ({ onImageSelected, isProcessing }: ImageUploaderProps) => {
+const ImageUploader = ({ onImageSelected, isProcessing, maxMb = 5 }: ImageUploaderProps) => {
   const [imageUrl, setImageUrl] = useState('');
   const [fileError, setFileError] = useState<string | null>(null);
   const [rejectedFile, setRejectedFile] = useState<boolean>(false);
   
-  const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB
+  const MAX_FILE_SIZE = (maxMb || 5) * 1024 * 1024; // Default 5MB or use provided maxMb
   
   const onDrop = useCallback((acceptedFiles: File[], rejectedFiles: any[]) => {
     setFileError(null);
@@ -25,9 +27,9 @@ const ImageUploader = ({ onImageSelected, isProcessing }: ImageUploaderProps) =>
     if (rejectedFiles.length > 0) {
       const errors = rejectedFiles[0].errors;
       if (errors.find((e: any) => e.code === 'file-too-large')) {
-        setFileError('File is too large. Maximum size is 15MB.');
+        setFileError(`File is too large. Maximum size is ${maxMb}MB.`);
         setRejectedFile(true);
-        toast.error('File is too large', { description: 'Maximum size is 15MB' });
+        toast.error('File is too large', { description: `Maximum size is ${maxMb}MB` });
       } else if (errors.find((e: any) => e.code === 'file-invalid-type')) {
         setFileError('Please upload a valid image file (JPG, PNG, WEBP).');
         setRejectedFile(true);
@@ -39,9 +41,9 @@ const ImageUploader = ({ onImageSelected, isProcessing }: ImageUploaderProps) =>
     if (acceptedFiles.length > 0) {
       const file = acceptedFiles[0];
       if (file.size > MAX_FILE_SIZE) {
-        setFileError('File is too large. Maximum size is 15MB.');
+        setFileError(`File is too large. Maximum size is ${maxMb}MB.`);
         setRejectedFile(true);
-        toast.error('File is too large', { description: 'Maximum size is 15MB' });
+        toast.error('File is too large', { description: `Maximum size is ${maxMb}MB` });
         return;
       }
       
@@ -55,7 +57,7 @@ const ImageUploader = ({ onImageSelected, isProcessing }: ImageUploaderProps) =>
         toast.error('Invalid file type', { description: 'Please upload a valid image file' });
       }
     }
-  }, [onImageSelected]);
+  }, [onImageSelected, maxMb, MAX_FILE_SIZE]);
   
   const { getRootProps, getInputProps, isDragActive, isDragReject } = useDropzone({
     onDrop,
@@ -146,7 +148,7 @@ const ImageUploader = ({ onImageSelected, isProcessing }: ImageUploaderProps) =>
           
           {!fileError && (
             <p className="text-xs text-muted-foreground">
-              Supports JPG, PNG, WEBP (max 5MB)
+              Supports JPG, PNG, WEBP (max {maxMb}MB)
             </p>
           )}
         </div>

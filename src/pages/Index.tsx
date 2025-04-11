@@ -8,7 +8,7 @@ import BetaSignupForm from '@/components/BetaSignupForm';
 import { analyzeImage } from '@/services/googleVisionService';
 import { trackImageSearch } from '@/services/searchTrackingService';
 import { toast } from 'sonner';
-import { Loader2, Shield, Image as ImageIcon, AlertCircle, Upload, Sparkles, Search, UserPlus, HelpCircle, QuestionMark } from 'lucide-react';
+import { Loader2, Shield, Image as ImageIcon, AlertCircle, Upload, Sparkles, Search, UserPlus, HelpCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
@@ -196,7 +196,7 @@ const Index = () => {
           <Card className="border-0 shadow-md overflow-hidden mb-8">
             <CardHeader className="card-gradient-red text-white border-b">
               <div className="flex items-center">
-                <QuestionMark className="mr-2 h-5 w-5" />
+                <HelpCircle className="mr-2 h-5 w-5" />
                 <CardTitle className="text-2xl font-semibold leading-none tracking-tight">How It Works</CardTitle>
               </div>
             </CardHeader>
