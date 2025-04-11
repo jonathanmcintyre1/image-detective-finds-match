@@ -123,9 +123,9 @@ const BetaSignupForm = ({ onSuccess }: BetaSignupFormProps) => {
   };
 
   return (
-    <div className="bg-white border rounded-lg p-6 shadow-sm w-full">
+    <div className="w-full">
       <div className="mb-4 text-center">
-        <h2 className="text-lg font-semibold text-brand-dark">Get Early Access</h2>
+        <h2 className="text-xl font-semibold text-brand-dark">Get Early Access</h2>
         <p className="text-sm text-muted-foreground">
           Sign up for beta access to CopyProtect when we launch
         </p>

@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Upload, Image as ImageIcon, Loader2, AlertCircle, XCircle } from 'lucide-react';
@@ -17,7 +16,7 @@ const ImageUploader = ({ onImageSelected, isProcessing }: ImageUploaderProps) =>
   const [fileError, setFileError] = useState<string | null>(null);
   const [rejectedFile, setRejectedFile] = useState<boolean>(false);
   
-  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+  const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB
   
   const onDrop = useCallback((acceptedFiles: File[], rejectedFiles: any[]) => {
     setFileError(null);
@@ -26,9 +25,9 @@ const ImageUploader = ({ onImageSelected, isProcessing }: ImageUploaderProps) =>
     if (rejectedFiles.length > 0) {
       const errors = rejectedFiles[0].errors;
       if (errors.find((e: any) => e.code === 'file-too-large')) {
-        setFileError('File is too large. Maximum size is 5MB.');
+        setFileError('File is too large. Maximum size is 15MB.');
         setRejectedFile(true);
-        toast.error('File is too large', { description: 'Maximum size is 5MB' });
+        toast.error('File is too large', { description: 'Maximum size is 15MB' });
       } else if (errors.find((e: any) => e.code === 'file-invalid-type')) {
         setFileError('Please upload a valid image file (JPG, PNG, WEBP).');
         setRejectedFile(true);
@@ -40,9 +39,9 @@ const ImageUploader = ({ onImageSelected, isProcessing }: ImageUploaderProps) =>
     if (acceptedFiles.length > 0) {
       const file = acceptedFiles[0];
       if (file.size > MAX_FILE_SIZE) {
-        setFileError('File is too large. Maximum size is 5MB.');
+        setFileError('File is too large. Maximum size is 15MB.');
         setRejectedFile(true);
-        toast.error('File is too large', { description: 'Maximum size is 5MB' });
+        toast.error('File is too large', { description: 'Maximum size is 15MB' });
         return;
       }
       
@@ -171,7 +170,7 @@ const ImageUploader = ({ onImageSelected, isProcessing }: ImageUploaderProps) =>
         <Button 
           type="submit"
           disabled={isProcessing}
-          className="bg-[#CC121E] hover:bg-[#CC121E]/90"
+          variant="brand"
         >
           {isProcessing ? (
             <>

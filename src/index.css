@@ -128,7 +128,7 @@
 }
 
 .card-gradient-red {
-  @apply bg-gradient-to-r from-[#FF4141] to-[#FF7070];
+  @apply bg-gradient-to-r from-[#8B0016] to-[#CC0000];
 }
 
 .card-gradient-dark {

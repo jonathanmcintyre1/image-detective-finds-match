@@ -8,7 +8,7 @@ import BetaSignupForm from '@/components/BetaSignupForm';
 import { analyzeImage } from '@/services/googleVisionService';
 import { trackImageSearch } from '@/services/searchTrackingService';
 import { toast } from 'sonner';
-import { Loader2, Shield, Image as ImageIcon, AlertCircle, Upload, Sparkles, Search, UserPlus, Info } from 'lucide-react';
+import { Loader2, Shield, Image as ImageIcon, AlertCircle, Upload, Sparkles, Search, UserPlus, HelpCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
@@ -194,10 +194,10 @@ const Index = () => {
           )}
           
           <Card className="border-0 shadow-md overflow-hidden mb-8">
-            <CardHeader className="bg-gradient-to-r from-[#FF4141] to-[#FF7070] text-white border-b">
+            <CardHeader className="card-gradient-red text-white border-b">
               <div className="flex items-center">
-                <Info className="mr-2 h-5 w-5" />
-                <CardTitle className="text-xl font-semibold">How It Works</CardTitle>
+                <HelpCircle className="mr-2 h-5 w-5" />
+                <CardTitle className="text-2xl font-semibold leading-none tracking-tight">How It Works</CardTitle>
               </div>
             </CardHeader>
             <CardContent className="p-6">
@@ -235,12 +235,12 @@ const Index = () => {
             </CardContent>
           </Card>
           
-          <div className="grid grid-cols-1 gap-8">
-            <Card className="border-0 shadow-md overflow-hidden w-full" data-upload-section>
-              <CardHeader className="bg-gradient-to-r from-brand-dark to-brand-blue/90 text-white">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <Card className="border-0 shadow-md overflow-hidden w-full h-full" data-upload-section>
+              <CardHeader className="card-gradient-dark text-white">
                 <div className="flex items-center">
                   <ImageIcon className="mr-2 h-5 w-5" />
-                  <CardTitle>Upload Image</CardTitle>
+                  <CardTitle className="text-2xl font-semibold leading-none tracking-tight">Upload Image</CardTitle>
                 </div>
               </CardHeader>
               <CardContent className="p-6">
@@ -275,11 +275,11 @@ const Index = () => {
               </CardContent>
             </Card>
             
-            <Card className="border-0 shadow-md overflow-hidden w-full">
-              <CardHeader className="bg-gradient-to-r from-[#FF4141] to-[#FF7070] text-white">
+            <Card className="border-0 shadow-md overflow-hidden w-full h-full">
+              <CardHeader className="card-gradient-red text-white">
                 <div className="flex items-center">
                   <UserPlus className="mr-2 h-5 w-5" />
-                  <CardTitle>Get Early Access</CardTitle>
+                  <CardTitle className="text-2xl font-semibold leading-none tracking-tight">Get Early Access</CardTitle>
                 </div>
               </CardHeader>
               <CardContent className="p-6 flex justify-center">
