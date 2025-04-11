@@ -21,12 +21,15 @@ const buttonVariants = cva(
         link: "text-primary underline-offset-4 hover:underline",
         brand: "bg-gradient-to-r from-[#8B0016] to-[#CC0000] text-white hover:from-[#A90000] hover:to-[#E60000] shadow-md", 
         brandDark: "bg-[#333] text-white hover:bg-[#444] shadow-md",
+        action: "bg-blue-600 text-white hover:bg-blue-700 shadow-sm border border-blue-700",
+        neutral: "bg-gray-100 text-gray-800 hover:bg-gray-200 border border-gray-300",
       },
       size: {
         default: "h-10 px-5 py-2.5",
         sm: "h-9 rounded-md px-3.5 py-2",
         lg: "h-12 rounded-md px-8 py-3",
         icon: "h-10 w-10",
+        compact: "h-8 rounded-md px-3 py-1.5 text-xs",
       },
     },
     defaultVariants: {

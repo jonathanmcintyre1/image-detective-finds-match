@@ -1,10 +1,9 @@
-
 import React, { useState, useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { 
   AlertTriangle, AlertCircle, Link as LinkIcon, 
   ShoppingBag, FileText, Clock, Download, Globe, Image as ImageIcon,
-  Shield, ShieldAlert, Eye
+  Shield, ShieldAlert, Eye, Sparkles, Layout
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ExactMatchesTable } from './ExactMatchesTable';
@@ -22,6 +21,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from 'date-fns';
 import { useBetaSignupPrompt } from '@/hooks/useBetaSignupPrompt';
 import { toast } from 'sonner';
+import ImprovedResultsView from './ImprovedResultsView';
 
 interface WebEntity {
   entityId: string;
@@ -60,22 +60,19 @@ interface ResultsDisplayProps {
 const DEFAULT_ITEMS_TO_SHOW = 8; // Show more items by default
 
 const isLikelySpam = (url: string, pageTitle: string): boolean => {
-  // List of spam patterns
   const spamPatterns = [
-    /\.(ru|cn)\/(?![\w-]+\/)$/, // Russian or Chinese TLDs with no path
-    /bit\.ly/,         // URL shorteners
+    /\.(ru|cn)\/(?![\w-]+\/)$/,
+    /bit\.ly/,
     /goo\.gl/,
     /tinyurl/,
-    /(\d{1,3}\.){3}\d{1,3}/, // IP addresses
-    /porn|xxx|sex|adult|dating|casino|bet|loan|pharma|рф|бг/, // Known spam keywords
-    /\.(jsp|php|aspx)\?id=\d+$/, // Typical spam URL patterns
-    /forum|topic|thread|blog.*\?p=\d+$/, // Forum spam
+    /(\d{1,3}\.){3}\d{1,3}/,
+    /porn|xxx|sex|adult|dating|casino|bet|loan|pharma|рф|бг/,
+    /\.(jsp|php|aspx)\?id=\d+$/,
+    /forum|topic|thread|blog.*\?p=\d+$/,
   ];
   
-  // Check if URL matches any spam pattern
   const isSpamUrl = spamPatterns.some(pattern => pattern.test(url.toLowerCase()));
   
-  // Check if title is suspicious (very short, numeric, empty, or contains spam words)
   const isSpamTitle = !pageTitle || 
                       pageTitle.length < 3 || 
                       /^\d+$/.test(pageTitle) ||
@@ -92,9 +89,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
   
   if (!results) return null;
 
-  // Using useMemo to prevent unnecessary recalculations
   const processedResults = useMemo(() => {
-    // Process all results first
     const processedData = {
       ...results,
       visuallySimilarImages: results.visuallySimilarImages.map(img => ({
@@ -111,7 +106,6 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
     return processedData;
   }, [results, today]);
   
-  // Get legitimate and spam pages separately
   const legitimatePages = useMemo(() => 
     processedResults.pagesWithMatchingImages.filter((page: any) => !page.isSpam),
     [processedResults.pagesWithMatchingImages]
@@ -122,10 +116,8 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
     [processedResults.pagesWithMatchingImages]
   );
   
-  // Only use legitimate pages for normal display
   const displayPages = showSpamResults ? processedResults.pagesWithMatchingImages : legitimatePages;
   
-  // Using useMemo for all derived values to avoid recalculations during renders
   const exactMatches = useMemo(() => 
     processedResults.visuallySimilarImages.filter(img => img.score >= 0.9),
     [processedResults.visuallySimilarImages]
@@ -167,7 +159,6 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
     [allRelevantPages]
   );
 
-  // Count calculations
   const exactMatchCount = exactMatches.length;
   const partialMatchCount = partialMatches.length;
   const productPageCount = productPages.length;
@@ -189,7 +180,6 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
   };
 
   const exportResults = (type: 'csv' | 'pdf') => {
-    // Check if user has signed up for beta
     const hasSeenBetaSignup = localStorage.getItem('seen_beta_signup');
     
     if (!hasSeenBetaSignup) {
@@ -385,6 +375,13 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
                 Pages with Image
                 <Badge className="ml-2 bg-brand-blue text-white">
                   {pageMatchCount}
+                </Badge>
+              </TabsTrigger>
+              <TabsTrigger value="improved" className="relative px-6 py-2">
+                <Sparkles className="h-4 w-4 mr-1" />
+                Improved View
+                <Badge className="ml-2 bg-purple-500 text-white">
+                  {totalMatchCount}
                 </Badge>
               </TabsTrigger>
             </TabsList>
@@ -592,6 +589,26 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
                     <p className="text-muted-foreground">No pages containing your image were found</p>
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="improved" className="m-0">
+            <Card className="border-0 shadow-md">
+              <CardHeader className="bg-purple-500/10 border-b">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Badge className="bg-purple-500 text-white mr-2">{totalMatchCount}</Badge>
+                    <Layout className="h-4 w-4 mr-2 text-purple-500" />
+                    <CardTitle className="text-lg">Improved Results View</CardTitle>
+                  </div>
+                </div>
+                <CardDescription>
+                  Enhanced visualization with domain normalization and better context
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="pt-4">
+                <ImprovedResultsView results={processedResults} />
               </CardContent>
             </Card>
           </TabsContent>

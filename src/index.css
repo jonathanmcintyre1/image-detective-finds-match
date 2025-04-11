@@ -120,7 +120,7 @@
 }
 
 .btn-brand {
-  @apply bg-gradient-to-r from-[#FF4141] to-[#FF7070] text-white hover:from-[#FF2F2F] hover:to-[#FF5A5A] shadow-md;
+  @apply bg-gradient-to-r from-[#8B0016] to-[#CC0000] text-white hover:from-[#FF2F2F] hover:to-[#FF5A5A] shadow-md;
 }
 
 .btn-brand-dark {
@@ -134,3 +134,50 @@
 .card-gradient-dark {
   @apply bg-gradient-to-r from-brand-dark to-brand-blue/90;
 }
+
+/* Results display styles */
+.result-grid {
+  @apply grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4;
+}
+
+.result-card {
+  @apply bg-white rounded-lg shadow transition-all duration-300 hover:shadow-md border border-gray-200 overflow-hidden flex flex-col;
+}
+
+.result-image {
+  @apply aspect-square bg-gray-100 w-full object-cover;
+}
+
+.image-unavailable {
+  @apply flex items-center justify-center bg-gray-100 h-full w-full;
+}
+
+.domain-badge {
+  @apply text-xs font-medium px-2 py-1 rounded-full absolute top-2 left-2;
+}
+
+.match-percentage {
+  @apply absolute top-2 right-2 bg-white/90 text-xs font-bold px-2 py-1 rounded-full shadow-sm;
+}
+
+.skeleton-loader {
+  @apply animate-pulse bg-gray-200 rounded;
+}
+
+.infinite-scroll-container {
+  @apply overflow-y-auto max-h-[80vh] p-2;
+}
+
+/* Domain color map classes */
+.domain-amazon { @apply bg-[#FF9900] text-white; }
+.domain-ebay { @apply bg-[#E53238] text-white; }
+.domain-etsy { @apply bg-[#F45800] text-white; }
+.domain-pinterest { @apply bg-[#E60023] text-white; }
+.domain-instagram { @apply bg-gradient-to-r from-[#405DE6] via-[#5851DB] to-[#833AB4] text-white; }
+.domain-facebook { @apply bg-[#1877F2] text-white; }
+.domain-twitter { @apply bg-[#1DA1F2] text-white; }
+.domain-youtube { @apply bg-[#FF0000] text-white; }
+.domain-shopify { @apply bg-[#7AB55C] text-white; }
+.domain-walmart { @apply bg-[#0071CE] text-white; }
+.domain-cdn { @apply bg-gray-500 text-white; }
+.domain-unknown { @apply bg-gray-400 text-white; }
