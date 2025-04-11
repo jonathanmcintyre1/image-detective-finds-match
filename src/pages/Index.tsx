@@ -200,8 +200,8 @@ const Index = () => {
             <CardContent className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="flex flex-col items-center text-center">
-                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
-                    <Upload className="h-6 w-6 text-gray-600" />
+                  <div className="w-12 h-12 bg-gradient-to-b from-gray-50 to-gray-100 rounded-full flex items-center justify-center mb-3 shadow-md border border-gray-200">
+                    <Upload className="h-6 w-6 text-[#333]" />
                   </div>
                   <h3 className="font-medium mb-1">Upload Your Image</h3>
                   <p className="text-sm text-muted-foreground">
@@ -210,8 +210,8 @@ const Index = () => {
                 </div>
                 
                 <div className="flex flex-col items-center text-center">
-                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
-                    <Search className="h-6 w-6 text-gray-600" />
+                  <div className="w-12 h-12 bg-gradient-to-b from-gray-50 to-gray-100 rounded-full flex items-center justify-center mb-3 shadow-md border border-gray-200">
+                    <Search className="h-6 w-6 text-[#333]" />
                   </div>
                   <h3 className="font-medium mb-1">AI-Powered Scan</h3>
                   <p className="text-sm text-muted-foreground">
@@ -220,8 +220,8 @@ const Index = () => {
                 </div>
                 
                 <div className="flex flex-col items-center text-center">
-                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
-                    <Sparkles className="h-6 w-6 text-gray-600" />
+                  <div className="w-12 h-12 bg-gradient-to-b from-gray-50 to-gray-100 rounded-full flex items-center justify-center mb-3 shadow-md border border-gray-200">
+                    <Sparkles className="h-6 w-6 text-[#333]" />
                   </div>
                   <h3 className="font-medium mb-1">Review Results</h3>
                   <p className="text-sm text-muted-foreground">
@@ -232,7 +232,7 @@ const Index = () => {
             </CardContent>
           </Card>
           
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 gap-8">
             <Card className="border-0 shadow-md overflow-hidden w-full" data-upload-section>
               <CardHeader className="bg-gradient-to-r from-brand-dark to-brand-blue/90 text-white">
                 <div className="flex items-center">
@@ -273,13 +273,13 @@ const Index = () => {
             </Card>
             
             <Card className="border-0 shadow-md overflow-hidden w-full">
-              <CardHeader className="bg-gradient-to-r from-[#9B1B30] to-[#E82C45] text-white">
+              <CardHeader className="bg-gradient-to-r from-[#333] to-[#555] text-white">
                 <div className="flex items-center">
                   <UserPlus className="mr-2 h-5 w-5" />
                   <CardTitle>Get Early Access</CardTitle>
                 </div>
               </CardHeader>
-              <CardContent className="p-6">
+              <CardContent className="p-6 flex justify-center">
                 <BetaSignupForm onSuccess={handleBetaSignupSuccess} />
               </CardContent>
             </Card>
@@ -289,7 +289,7 @@ const Index = () => {
             {isProcessing && (
               <Card className="border-0 shadow-md h-64 w-full">
                 <CardContent className="p-6 h-full flex flex-col items-center justify-center">
-                  <Loader2 className="h-12 w-12 text-[#CC121E] animate-spin mb-4" />
+                  <Loader2 className="h-12 w-12 text-[#333] animate-spin mb-4" />
                   <p className="text-lg font-medium">Analyzing image...</p>
                   <div className="w-full max-w-xs mt-4">
                     <div className="space-y-2">

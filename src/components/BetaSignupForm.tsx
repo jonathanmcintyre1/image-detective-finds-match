@@ -119,7 +119,7 @@ const BetaSignupForm = ({ onSuccess }: BetaSignupFormProps) => {
   };
 
   return (
-    <div className="bg-white border rounded-lg p-6 shadow-sm max-w-md w-full">
+    <div className="bg-white border rounded-lg p-6 shadow-sm w-full">
       <div className="mb-4 text-center">
         <h2 className="text-lg font-semibold text-brand-dark">Get Early Access</h2>
         <p className="text-sm text-muted-foreground">
@@ -208,7 +208,8 @@ const BetaSignupForm = ({ onSuccess }: BetaSignupFormProps) => {
           
           <Button 
             type="submit" 
-            className="w-full bg-[#CC121E] hover:bg-[#CC121E]/90"
+            className="w-full bg-[#333] hover:bg-[#333]/90"
+            variant="brand"
             disabled={loading}
           >
             {loading ? (

@@ -1,8 +1,10 @@
+
 import React, { useState, useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { 
   AlertTriangle, AlertCircle, Link as LinkIcon, 
-  ShoppingBag, FileText, Clock, Download, Globe, Image as ImageIcon
+  ShoppingBag, FileText, Clock, Download, Globe, Image as ImageIcon,
+  Shield, ShieldAlert, Eye
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ExactMatchesTable } from './ExactMatchesTable';
@@ -86,23 +88,42 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
   const [sortBy, setSortBy] = useState<'confidence' | 'date' | 'domain' | 'count'>('confidence');
   const [today] = useState(new Date());
   const { showBetaSignup, setShowBetaSignup } = useBetaSignupPrompt();
+  const [showSpamResults, setShowSpamResults] = useState(false);
   
   if (!results) return null;
 
   // Using useMemo to prevent unnecessary recalculations
-  const processedResults = useMemo(() => ({
-    ...results,
-    visuallySimilarImages: results.visuallySimilarImages.map(img => ({
-      ...img,
-      dateFound: img.dateFound || new Date(today.getTime() - Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000)
-    })),
-    pagesWithMatchingImages: results.pagesWithMatchingImages
-      .filter(page => !isLikelySpam(page.url, page.pageTitle))
-      .map(page => ({
+  const processedResults = useMemo(() => {
+    // Process all results first
+    const processedData = {
+      ...results,
+      visuallySimilarImages: results.visuallySimilarImages.map(img => ({
+        ...img,
+        dateFound: img.dateFound || new Date(today.getTime() - Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000)
+      })),
+      pagesWithMatchingImages: results.pagesWithMatchingImages.map(page => ({
         ...page,
-        dateFound: page.dateFound || new Date(today.getTime() - Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000)
+        dateFound: page.dateFound || new Date(today.getTime() - Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000),
+        isSpam: isLikelySpam(page.url, page.pageTitle)
       }))
-  }), [results, today]);
+    };
+    
+    return processedData;
+  }, [results, today]);
+  
+  // Get legitimate and spam pages separately
+  const legitimatePages = useMemo(() => 
+    processedResults.pagesWithMatchingImages.filter((page: any) => !page.isSpam),
+    [processedResults.pagesWithMatchingImages]
+  );
+  
+  const spamPages = useMemo(() => 
+    processedResults.pagesWithMatchingImages.filter((page: any) => page.isSpam),
+    [processedResults.pagesWithMatchingImages]
+  );
+  
+  // Only use legitimate pages for normal display
+  const displayPages = showSpamResults ? processedResults.pagesWithMatchingImages : legitimatePages;
   
   // Using useMemo for all derived values to avoid recalculations during renders
   const exactMatches = useMemo(() => 
@@ -116,10 +137,10 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
   );
   
   const allRelevantPages = useMemo(() => 
-    processedResults.pagesWithMatchingImages
+    displayPages
       .filter(page => page.score >= 0.6)
       .filter(page => page.matchingImages && page.matchingImages.length > 0),
-    [processedResults.pagesWithMatchingImages]
+    [displayPages]
   );
   
   const productPages = useMemo(() => 
@@ -155,6 +176,17 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
   const otherPageCount = otherPages.length;
   const pageMatchCount = productPageCount + categoryPageCount + searchPageCount + otherPageCount;
   const totalMatchCount = exactMatchCount + partialMatchCount + pageMatchCount;
+  const spamPagesCount = spamPages.length;
+
+  const toggleSpamResults = () => {
+    setShowSpamResults(!showSpamResults);
+    
+    if (!showSpamResults && spamPagesCount > 0) {
+      toast.info(`Showing ${spamPagesCount} potential spam results`, {
+        description: "These results were filtered out due to suspicious content"
+      });
+    }
+  };
 
   const exportResults = (type: 'csv' | 'pdf') => {
     // Check if user has signed up for beta
@@ -242,24 +274,39 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
           </div>
           <CardDescription className="text-white/80 mt-1">
             Found {totalMatchCount} potential matches for your image
+            {spamPagesCount > 0 && (
+              <button 
+                onClick={toggleSpamResults}
+                className="ml-3 text-xs underline hover:text-white transition-colors flex items-center"
+              >
+                <Eye className="h-3 w-3 mr-1" />
+                {showSpamResults ? "Hide" : "View"} Potential Spam Results ({spamPagesCount})
+              </button>
+            )}
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-6">
           <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
             <div className="flex items-center flex-wrap gap-2">
               <div className="flex flex-wrap gap-2">
-                <div className="flex flex-col items-center justify-center px-4 py-2 bg-red-50 border border-red-100 rounded-lg">
+                <div className="flex flex-col items-center justify-center px-4 py-2 bg-gradient-to-b from-gray-50 to-gray-100 border border-gray-200 rounded-lg shadow-sm">
                   <span className="text-xl font-bold text-brand-red">{exactMatchCount}</span>
                   <span className="text-xs text-muted-foreground">Exact</span>
                 </div>
-                <div className="flex flex-col items-center justify-center px-4 py-2 bg-amber-50 border border-amber-100 rounded-lg">
+                <div className="flex flex-col items-center justify-center px-4 py-2 bg-gradient-to-b from-gray-50 to-gray-100 border border-gray-200 rounded-lg shadow-sm">
                   <span className="text-xl font-bold text-amber-500">{partialMatchCount}</span>
                   <span className="text-xs text-muted-foreground">Partial</span>
                 </div>
-                <div className="flex flex-col items-center justify-center px-4 py-2 bg-blue-50 border border-blue-100 rounded-lg">
+                <div className="flex flex-col items-center justify-center px-4 py-2 bg-gradient-to-b from-gray-50 to-gray-100 border border-gray-200 rounded-lg shadow-sm">
                   <span className="text-xl font-bold text-brand-blue">{pageMatchCount}</span>
                   <span className="text-xs text-muted-foreground">Pages</span>
                 </div>
+                {showSpamResults && spamPagesCount > 0 && (
+                  <div className="flex flex-col items-center justify-center px-4 py-2 bg-gradient-to-b from-red-50 to-red-100 border border-red-200 rounded-lg shadow-sm">
+                    <span className="text-xl font-bold text-red-500">{spamPagesCount}</span>
+                    <span className="text-xs text-muted-foreground">Spam</span>
+                  </div>
+                )}
               </div>
             </div>
             
@@ -289,6 +336,26 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
               </div>
             </div>
           )}
+          
+          {showSpamResults && (
+            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start">
+              <ShieldAlert className="text-red-500 h-5 w-5 mr-3 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-medium text-red-600">Showing potential spam results</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  These results were filtered out due to suspicious patterns or content
+                </p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="mt-2 bg-white text-red-600 border-red-200 hover:bg-red-50"
+                  onClick={toggleSpamResults}
+                >
+                  Hide Spam Results
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -298,7 +365,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
             <TabsList className="w-full h-auto justify-start mb-4 bg-gray-100 p-1.5">
               <TabsTrigger value="all" className="relative px-6 py-2">
                 All Results
-                <Badge className="ml-2 bg-gray-500 text-white">
+                <Badge className="ml-2 bg-[#333] text-white">
                   {totalMatchCount}
                 </Badge>
               </TabsTrigger>
@@ -327,7 +394,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
             <Card className="border-0 shadow-md">
               <CardHeader className="bg-gray-50 border-b">
                 <div className="flex items-center">
-                  <Badge className="bg-gray-500 text-white mr-2">{totalMatchCount}</Badge>
+                  <Badge className="bg-[#333] text-white mr-2">{totalMatchCount}</Badge>
                   <CardTitle className="text-lg">All Results</CardTitle>
                 </div>
                 <CardDescription>
