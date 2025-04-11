@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { 
@@ -75,7 +75,7 @@ const getNormalizedDomain = (url: string): string => {
     }
     
     // Extract main domain for common services
-    if (domain.includes('instagram') || domain.includes('cdninstagram') || domain.includes('fbcdn')) {
+    if (domain.includes('instagram') || domain.includes('cdninstagram') || domain.includes('fbcdn') || domain.includes('lookaside')) {
       return 'Instagram';
     } else if (domain.includes('facebook') || domain.includes('fbcdn')) {
       return 'Facebook';
@@ -164,7 +164,7 @@ const ImageWithFallback = ({ src, domain }: { src?: string, domain: string }) =>
   
   if (hasError || !src) {
     return (
-      <div className="image-unavailable">
+      <div className="image-unavailable w-full h-full flex items-center justify-center bg-gray-200">
         <div className="flex flex-col items-center justify-center p-4 text-center">
           <ImageIcon className="h-8 w-8 text-gray-400 mb-2" />
           <span className="text-xs text-gray-500">Preview Unavailable</span>
@@ -177,7 +177,7 @@ const ImageWithFallback = ({ src, domain }: { src?: string, domain: string }) =>
     <img 
       src={src} 
       alt={`Match from ${domain}`} 
-      className="result-image"
+      className="result-image w-full h-full object-cover"
       onError={() => setHasError(true)}
       loading="lazy"
     />
@@ -203,23 +203,25 @@ const ResultCard = ({
   const title = 'pageTitle' in item ? item.pageTitle : domain;
   
   return (
-    <div className="result-card hover:scale-[1.02] cursor-pointer" onClick={onClick}>
+    <div className="result-card cursor-pointer" onClick={onClick}>
       <div className="relative">
         <Badge className={`domain-badge ${domainClass}`}>
           {domain}
         </Badge>
-        <Badge className={`match-percentage ${score >= 0.9 ? 'bg-red-500 text-white' : 'bg-amber-500 text-white'}`}>
+        <Badge className={`match-percentage ${score >= 0.9 ? 'bg-red-500' : 'bg-amber-500'} text-white`}>
           {Math.round(score * 100)}%
         </Badge>
-        <ImageWithFallback src={imageUrl || ('url' in item ? item.url : '')} domain={domain} />
+        <div className="h-48 w-full overflow-hidden">
+          <ImageWithFallback src={imageUrl || ('url' in item ? item.url : '')} domain={domain} />
+        </div>
       </div>
-      <div className="p-3">
+      <div className="p-3 bg-gray-100">
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center">
             {getMatchTypeIcon(type, pageType)}
             <span className="text-xs font-medium ml-1">
               {type === 'exact' ? 'Exact Match' : 
-               type === 'partial' ? 'Similar' : 
+               type === 'partial' ? 'Partial Match' : 
                pageType === 'product' ? 'Product' :
                pageType === 'category' ? 'Category' :
                pageType === 'search' ? 'Search' : 'Page'}
@@ -288,7 +290,7 @@ const ResultDetail = ({
           {getMatchTypeIcon(type, pageType)}
           <span className="ml-2">
             {type === 'exact' ? 'Exact Match' : 
-             type === 'partial' ? 'Similar Match' : 
+             type === 'partial' ? 'Partial Match' : 
              pageType === 'product' ? 'Product Page' :
              pageType === 'category' ? 'Category Page' :
              pageType === 'search' ? 'Search Page' : 'Web Page'}
@@ -301,7 +303,7 @@ const ResultDetail = ({
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         <div>
-          <div className="rounded-lg overflow-hidden border bg-gray-50">
+          <div className="rounded-lg overflow-hidden border bg-gray-200 h-64 w-full">
             <ImageWithFallback src={imageUrl || ('url' in item ? item.url : '')} domain={domain} />
           </div>
         </div>
@@ -344,7 +346,7 @@ const ResultDetail = ({
           <h3 className="text-base font-medium mb-2">Images on this page ({matchingImages.length})</h3>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {matchingImages.map((img, idx) => (
-              <div key={idx} className="relative rounded-md overflow-hidden border">
+              <div key={idx} className="relative rounded-md overflow-hidden border h-24">
                 <ImageWithFallback src={img.imageUrl || img.url} domain={domain} />
                 <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs p-1">
                   {Math.round(img.score * 100)}% Match
@@ -405,59 +407,95 @@ const ImprovedResultsView: React.FC<ImprovedResultsViewProps> = ({ results }) =>
   const [selectedItem, setSelectedItem] = useState<{item: WebImage | WebPage, type: 'exact' | 'partial' | 'page'} | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [displayItems, setDisplayItems] = useState<Array<{item: WebImage | WebPage, type: 'exact' | 'partial' | 'page'}>>([]);
   
   const observerTarget = useRef<HTMLDivElement>(null);
   
-  // Process results data
-  useEffect(() => {
-    if (!results) {
-      setDisplayItems([]);
-      return;
-    }
+  // Group items by domain
+  const groupedItems = useMemo(() => {
+    if (!results) return {};
     
-    setIsLoading(true);
+    const groups: Record<string, Array<{item: WebImage | WebPage, type: 'exact' | 'partial' | 'page'}>> = {};
     
-    setTimeout(() => {
-      let items: Array<{item: WebImage | WebPage, type: 'exact' | 'partial' | 'page'}> = [];
-      
-      // Exact matches
+    // Process exact matches (score >= 0.9)
+    results.visuallySimilarImages
+      .filter(img => img.score >= 0.9)
+      .forEach(img => {
+        const domain = getNormalizedDomain(img.url);
+        if (!groups[domain]) groups[domain] = [];
+        groups[domain].push({ item: img, type: 'exact' as const });
+      });
+    
+    // Process partial matches (score >= 0.7 and < 0.9)
+    results.visuallySimilarImages
+      .filter(img => img.score >= 0.7 && img.score < 0.9)
+      .forEach(img => {
+        const domain = getNormalizedDomain(img.url);
+        if (!groups[domain]) groups[domain] = [];
+        groups[domain].push({ item: img, type: 'partial' as const });
+      });
+    
+    // Process pages (non-spam)
+    results.pagesWithMatchingImages
+      .filter(page => !page.isSpam)
+      .forEach(page => {
+        const domain = getNormalizedDomain(page.url);
+        if (!groups[domain]) groups[domain] = [];
+        groups[domain].push({ item: page, type: 'page' as const });
+      });
+    
+    return groups;
+  }, [results]);
+  
+  // Get items based on filter
+  const getFilteredItems = () => {
+    if (!results) return [];
+    
+    let items: Array<{item: WebImage | WebPage, type: 'exact' | 'partial' | 'page'}> = [];
+    
+    // Exact matches (score >= 0.9)
+    if (filter === 'all' || filter === 'exact') {
       const exactMatches = results.visuallySimilarImages
         .filter(img => img.score >= 0.9)
         .map(img => ({ item: img, type: 'exact' as const }));
-      
-      // Partial matches
+      items = [...items, ...exactMatches];
+    }
+    
+    // Partial matches (score >= 0.7 and < 0.9)
+    if (filter === 'all' || filter === 'partial') {
       const partialMatches = results.visuallySimilarImages
         .filter(img => img.score >= 0.7 && img.score < 0.9)
         .map(img => ({ item: img, type: 'partial' as const }));
-      
-      // Pages
+      items = [...items, ...partialMatches];
+    }
+    
+    // Pages
+    if (filter === 'all' || filter === 'pages') {
       const pageMatches = results.pagesWithMatchingImages
         .filter(page => !page.isSpam)
         .map(page => ({ item: page, type: 'page' as const }));
-      
-      // Filter based on the selected filter
-      switch (filter) {
-        case 'exact':
-          items = exactMatches;
-          break;
-        case 'partial':
-          items = partialMatches;
-          break;
-        case 'pages':
-          items = pageMatches;
-          break;
-        default:
-          items = [...exactMatches, ...partialMatches, ...pageMatches];
-          break;
-      }
-      
-      // Sort by confidence
-      items.sort((a, b) => b.item.score - a.item.score);
-      
-      setDisplayItems(items);
-      setIsLoading(false);
-    }, 500);
+      items = [...items, ...pageMatches];
+    }
+    
+    return items;
+  };
+  
+  // Get domain-grouped filtered items
+  const displayGroups = useMemo(() => {
+    const allItems = getFilteredItems();
+    
+    // Group by domain
+    const groups: Record<string, Array<{item: WebImage | WebPage, type: 'exact' | 'partial' | 'page'}>> = {};
+    
+    allItems.forEach(item => {
+      const domain = getNormalizedDomain('url' in item.item ? item.item.url : '');
+      if (!groups[domain]) groups[domain] = [];
+      groups[domain].push(item);
+    });
+    
+    // Convert to array and sort by most matches
+    return Object.entries(groups)
+      .map(([domain, items]) => ({ domain, items }))
+      .sort((a, b) => b.items.length - a.items.length);
   }, [results, filter]);
   
   const handleItemClick = (item: WebImage | WebPage, type: 'exact' | 'partial' | 'page') => {
@@ -499,7 +537,7 @@ const ImprovedResultsView: React.FC<ImprovedResultsViewProps> = ({ results }) =>
                 <Badge className="ml-1 bg-red-500 text-white">{exactCount}</Badge>
               </TabsTrigger>
               <TabsTrigger value="partial" className="flex items-center">
-                Similar
+                Partial
                 <Badge className="ml-1 bg-amber-500 text-white">{partialCount}</Badge>
               </TabsTrigger>
               <TabsTrigger value="pages" className="flex items-center">
@@ -566,7 +604,7 @@ const ImprovedResultsView: React.FC<ImprovedResultsViewProps> = ({ results }) =>
                         </div>
                         <div className="flex items-center text-sm">
                           <Badge className="bg-amber-500 text-white mr-2">70-89%</Badge>
-                          <span>Similar matches - Visually similar to your image</span>
+                          <span>Partial matches - Partially matching your image</span>
                         </div>
                         <div className="flex items-center text-sm">
                           <Badge className="bg-blue-500 text-white mr-2">Pages</Badge>
@@ -588,60 +626,83 @@ const ImprovedResultsView: React.FC<ImprovedResultsViewProps> = ({ results }) =>
       {isLoading ? (
         <LoadingSkeleton />
       ) : (
-        displayItems.length > 0 ? (
-          <div className={viewType === 'grid' ? 'result-grid' : 'space-y-2'}>
-            {displayItems.map((data, idx) => (
-              <React.Fragment key={idx}>
-                {viewType === 'grid' ? (
-                  <ResultCard 
-                    item={data.item} 
-                    type={data.type} 
-                    onClick={() => handleItemClick(data.item, data.type)} 
-                  />
-                ) : (
-                  <Card className="cursor-pointer hover:bg-gray-50" onClick={() => handleItemClick(data.item, data.type)}>
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-4">
-                        <div className="w-16 h-16 rounded-md overflow-hidden bg-gray-100 flex-shrink-0">
-                          <ImageWithFallback 
-                            src={'imageUrl' in data.item ? data.item.imageUrl : ('url' in data.item ? data.item.url : undefined)} 
-                            domain={getNormalizedDomain('url' in data.item ? data.item.url : '')} 
-                          />
-                        </div>
-                        <div className="flex-grow min-w-0">
-                          <div className="flex items-center justify-between mb-1">
-                            <Badge className={`${getDomainColorClass(getNormalizedDomain('url' in data.item ? data.item.url : ''))}`}>
-                              {getNormalizedDomain('url' in data.item ? data.item.url : '')}
-                            </Badge>
-                            <Badge className={data.item.score >= 0.9 ? 'bg-red-500 text-white' : 'bg-amber-500 text-white'}>
-                              {Math.round(data.item.score * 100)}%
-                            </Badge>
-                          </div>
-                          <h3 className="font-medium truncate">
-                            {'pageTitle' in data.item ? data.item.pageTitle : 'Image Match'}
-                          </h3>
-                          <div className="flex items-center justify-between mt-1">
-                            <div className="flex items-center text-xs text-muted-foreground">
-                              {getMatchTypeIcon(data.type, 'pageType' in data.item ? data.item.pageType : undefined)}
-                              <span className="ml-1">
-                                {data.type === 'exact' ? 'Exact Match' : 
-                                data.type === 'partial' ? 'Similar' : 
-                                'pageType' in data.item && data.item.pageType === 'product' ? 'Product' :
-                                'pageType' in data.item && data.item.pageType === 'category' ? 'Category' :
-                                'pageType' in data.item && data.item.pageType === 'search' ? 'Search' : 'Page'}
-                              </span>
+        displayGroups.length > 0 ? (
+          <div className="space-y-6">
+            {displayGroups.map((group, groupIdx) => (
+              <div key={groupIdx} className="border rounded-lg overflow-hidden shadow-sm">
+                <div className="bg-gray-200 px-4 py-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <Badge className={`${getDomainColorClass(group.domain)} mr-2`}>
+                        {group.items.length}
+                      </Badge>
+                      <h3 className="text-base font-medium">{group.domain}</h3>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="p-4">
+                  {viewType === 'grid' ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                      {group.items.map((item, idx) => (
+                        <ResultCard 
+                          key={idx}
+                          item={item.item} 
+                          type={item.type} 
+                          onClick={() => handleItemClick(item.item, item.type)} 
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {group.items.map((item, idx) => (
+                        <Card 
+                          key={idx} 
+                          className="cursor-pointer"
+                          onClick={() => handleItemClick(item.item, item.type)}
+                        >
+                          <CardContent className="p-4">
+                            <div className="flex items-center gap-4">
+                              <div className="w-16 h-16 rounded-md overflow-hidden bg-gray-200 flex-shrink-0">
+                                <ImageWithFallback 
+                                  src={'imageUrl' in item.item ? item.item.imageUrl : ('url' in item.item ? item.item.url : undefined)} 
+                                  domain={getNormalizedDomain('url' in item.item ? item.item.url : '')} 
+                                />
+                              </div>
+                              <div className="flex-grow min-w-0">
+                                <div className="flex items-center justify-between mb-1">
+                                  <Badge className={item.item.score >= 0.9 ? 'bg-red-500 text-white' : 'bg-amber-500 text-white'}>
+                                    {Math.round(item.item.score * 100)}%
+                                  </Badge>
+                                </div>
+                                <h3 className="font-medium truncate">
+                                  {'pageTitle' in item.item ? item.item.pageTitle : 'Image Match'}
+                                </h3>
+                                <div className="flex items-center justify-between mt-1">
+                                  <div className="flex items-center text-xs text-muted-foreground">
+                                    {getMatchTypeIcon(item.type, 'pageType' in item.item ? item.item.pageType : undefined)}
+                                    <span className="ml-1">
+                                      {item.type === 'exact' ? 'Exact Match' : 
+                                      item.type === 'partial' ? 'Partial Match' : 
+                                      'pageType' in item.item && item.item.pageType === 'product' ? 'Product' :
+                                      'pageType' in item.item && item.item.pageType === 'category' ? 'Category' :
+                                      'pageType' in item.item && item.item.pageType === 'search' ? 'Search' : 'Page'}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center text-xs text-muted-foreground">
+                                    <Clock className="w-3 h-3 mr-1" />
+                                    {formatDate('dateFound' in item.item ? item.item.dateFound : undefined)}
+                                  </div>
+                                </div>
+                              </div>
                             </div>
-                            <div className="flex items-center text-xs text-muted-foreground">
-                              <Clock className="w-3 h-3 mr-1" />
-                              {formatDate('dateFound' in data.item ? data.item.dateFound : undefined)}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-              </React.Fragment>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
             ))}
             {/* Observer element for infinite scrolling */}
             <div ref={observerTarget} className="h-1" />
