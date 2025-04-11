@@ -318,9 +318,9 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
                     <TableRow>
                       <TableHead className="w-16">Image</TableHead>
                       <TableHead>Website</TableHead>
-                      <TableHead>URL</TableHead>
-                      {!compact && <TableHead>Found</TableHead>}
-                      <TableHead className="w-24 text-right">Confidence</TableHead>
+                      <TableHead className="hidden md:table-cell">URL</TableHead>
+                      {!compact && <TableHead className="hidden md:table-cell">Found</TableHead>}
+                      <TableHead className="w-24 text-right">Score</TableHead>
                       <TableHead className="w-20 text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -368,13 +368,19 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
                                   getHostname(match.url)
                                 )}
                               </div>
+                              <div className="md:hidden text-xs mt-1 text-brand-blue underline">
+                                <a href={match.url} target="_blank" rel="noopener noreferrer" className="flex items-center">
+                                  View URL
+                                  <ExternalLink className="ml-1 h-3 w-3 inline flex-shrink-0" />
+                                </a>
+                              </div>
                               {relatedPagesList.length > 0 && (
                                 <div className="text-xs mt-1 text-brand-blue">
                                   {relatedPagesList.length} page{relatedPagesList.length !== 1 ? 's' : ''} with this image
                                 </div>
                               )}
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="hidden md:table-cell">
                               <div className="max-w-xs truncate text-sm text-brand-blue hover:underline">
                                 <a href={match.url} target="_blank" rel="noopener noreferrer" className="flex items-center">
                                   {getHostname(match.url)}
@@ -383,7 +389,7 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
                               </div>
                             </TableCell>
                             {!compact && (
-                              <TableCell>
+                              <TableCell className="hidden md:table-cell">
                                 <div className="flex items-center text-sm text-muted-foreground">
                                   <Calendar className="h-3 w-3 mr-1" />
                                   {match.dateFound 
@@ -406,7 +412,7 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
                                   title="Copy URL"
                                   onClick={() => handleCopyUrl(match.url)}
                                 >
-                                  <Copy className="h-4 w-4 text-muted-foreground" />
+                                  <Copy className="h-4 w-4 text-gray-600" />
                                 </Button>
                                 <Button 
                                   variant="ghost" 
@@ -416,7 +422,7 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
                                   asChild
                                 >
                                   <a href={match.url} target="_blank" rel="noopener noreferrer">
-                                    <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                                    <ExternalLink className="h-4 w-4 text-gray-600" />
                                   </a>
                                 </Button>
                               </div>
@@ -430,7 +436,7 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
                                   <p className="text-xs font-medium text-muted-foreground mb-1">Pages with Image:</p>
                                   <div className="space-y-1">
                                     {relatedPagesList.map((page, pageIdx) => (
-                                      <div key={pageIdx} className="flex items-center justify-between text-sm">
+                                      <div key={pageIdx} className="flex items-center justify-between text-sm flex-wrap gap-1">
                                         <a 
                                           href={page.url} 
                                           target="_blank" 
@@ -448,7 +454,7 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
                                                   page.pageType === 'search' ? 'Search' : 'Page'}</span>
                                           </Badge>
                                           {!compact && page.dateFound && (
-                                            <span className="text-xs text-muted-foreground">
+                                            <span className="text-xs text-muted-foreground hidden md:inline">
                                               {format(page.dateFound, 'MMM d, yyyy')}
                                             </span>
                                           )}

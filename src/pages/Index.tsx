@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import Header from '@/components/Header';
 import ImageUploader from '@/components/ImageUploader';
@@ -159,7 +160,7 @@ const Index = () => {
       <div className="min-h-screen flex flex-col bg-gray-50 font-sans">
         <Header />
         
-        <main className="flex-1 md:max-w-[75%] lg:max-w-[75%] mx-auto py-8 px-4 space-y-8">
+        <main className="flex-1 md:max-w-[80%] lg:max-w-[80%] mx-auto py-8 px-4 space-y-8">
           <div className="text-center max-w-2xl mx-auto space-y-4">
             <div className="flex items-center justify-center mb-2">
               <div className="relative h-16 w-16 mr-3">
@@ -199,8 +200,8 @@ const Index = () => {
             <CardContent className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="flex flex-col items-center text-center">
-                  <div className="w-12 h-12 bg-[#CC121E]/10 rounded-full flex items-center justify-center mb-3">
-                    <Upload className="h-6 w-6 text-[#CC121E]" />
+                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
+                    <Upload className="h-6 w-6 text-gray-600" />
                   </div>
                   <h3 className="font-medium mb-1">Upload Your Image</h3>
                   <p className="text-sm text-muted-foreground">
@@ -209,8 +210,8 @@ const Index = () => {
                 </div>
                 
                 <div className="flex flex-col items-center text-center">
-                  <div className="w-12 h-12 bg-[#CC121E]/10 rounded-full flex items-center justify-center mb-3">
-                    <Search className="h-6 w-6 text-[#CC121E]" />
+                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
+                    <Search className="h-6 w-6 text-gray-600" />
                   </div>
                   <h3 className="font-medium mb-1">AI-Powered Scan</h3>
                   <p className="text-sm text-muted-foreground">
@@ -219,8 +220,8 @@ const Index = () => {
                 </div>
                 
                 <div className="flex flex-col items-center text-center">
-                  <div className="w-12 h-12 bg-[#CC121E]/10 rounded-full flex items-center justify-center mb-3">
-                    <Sparkles className="h-6 w-6 text-[#CC121E]" />
+                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
+                    <Sparkles className="h-6 w-6 text-gray-600" />
                   </div>
                   <h3 className="font-medium mb-1">Review Results</h3>
                   <p className="text-sm text-muted-foreground">
@@ -232,7 +233,7 @@ const Index = () => {
           </Card>
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <Card className="border-0 shadow-md overflow-hidden" data-upload-section>
+            <Card className="border-0 shadow-md overflow-hidden w-full" data-upload-section>
               <CardHeader className="bg-gradient-to-r from-brand-dark to-brand-blue/90 text-white">
                 <div className="flex items-center">
                   <ImageIcon className="mr-2 h-5 w-5" />
@@ -271,7 +272,7 @@ const Index = () => {
               </CardContent>
             </Card>
             
-            <Card className="border-0 shadow-md overflow-hidden">
+            <Card className="border-0 shadow-md overflow-hidden w-full">
               <CardHeader className="bg-gradient-to-r from-[#9B1B30] to-[#E82C45] text-white">
                 <div className="flex items-center">
                   <UserPlus className="mr-2 h-5 w-5" />
@@ -284,9 +285,9 @@ const Index = () => {
             </Card>
           </div>
           
-          <div className="lg:col-span-2">
+          <div className="w-full">
             {isProcessing && (
-              <Card className="border-0 shadow-md h-64">
+              <Card className="border-0 shadow-md h-64 w-full">
                 <CardContent className="p-6 h-full flex flex-col items-center justify-center">
                   <Loader2 className="h-12 w-12 text-[#CC121E] animate-spin mb-4" />
                   <p className="text-lg font-medium">Analyzing image...</p>
@@ -303,13 +304,13 @@ const Index = () => {
             )}
             
             {!isProcessing && results && (
-              <div>
+              <div className="w-full">
                 <ResultsDisplay results={results} />
               </div>
             )}
             
             {!isProcessing && !results && !selectedImage && (
-              <Card className="border-0 shadow-md h-64">
+              <Card className="border-0 shadow-md h-64 w-full">
                 <CardContent className="p-6 h-full flex flex-col items-center justify-center">
                   <ImageIcon className="h-12 w-12 text-gray-300 mb-4" />
                   <p className="text-lg font-medium text-brand-dark">No image selected</p>
@@ -321,7 +322,7 @@ const Index = () => {
         </main>
         
         <footer className="border-t py-6 bg-gradient-to-r from-brand-dark to-brand-blue/90 text-white">
-          <div className="container max-w-[75%] mx-auto text-center text-sm">
+          <div className="container max-w-[80%] mx-auto text-center text-sm">
             <div className="flex items-center justify-center gap-2 mb-2">
               <img 
                 src="/lovable-uploads/02ba20bb-b85e-440c-9a4d-865ee5336758.png" 

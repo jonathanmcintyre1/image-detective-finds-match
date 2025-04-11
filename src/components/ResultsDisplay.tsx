@@ -1,9 +1,8 @@
-
 import React, { useState, useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { 
   AlertTriangle, AlertCircle, Link as LinkIcon, 
-  ShoppingBag, FileText, Shield, Clock, Download, Globe, Image as ImageIcon
+  ShoppingBag, FileText, Clock, Download, Globe, Image as ImageIcon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ExactMatchesTable } from './ExactMatchesTable';
@@ -58,6 +57,31 @@ interface ResultsDisplayProps {
 
 const DEFAULT_ITEMS_TO_SHOW = 8; // Show more items by default
 
+const isLikelySpam = (url: string, pageTitle: string): boolean => {
+  // List of spam patterns
+  const spamPatterns = [
+    /\.(ru|cn)\/(?![\w-]+\/)$/, // Russian or Chinese TLDs with no path
+    /bit\.ly/,         // URL shorteners
+    /goo\.gl/,
+    /tinyurl/,
+    /(\d{1,3}\.){3}\d{1,3}/, // IP addresses
+    /porn|xxx|sex|adult|dating|casino|bet|loan|pharma|рф|бг/, // Known spam keywords
+    /\.(jsp|php|aspx)\?id=\d+$/, // Typical spam URL patterns
+    /forum|topic|thread|blog.*\?p=\d+$/, // Forum spam
+  ];
+  
+  // Check if URL matches any spam pattern
+  const isSpamUrl = spamPatterns.some(pattern => pattern.test(url.toLowerCase()));
+  
+  // Check if title is suspicious (very short, numeric, empty, or contains spam words)
+  const isSpamTitle = !pageTitle || 
+                      pageTitle.length < 3 || 
+                      /^\d+$/.test(pageTitle) ||
+                      /sex|porn|xxx|hot|dating|viagra|casino/.test(pageTitle.toLowerCase());
+  
+  return isSpamUrl || isSpamTitle;
+};
+
 const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
   const [sortBy, setSortBy] = useState<'confidence' | 'date' | 'domain' | 'count'>('confidence');
   const [today] = useState(new Date());
@@ -72,10 +96,12 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
       ...img,
       dateFound: img.dateFound || new Date(today.getTime() - Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000)
     })),
-    pagesWithMatchingImages: results.pagesWithMatchingImages.map(page => ({
-      ...page,
-      dateFound: page.dateFound || new Date(today.getTime() - Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000)
-    }))
+    pagesWithMatchingImages: results.pagesWithMatchingImages
+      .filter(page => !isLikelySpam(page.url, page.pageTitle))
+      .map(page => ({
+        ...page,
+        dateFound: page.dateFound || new Date(today.getTime() - Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000)
+      }))
   }), [results, today]);
   
   // Using useMemo for all derived values to avoid recalculations during renders
@@ -90,7 +116,9 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
   );
   
   const allRelevantPages = useMemo(() => 
-    processedResults.pagesWithMatchingImages.filter(page => page.score >= 0.6),
+    processedResults.pagesWithMatchingImages
+      .filter(page => page.score >= 0.6)
+      .filter(page => page.matchingImages && page.matchingImages.length > 0),
     [processedResults.pagesWithMatchingImages]
   );
   
@@ -196,12 +224,12 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
     <div className="space-y-8">
       <Card className="border-0 shadow-md">
         <CardHeader className="bg-gradient-to-r from-brand-dark to-brand-blue/90 text-white rounded-t-lg">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center space-x-2">
               <ImageIcon className="h-5 w-5" />
               <CardTitle>Image Search Results</CardTitle>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <Button variant="outline" size="sm" className="bg-white/20 border-white/10 text-white hover:bg-white/30" onClick={() => exportResults('csv')}>
                 <Download className="h-4 w-4 mr-1" />
                 Export CSV
@@ -218,8 +246,8 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
         </CardHeader>
         <CardContent className="pt-6">
           <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
-            <div className="flex items-center space-x-3">
-              <div className="flex space-x-2">
+            <div className="flex items-center flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2">
                 <div className="flex flex-col items-center justify-center px-4 py-2 bg-red-50 border border-red-100 rounded-lg">
                   <span className="text-xl font-bold text-brand-red">{exactMatchCount}</span>
                   <span className="text-xs text-muted-foreground">Exact</span>
