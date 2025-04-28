@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import Header from '@/components/Header';
 import ImageUploader from '@/components/ImageUploader';
@@ -60,8 +61,12 @@ const Index = () => {
       setApiKey(envApiKey);
       console.log("Using API key from environment variables");
     } else {
-      console.log("Checking for stored API key in ApiKeyInput component");
-      if (!apiKey) {
+      const savedApiKey = localStorage.getItem('gcv_api_key');
+      if (savedApiKey) {
+        setApiKey(savedApiKey);
+        console.log("Using API key from local storage");
+      } else {
+        console.log("No API key found");
         const timer = setTimeout(() => setShowApiKeyReminder(true), 2000);
         return () => clearTimeout(timer);
       }
