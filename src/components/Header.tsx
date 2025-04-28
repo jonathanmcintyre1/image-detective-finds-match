@@ -2,6 +2,7 @@
 import React from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
+import { Shield } from 'lucide-react';
 
 const Header = () => {
   const isMobile = useIsMobile();
@@ -19,15 +20,12 @@ const Header = () => {
             CopyProtect
           </h1>
         </div>
-        <nav>
-          <ul className="flex items-center space-x-6">
-            <li>
-              <a href="#" className="text-sm font-medium text-white/90 hover:text-white transition-colors flex items-center">
-                Help
-              </a>
-            </li>
-          </ul>
-        </nav>
+        <div className="flex items-center">
+          <Button variant="ghost" className="text-white hover:bg-white/20" size="sm">
+            <Shield className="h-4 w-4 mr-2" />
+            <span className={isMobile ? "sr-only" : ""}>Documentation</span>
+          </Button>
+        </div>
       </div>
     </header>
   );
