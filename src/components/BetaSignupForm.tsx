@@ -50,8 +50,8 @@ const BetaSignupForm = ({ onSuccess }: BetaSignupFormProps) => {
       
       // Check if email already exists
       const { count, error: countError } = await supabase
-        .from('prelaunch_signups' as any)
-        .select('*', { count: 'exact', head: true } as any)
+        .from('prelaunch_signups')
+        .select('*', { count: 'exact', head: true })
         .eq('email', data.email);
       
       if (countError) {
@@ -85,7 +85,7 @@ const BetaSignupForm = ({ onSuccess }: BetaSignupFormProps) => {
       
       // Add email and additional info to the beta signup list
       const { error } = await supabase
-        .from('prelaunch_signups' as any)
+        .from('prelaunch_signups')
         .insert({
           email: data.email,
           phone: data.phone || null,
@@ -94,7 +94,7 @@ const BetaSignupForm = ({ onSuccess }: BetaSignupFormProps) => {
           browser_info: browserInfo,
           signup_page: window.location.pathname,
           referrer: document.referrer || null,
-        } as any);
+        });
       
       if (error) {
         throw error;

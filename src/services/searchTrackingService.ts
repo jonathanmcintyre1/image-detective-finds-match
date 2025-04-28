@@ -32,12 +32,12 @@ export const trackImageSearch = async (image: File | string, resultsCount: numbe
     
     // Insert search record into database
     const { error } = await supabase
-      .from('searches' as any)
+      .from('searches')
       .insert({
         image_hash: imageName,
         result_count: resultsCount,
         created_at: new Date().toISOString(),
-      } as any);
+      });
     
     if (error) {
       console.error('Error tracking search:', error);
@@ -59,8 +59,8 @@ export const getSearchStats = async (): Promise<{
   try {
     // Get total search count
     const { count: totalSearches, error: countError } = await supabase
-      .from('searches' as any)
-      .select('*', { count: 'exact', head: true } as any);
+      .from('searches')
+      .select('*', { count: 'exact', head: true });
     
     if (countError) {
       throw countError;
@@ -68,7 +68,7 @@ export const getSearchStats = async (): Promise<{
     
     // Get average results count
     const { data: avgData, error: avgError } = await supabase
-      .rpc('average_search_results' as any);
+      .rpc('average_search_results');
     
     if (avgError) {
       throw avgError;
@@ -76,7 +76,7 @@ export const getSearchStats = async (): Promise<{
     
     // Get searches by type
     const { data: typeData, error: typeError } = await supabase
-      .from('searches' as any)
+      .from('searches')
       .select('image_hash, count');
     
     if (typeError) {
@@ -85,13 +85,13 @@ export const getSearchStats = async (): Promise<{
     
     // Map the grouped data
     const searchesByType = typeData?.map(item => ({
-      type: (item as any).image_hash || 'unknown',
-      count: parseInt(String((item as any).count) || '0', 10)
+      type: item.image_hash || 'unknown',
+      count: parseInt(String(item.count) || '0', 10)
     })) || [];
     
     return {
       totalSearches: totalSearches || 0,
-      averageResults: avgData && avgData[0] ? (avgData[0] as any).average_result : 0,
+      averageResults: avgData && avgData[0] ? avgData[0] : 0,
       searchesByType
     };
   } catch (error) {
@@ -117,8 +117,8 @@ export const getSearchAnalytics = async (): Promise<{
   try {
     // Get total searches count
     const { count: totalSearches, error: countError } = await supabase
-      .from('searches' as any)
-      .select('*', { count: 'exact', head: true } as any);
+      .from('searches')
+      .select('*', { count: 'exact', head: true });
     
     if (countError) {
       throw countError;
@@ -126,8 +126,8 @@ export const getSearchAnalytics = async (): Promise<{
 
     // Get searches with results
     const { count: searchesWithResults, error: withResultsError } = await supabase
-      .from('searches' as any)
-      .select('*', { count: 'exact', head: true } as any)
+      .from('searches')
+      .select('*', { count: 'exact', head: true })
       .gt('result_count', 0);
     
     if (withResultsError) {
@@ -136,8 +136,8 @@ export const getSearchAnalytics = async (): Promise<{
 
     // Get searches with no results
     const { count: searchesNoResults, error: noResultsError } = await supabase
-      .from('searches' as any)
-      .select('*', { count: 'exact', head: true } as any)
+      .from('searches')
+      .select('*', { count: 'exact', head: true })
       .eq('result_count', 0);
     
     if (noResultsError) {
@@ -146,7 +146,7 @@ export const getSearchAnalytics = async (): Promise<{
 
     // Get average results per search
     const { data: avgData, error: avgError } = await supabase
-      .rpc('average_search_results' as any);
+      .rpc('average_search_results');
     
     if (avgError) {
       throw avgError;
@@ -156,7 +156,7 @@ export const getSearchAnalytics = async (): Promise<{
       totalSearches: totalSearches || 0,
       searchesWithResults: searchesWithResults || 0,
       searchesNoResults: searchesNoResults || 0,
-      avgResultsPerSearch: avgData && avgData[0] ? (avgData[0] as any).average_result : 0
+      avgResultsPerSearch: avgData && avgData[0] ? avgData[0] : 0
     };
   } catch (error) {
     console.error('Error getting search analytics:', error);
