@@ -9,72 +9,13 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      prelaunch_signups: {
-        Row: {
-          browser_info: Json | null
-          company: string | null
-          created_at: string | null
-          email: string
-          id: string
-          name: string | null
-          phone: string | null
-          referrer: string | null
-          signup_page: string | null
-        }
-        Insert: {
-          browser_info?: Json | null
-          company?: string | null
-          created_at?: string | null
-          email: string
-          id?: string
-          name?: string | null
-          phone?: string | null
-          referrer?: string | null
-          signup_page?: string | null
-        }
-        Update: {
-          browser_info?: Json | null
-          company?: string | null
-          created_at?: string | null
-          email?: string
-          id?: string
-          name?: string | null
-          phone?: string | null
-          referrer?: string | null
-          signup_page?: string | null
-        }
-        Relationships: []
-      }
-      searches: {
-        Row: {
-          created_at: string | null
-          id: string
-          image_hash: string | null
-          result_count: number | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          image_hash?: string | null
-          result_count?: number | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          image_hash?: string | null
-          result_count?: number | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      average_search_results: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never
