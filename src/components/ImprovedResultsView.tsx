@@ -1,35 +1,6 @@
 
 import React from 'react';
-
-interface WebEntity {
-  entityId: string;
-  score: number;
-  description: string;
-}
-
-interface WebImage {
-  url: string;
-  score: number;
-  imageUrl?: string;
-  platform?: string;
-  dateFound?: Date;
-}
-
-interface WebPage {
-  url: string;
-  score: number;
-  pageTitle: string;
-  platform?: string;
-  pageType?: 'product' | 'category' | 'search' | 'unknown';
-  matchingImages?: WebImage[];
-  dateFound?: Date;
-}
-
-interface MatchResult {
-  webEntities: WebEntity[];
-  visuallySimilarImages: WebImage[];
-  pagesWithMatchingImages: WebPage[];
-}
+import { WebEntity, WebImage, WebPage, MatchResult } from '@/types/results';
 
 interface ImprovedResultsViewProps {
   results: MatchResult;
