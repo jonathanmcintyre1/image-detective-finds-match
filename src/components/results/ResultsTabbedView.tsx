@@ -106,33 +106,31 @@ const ResultsTabbedView: React.FC<ResultsTabbedViewProps> = ({
           <>
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-medium text-lg">Web Pages with Matching Images</h3>
-              <CollapsibleTrigger
-                className="flex items-center text-sm text-brand-blue hover:text-brand-dark transition-colors"
-                onClick={() => setPagesSectionOpen(!pagesSectionOpen)}
-              >
-                {pagesSectionOpen ? (
-                  <>
-                    <span className="mr-1">Hide pages</span>
-                    <ChevronUp className="h-4 w-4" />
-                  </>
-                ) : (
-                  <>
-                    <span className="mr-1">Show pages</span>
-                    <ChevronDown className="h-4 w-4" />
-                  </>
-                )}
-              </CollapsibleTrigger>
+              <Collapsible open={pagesSectionOpen} onOpenChange={setPagesSectionOpen}>
+                <CollapsibleTrigger
+                  className="flex items-center text-sm text-brand-blue hover:text-brand-dark transition-colors"
+                >
+                  {pagesSectionOpen ? (
+                    <>
+                      <span className="mr-1">Hide pages</span>
+                      <ChevronUp className="h-4 w-4" />
+                    </>
+                  ) : (
+                    <>
+                      <span className="mr-1">Show pages</span>
+                      <ChevronDown className="h-4 w-4" />
+                    </>
+                  )}
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <PagesMatchTable 
+                    pages={filteredData.allPages} 
+                    sortBy={filterOptions.sortBy} 
+                    initialItemsToShow={DEFAULT_ITEMS_TO_SHOW} 
+                  />
+                </CollapsibleContent>
+              </Collapsible>
             </div>
-            
-            <Collapsible open={pagesSectionOpen} onOpenChange={setPagesSectionOpen}>
-              <CollapsibleContent>
-                <PagesMatchTable 
-                  pages={filteredData.allPages} 
-                  sortBy={filterOptions.sortBy} 
-                  initialItemsToShow={DEFAULT_ITEMS_TO_SHOW} 
-                />
-              </CollapsibleContent>
-            </Collapsible>
           </>
         ) : (
           <NoResultsView 
