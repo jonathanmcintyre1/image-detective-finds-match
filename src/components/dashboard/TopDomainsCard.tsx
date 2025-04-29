@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -18,7 +17,7 @@ interface TopDomainsCardProps {
 const ECOMMERCE_PATTERNS = [
   'boutique', 'shop', 'store', 'market', 'apparel', 'clothing', 
   'fashion', 'wear', 'jewelry', 'accessory', 'accessories',
-  'baby', 'kids', 'child', 'children', 'toys', 'cheeky'
+  'baby', 'kids', 'child', 'children', 'toys'
 ];
 
 // Helper function to better detect e-commerce sites
@@ -58,8 +57,8 @@ const TopDomainsCard: React.FC<TopDomainsCardProps> = ({ topDomains, onDomainSel
                   className="px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors"
                   onClick={() => onDomainSelect && onDomainSelect(domain.domain)}
                 >
-                  <div className="flex items-start">
-                    <span className="text-sm text-muted-foreground w-5 text-center mr-2 mt-0.5">{index + 1}</span>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-muted-foreground w-5 text-center">{index + 1}</span>
                     <div className="flex-1">
                       <p className="font-medium text-sm">{domain.domain}</p>
                       <div className="flex flex-wrap items-center gap-2 mt-1">
