@@ -1,9 +1,7 @@
 
-// This is a read-only file so I'm adding a new file with improved functionality
-
 import React from 'react';
-import { StatCardGrid } from './StatCardGrid';
-import { MatchDistributionCard } from './MatchDistributionCard';
+import StatCardGrid from './StatCardGrid';
+import MatchDistributionCard from './MatchDistributionCard';
 import { TopDomainsCard } from './TopDomainsCard';
 import { DashboardData } from '@/types/results';
 import { FilterControls } from '../FilterControls';
