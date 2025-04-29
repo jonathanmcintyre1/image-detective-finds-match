@@ -5,24 +5,29 @@ import { Progress } from '@/components/ui/progress';
 import { ShoppingCart, MonitorSmartphone, Building } from 'lucide-react';
 
 interface MatchDistributionCardProps {
-  exactMatchCount: number;
-  exactMatchPercentage: number;
-  partialMatchCount: number;
-  partialMatchPercentage: number;
-  marketplacePercentage: number;
-  socialMediaPercentage: number;
-  ecommercePercentage: number;
+  marketplacesCount: number;
+  ecommerceCount: number;
+  socialMediaCount: number;
 }
 
 const MatchDistributionCard: React.FC<MatchDistributionCardProps> = ({
-  exactMatchCount,
-  exactMatchPercentage,
-  partialMatchCount,
-  partialMatchPercentage,
-  marketplacePercentage,
-  socialMediaPercentage,
-  ecommercePercentage
+  marketplacesCount,
+  ecommerceCount,
+  socialMediaCount
 }) => {
+  const total = marketplacesCount + ecommerceCount + socialMediaCount;
+  
+  // Calculate percentages safely, avoiding division by zero
+  const marketplacePercentage = total > 0 ? Math.round((marketplacesCount / total) * 100) : 0;
+  const socialMediaPercentage = total > 0 ? Math.round((socialMediaCount / total) * 100) : 0;
+  const ecommercePercentage = total > 0 ? Math.round((ecommerceCount / total) * 100) : 0;
+  
+  // Calculate exact and partial matches for display
+  const exactMatchCount = marketplacesCount;
+  const partialMatchCount = ecommerceCount + socialMediaCount;
+  const exactMatchPercentage = total > 0 ? Math.round((exactMatchCount / total) * 100) : 0;
+  const partialMatchPercentage = total > 0 ? Math.round((partialMatchCount / total) * 100) : 0;
+
   return (
     <Card className="col-span-2 shadow-sm">
       <CardHeader className="pb-2">

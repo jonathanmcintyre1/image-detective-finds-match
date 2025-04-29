@@ -2,41 +2,42 @@
 import React from 'react';
 import StatCard from './StatCard';
 import { PieChart, Globe, ShoppingCart, BarChart } from 'lucide-react';
-import { DashboardData } from '@/types/results';
 
 interface StatCardGridProps {
-  data: DashboardData;
+  totalMatches: number;
+  exactMatchesCount: number;
+  partialMatchesCount: number;
+  domainsCount: number;
+  highestConfidence: number;
 }
 
-const StatCardGrid: React.FC<StatCardGridProps> = ({ data }) => {
-  // Ensure data is properly initialized with defaults to prevent errors
-  const safeData = {
-    totalMatches: data?.totalMatches || 0,
-    domainsCount: data?.domainsCount || 0,
-    marketplacesCount: data?.marketplacesCount || 0,
-    highestConfidence: data?.highestConfidence || 0,
-  };
-
+const StatCardGrid: React.FC<StatCardGridProps> = ({
+  totalMatches,
+  exactMatchesCount,
+  partialMatchesCount,
+  domainsCount,
+  highestConfidence
+}) => {
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
       <StatCard 
         title="Total Matches" 
-        value={safeData.totalMatches} 
+        value={totalMatches} 
         icon={PieChart} 
       />
       <StatCard 
         title="Unique Domains" 
-        value={safeData.domainsCount} 
+        value={domainsCount} 
         icon={Globe} 
       />
       <StatCard 
         title="Marketplaces" 
-        value={safeData.marketplacesCount} 
+        value={exactMatchesCount} 
         icon={ShoppingCart} 
       />
       <StatCard 
         title="Highest Match" 
-        value={`${Math.round(safeData.highestConfidence * 100)}%`} 
+        value={`${Math.round(highestConfidence * 100)}%`} 
         icon={BarChart}
         iconClassName="text-white"
         iconBgClassName="bg-brand-red" 
