@@ -35,13 +35,11 @@ interface ImprovedResultsViewProps {
   results: MatchResult;
 }
 
-const ImprovedResultsView: React.FC<ImprovedResultsViewProps> = ({ results }) => {
-  // Simple implementation to avoid any rendering issues
+const ImprovedResultsView: React.FC<ImprovedResultsViewProps> = () => {
   return (
-    <div>
-      <p className="text-muted-foreground text-center p-4">
-        The improved results view is now integrated into the main display. Please use the "Dashboard" view option in the filter controls.
-      </p>
+    <div className="text-muted-foreground text-center p-4">
+      The improved results view is now integrated into the main display. 
+      Please use the "Dashboard" view option in the filter controls.
     </div>
   );
 };

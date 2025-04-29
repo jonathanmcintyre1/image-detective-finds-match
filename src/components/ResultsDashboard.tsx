@@ -45,13 +45,39 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
   const isMobile = useIsMobile();
   const cardClass = isMobile ? "p-3" : "p-4";
 
-  // Safely calculate percentages
-  const exactMatchPercentage = data.totalMatches > 0 ? Math.round(data.exactMatches.length / data.totalMatches * 100) : 0;
-  const partialMatchPercentage = data.totalMatches > 0 ? Math.round(data.partialMatches.length / data.totalMatches * 100) : 0;
+  // Ensure data is properly initialized with defaults to prevent errors
+  const safeData = {
+    totalMatches: data?.totalMatches || 0,
+    exactMatches: data?.exactMatches || [],
+    partialMatches: data?.partialMatches || [],
+    domainsCount: data?.domainsCount || 0,
+    marketplacesCount: data?.marketplacesCount || 0,
+    socialMediaCount: data?.socialMediaCount || 0,
+    ecommerceCount: data?.ecommerceCount || 0,
+    highestConfidence: data?.highestConfidence || 0,
+    topDomains: data?.topDomains || []
+  };
   
-  const marketplacePercentage = data.domainsCount > 0 ? Math.round(data.marketplacesCount / data.domainsCount * 100) : 0;
-  const socialMediaPercentage = data.domainsCount > 0 ? Math.round(data.socialMediaCount / data.domainsCount * 100) : 0;
-  const ecommercePercentage = data.domainsCount > 0 ? Math.round(data.ecommerceCount / data.domainsCount * 100) : 0;
+  // Safely calculate percentages with null checks and default values
+  const exactMatchPercentage = safeData.totalMatches > 0 
+    ? Math.round((safeData.exactMatches.length / safeData.totalMatches) * 100) 
+    : 0;
+    
+  const partialMatchPercentage = safeData.totalMatches > 0 
+    ? Math.round((safeData.partialMatches.length / safeData.totalMatches) * 100) 
+    : 0;
+  
+  const marketplacePercentage = safeData.domainsCount > 0 
+    ? Math.round((safeData.marketplacesCount / safeData.domainsCount) * 100) 
+    : 0;
+    
+  const socialMediaPercentage = safeData.domainsCount > 0 
+    ? Math.round((safeData.socialMediaCount / safeData.domainsCount) * 100) 
+    : 0;
+    
+  const ecommercePercentage = safeData.domainsCount > 0 
+    ? Math.round((safeData.ecommerceCount / safeData.domainsCount) * 100) 
+    : 0;
   
   return (
     <div className="space-y-4">
@@ -60,7 +86,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
           <CardContent className={`${cardClass} flex items-center justify-between`}>
             <div>
               <div className="text-sm text-muted-foreground">Total Matches</div>
-              <div className="text-2xl font-bold">{data.totalMatches}</div>
+              <div className="text-2xl font-bold">{safeData.totalMatches}</div>
             </div>
             <div className="h-10 w-10 bg-gray-100 rounded-full flex items-center justify-center">
               <PieChart className="h-5 w-5 text-gray-600" />
@@ -72,7 +98,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
           <CardContent className={`${cardClass} flex items-center justify-between`}>
             <div>
               <div className="text-sm text-muted-foreground">Unique Domains</div>
-              <div className="text-2xl font-bold">{data.domainsCount}</div>
+              <div className="text-2xl font-bold">{safeData.domainsCount}</div>
             </div>
             <div className="h-10 w-10 bg-gray-100 rounded-full flex items-center justify-center">
               <Globe className="h-5 w-5 text-gray-600" />
@@ -84,7 +110,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
           <CardContent className={`${cardClass} flex items-center justify-between`}>
             <div>
               <div className="text-sm text-muted-foreground">Marketplaces</div>
-              <div className="text-2xl font-bold">{data.marketplacesCount}</div>
+              <div className="text-2xl font-bold">{safeData.marketplacesCount}</div>
             </div>
             <div className="h-10 w-10 bg-gray-100 rounded-full flex items-center justify-center">
               <ShoppingCart className="h-5 w-5 text-gray-600" />
@@ -96,7 +122,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
           <CardContent className={`${cardClass} flex items-center justify-between`}>
             <div>
               <div className="text-sm text-muted-foreground">Highest Match</div>
-              <div className="text-2xl font-bold">{Math.round(data.highestConfidence * 100)}%</div>
+              <div className="text-2xl font-bold">{Math.round(safeData.highestConfidence * 100)}%</div>
             </div>
             <div className="h-10 w-10 bg-brand-red rounded-full flex items-center justify-center">
               <BarChart className="h-5 w-5 text-white" />
@@ -116,20 +142,20 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                 <div className="flex items-center justify-between mb-1">
                   <div className="text-sm">Exact Matches</div>
                   <div className="text-sm text-muted-foreground">
-                    {data.exactMatches.length} ({exactMatchPercentage}%)
+                    {safeData.exactMatches.length} ({exactMatchPercentage}%)
                   </div>
                 </div>
-                <Progress value={exactMatchPercentage} className="h-2 bg-gray-100" indicatorClassName="bg-brand-red" />
+                <Progress value={exactMatchPercentage} className="h-2 bg-gray-100" />
               </div>
               
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <div className="text-sm">Partial Matches</div>
                   <div className="text-sm text-muted-foreground">
-                    {data.partialMatches.length} ({partialMatchPercentage}%)
+                    {safeData.partialMatches.length} ({partialMatchPercentage}%)
                   </div>
                 </div>
-                <Progress value={partialMatchPercentage} className="h-2 bg-gray-100" indicatorClassName="bg-amber-500" />
+                <Progress value={partialMatchPercentage} className="h-2 bg-gray-100" />
               </div>
               
               <div className="pt-2">
@@ -170,8 +196,8 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
           </CardHeader>
           <CardContent className="px-2">
             <ul className="space-y-2">
-              {data.topDomains && data.topDomains.length > 0 ? (
-                data.topDomains.map((domain, index) => (
+              {safeData.topDomains && safeData.topDomains.length > 0 ? (
+                safeData.topDomains.map((domain, index) => (
                   <li 
                     key={index}
                     className="flex items-center justify-between p-2 rounded-md hover:bg-gray-50 cursor-pointer"
