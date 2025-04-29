@@ -6,11 +6,13 @@ import DashboardLayout from './dashboard/DashboardLayout';
 interface ResultsDashboardProps {
   data: DashboardData;
   onDomainSelect?: (domain: string) => void;
+  hideFilters?: boolean;
 }
 
 export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({ 
   data, 
-  onDomainSelect 
+  onDomainSelect,
+  hideFilters = false
 }) => {
   // Ensure data is properly initialized with defaults to prevent errors
   const safeData = {
@@ -25,7 +27,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
     topDomains: data?.topDomains || []
   };
   
-  return <DashboardLayout data={safeData} onDomainSelect={onDomainSelect} />;
+  return <DashboardLayout data={safeData} onDomainSelect={onDomainSelect} hideFilters={hideFilters} />;
 };
 
 export default ResultsDashboard;

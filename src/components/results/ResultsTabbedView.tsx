@@ -66,6 +66,7 @@ const ResultsTabbedView: React.FC<ResultsTabbedViewProps> = ({
         <ResultsDashboard 
           data={dashboardData}
           onDomainSelect={onDomainSelect}
+          hideFilters={true}
         />
       </TabsContent>
       
@@ -104,9 +105,9 @@ const ResultsTabbedView: React.FC<ResultsTabbedViewProps> = ({
       <TabsContent value="pages" className="pt-2">
         {pageMatchCount > 0 ? (
           <>
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="font-medium text-lg">Web Pages with Matching Images</h3>
-              <Collapsible open={pagesSectionOpen} onOpenChange={setPagesSectionOpen}>
+            <h3 className="font-medium text-lg text-left mb-4">Web Pages with Matching Images</h3>
+            <Collapsible open={pagesSectionOpen} onOpenChange={setPagesSectionOpen} className="w-full">
+              <div className="flex justify-end mb-2">
                 <CollapsibleTrigger
                   className="flex items-center text-sm text-brand-blue hover:text-brand-dark transition-colors"
                 >
@@ -122,15 +123,15 @@ const ResultsTabbedView: React.FC<ResultsTabbedViewProps> = ({
                     </>
                   )}
                 </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <PagesMatchTable 
-                    pages={filteredData.allPages} 
-                    sortBy={filterOptions.sortBy} 
-                    initialItemsToShow={DEFAULT_ITEMS_TO_SHOW} 
-                  />
-                </CollapsibleContent>
-              </Collapsible>
-            </div>
+              </div>
+              <CollapsibleContent>
+                <PagesMatchTable 
+                  pages={filteredData.allPages} 
+                  sortBy={filterOptions.sortBy} 
+                  initialItemsToShow={DEFAULT_ITEMS_TO_SHOW} 
+                />
+              </CollapsibleContent>
+            </Collapsible>
           </>
         ) : (
           <NoResultsView 

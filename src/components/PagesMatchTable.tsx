@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
@@ -345,7 +346,7 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({
                       return (
                         <TableRow key={index} className="group hover:bg-gray-50">
                           <TableCell className="p-2">
-                            <div className="w-14 h-14 bg-gray-100 rounded overflow-hidden">
+                            <div className="w-14 h-14 bg-gray-100 rounded overflow-hidden relative">
                               {page.matchingImages && page.matchingImages.length > 0 ? (
                                 <div 
                                   className="w-full h-full cursor-pointer hover:ring-2 hover:ring-brand-blue hover:ring-opacity-50 transition-all"
@@ -370,6 +371,11 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({
                                       }}
                                     />
                                   </AspectRatio>
+                                  {page.matchingImages && page.matchingImages.length > 1 && (
+                                    <div className="absolute top-0 right-0 bg-brand-blue text-white text-xs font-bold px-1.5 py-0.5 rounded-bl">
+                                      {page.matchingImages.length}
+                                    </div>
+                                  )}
                                 </div>
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center bg-gray-200">
@@ -393,7 +399,7 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({
                               )}
                             </div>
                             {page.matchingImages && page.matchingImages.length > 1 && (
-                              <div className="text-xs mt-1 text-brand-blue">
+                              <div className="text-xs mt-1 text-brand-blue font-medium">
                                 {page.matchingImages.length} matching images
                               </div>
                             )}

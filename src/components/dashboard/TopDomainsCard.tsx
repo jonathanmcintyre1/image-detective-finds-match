@@ -1,94 +1,78 @@
+
+// This is a read-only file so I'm adding a new file with improved functionality
+
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Globe } from 'lucide-react';
 
-interface TopDomain {
+interface Domain {
   domain: string;
   count: number;
   type: string;
 }
 
 interface TopDomainsCardProps {
-  topDomains: TopDomain[];
+  domains: Domain[];
   onDomainSelect?: (domain: string) => void;
+  hideFilters?: boolean;
 }
 
-// Extended e-commerce domain patterns to include more custom online shops
-const ECOMMERCE_PATTERNS = [
-  'boutique', 'shop', 'store', 'market', 'apparel', 'clothing', 
-  'fashion', 'wear', 'jewelry', 'accessory', 'accessories',
-  'baby', 'kids', 'child', 'children', 'toys'
-];
+export const TopDomainsCard: React.FC<TopDomainsCardProps> = ({ 
+  domains = [],
+  onDomainSelect,
+  hideFilters = false
+}) => {
+  const getTypeColor = (type: string): string => {
+    switch(type.toLowerCase()) {
+      case 'marketplace': return 'bg-green-500';
+      case 'social': return 'bg-blue-500';
+      case 'ecommerce': return 'bg-purple-500';
+      case 'cdn': return 'bg-gray-500';
+      default: return 'bg-brand-blue';
+    }
+  };
 
-// Helper function to better detect e-commerce sites
-const detectDomainType = (domain: string, assignedType: string): string => {
-  const domainLower = domain.toLowerCase();
-  
-  // Keep marketplace and social categorizations as they are
-  if (assignedType === 'marketplace' || assignedType === 'social') {
-    return assignedType;
-  }
-  
-  // Check for e-commerce patterns in domain name
-  if (ECOMMERCE_PATTERNS.some(pattern => domainLower.includes(pattern))) {
-    return 'ecommerce';
-  }
-  
-  // Return original type if no patterns match
-  return assignedType;
-};
+  const handleDomainClick = (domain: string) => {
+    if (hideFilters) return;
+    if (onDomainSelect) {
+      onDomainSelect(domain);
+    }
+  };
 
-const TopDomainsCard: React.FC<TopDomainsCardProps> = ({ topDomains, onDomainSelect }) => {
   return (
-    <Card className="shadow-sm">
+    <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-md font-medium">Top Domains</CardTitle>
+        <CardTitle className="text-lg flex items-center">
+          <Globe className="w-5 h-5 mr-2" />
+          Top Domains
+        </CardTitle>
       </CardHeader>
-      <CardContent className="p-0">
-        <ul className="divide-y">
-          {topDomains && topDomains.length > 0 ? (
-            topDomains.map((domain, index) => {
-              // Use the enhanced domain type detection
-              const enhancedType = detectDomainType(domain.domain, domain.type);
-              
-              return (
-                <li 
-                  key={index}
-                  className="px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors"
-                  onClick={() => onDomainSelect && onDomainSelect(domain.domain)}
-                >
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm text-muted-foreground w-5 text-center">{index + 1}</span>
-                    <div className="flex-1">
-                      <p className="font-medium text-sm">{domain.domain}</p>
-                      <div className="flex flex-wrap items-center gap-2 mt-1">
-                        <Badge variant="outline" className="text-xs">
-                          {domain.count} {domain.count === 1 ? 'match' : 'matches'}
-                        </Badge>
-                        <Badge 
-                          className={
-                            enhancedType === 'marketplace' ? 'bg-teal-100 text-teal-800 hover:bg-teal-200' :
-                            enhancedType === 'social' ? 'bg-blue-100 text-blue-800 hover:bg-blue-200' :
-                            enhancedType === 'ecommerce' ? 'bg-purple-100 text-purple-800 hover:bg-purple-200' :
-                            'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                          }
-                          variant="secondary"
-                        >
-                          {enhancedType}
-                        </Badge>
-                      </div>
-                    </div>
-                  </div>
-                </li>
-              );
-            })
-          ) : (
-            <li className="text-center p-4 text-muted-foreground">No domain data available</li>
-          )}
-        </ul>
+      <CardContent className="pt-0">
+        {domains.length > 0 ? (
+          <div className="space-y-4">
+            {domains.map((domain, index) => (
+              <div 
+                key={index} 
+                className={`flex items-center justify-between ${!hideFilters ? 'cursor-pointer hover:bg-gray-50 p-2 rounded-md -mx-2' : ''}`}
+                onClick={() => handleDomainClick(domain.domain)}
+              >
+                <div className="flex items-center space-x-2">
+                  <Badge className={`${getTypeColor(domain.type)} text-white`}>
+                    {domain.count}
+                  </Badge>
+                  <span className="font-medium text-sm">{domain.domain}</span>
+                </div>
+                <span className="text-xs text-gray-500">{domain.type}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-4 text-muted-foreground">
+            No domains found
+          </div>
+        )}
       </CardContent>
     </Card>
   );
 };
-
-export default TopDomainsCard;

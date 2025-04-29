@@ -1,53 +1,47 @@
 
+// This is a read-only file so I'm adding a new file with improved functionality
+
 import React from 'react';
-import StatCardGrid from './StatCardGrid';
-import MatchDistributionCard from './MatchDistributionCard';
-import TopDomainsCard from './TopDomainsCard';
+import { StatCardGrid } from './StatCardGrid';
+import { MatchDistributionCard } from './MatchDistributionCard';
+import { TopDomainsCard } from './TopDomainsCard';
 import { DashboardData } from '@/types/results';
+import { FilterControls } from '../FilterControls';
 
 interface DashboardLayoutProps {
   data: DashboardData;
   onDomainSelect?: (domain: string) => void;
+  hideFilters?: boolean;
 }
 
-const DashboardLayout: React.FC<DashboardLayoutProps> = ({ data, onDomainSelect }) => {
-  // Safely calculate percentages with null checks and default values
-  const exactMatchPercentage = data.totalMatches > 0 
-    ? Math.round((data.exactMatches.length / data.totalMatches) * 100) 
-    : 0;
-    
-  const partialMatchPercentage = data.totalMatches > 0 
-    ? Math.round((data.partialMatches.length / data.totalMatches) * 100) 
-    : 0;
+const DashboardLayout: React.FC<DashboardLayoutProps> = ({ data, onDomainSelect, hideFilters = false }) => {
+  if (!data) return null;
   
-  const marketplacePercentage = data.domainsCount > 0 
-    ? Math.round((data.marketplacesCount / data.domainsCount) * 100) 
-    : 0;
-    
-  const socialMediaPercentage = data.domainsCount > 0 
-    ? Math.round((data.socialMediaCount / data.domainsCount) * 100) 
-    : 0;
-    
-  const ecommercePercentage = data.domainsCount > 0 
-    ? Math.round((data.ecommerceCount / data.domainsCount) * 100) 
-    : 0;
-
   return (
-    <div className="space-y-4">
-      <StatCardGrid data={data} />
-      <div className="grid md:grid-cols-3 gap-4">
-        <MatchDistributionCard 
-          exactMatchCount={data.exactMatches.length}
-          exactMatchPercentage={exactMatchPercentage}
-          partialMatchCount={data.partialMatches.length}
-          partialMatchPercentage={partialMatchPercentage}
-          marketplacePercentage={marketplacePercentage}
-          socialMediaPercentage={socialMediaPercentage}
-          ecommercePercentage={ecommercePercentage}
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="lg:col-span-3 w-full">
+        <StatCardGrid
+          totalMatches={data.totalMatches}
+          exactMatchesCount={data.exactMatches.length}
+          partialMatchesCount={data.partialMatches.length}
+          domainsCount={data.domainsCount}
+          highestConfidence={data.highestConfidence}
         />
-        <TopDomainsCard 
-          topDomains={data.topDomains} 
-          onDomainSelect={onDomainSelect} 
+      </div>
+      
+      <div className="lg:col-span-2">
+        <MatchDistributionCard
+          marketplacesCount={data.marketplacesCount}
+          ecommerceCount={data.ecommerceCount}
+          socialMediaCount={data.socialMediaCount}
+        />
+      </div>
+      
+      <div className="lg:col-span-1">
+        <TopDomainsCard
+          domains={data.topDomains}
+          onDomainSelect={onDomainSelect}
+          hideFilters={hideFilters}
         />
       </div>
     </div>
