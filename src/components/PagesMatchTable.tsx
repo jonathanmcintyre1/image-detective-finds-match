@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
@@ -175,6 +174,16 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({
     setLoadMoreVisible(sortedPages.length > initialItemsToShow);
   }, [sortedPages, initialItemsToShow]);
 
+  // Initialize all groups as expanded by default
+  useEffect(() => {
+    const initialGroupState: Record<string, boolean> = {};
+    visiblePages.forEach(page => {
+      const hostname = getHostname(page.url);
+      initialGroupState[hostname] = true;  // Default to expanded
+    });
+    setGroupedState(initialGroupState);
+  }, [visiblePages]);
+
   const groupedPages = useMemo(() => {
     const sites = new Map<string, GroupedPage>();
     
@@ -191,6 +200,14 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({
         });
       } else {
         sites.get(hostname)?.pages.push(page);
+      }
+    });
+    
+    // Set all groups to open by default if not already set
+    visiblePages.forEach(page => {
+      const hostname = getHostname(page.url);
+      if (groupedState[hostname] === undefined) {
+        groupedState[hostname] = true;
       }
     });
     

@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { ExactMatchesTable } from '../ExactMatchesTable';
@@ -8,6 +8,8 @@ import ResultsDashboard from '../ResultsDashboard';
 import { WebImage, WebPage, DashboardData } from '@/types/results';
 import { FilterOptions } from '../FilterControls';
 import NoResultsView from './NoResultsView';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 interface ResultsTabbedViewProps {
   filterOptions: FilterOptions;
@@ -36,6 +38,9 @@ const ResultsTabbedView: React.FC<ResultsTabbedViewProps> = ({
   isProcessing,
   onDomainSelect
 }) => {
+  // State for collapsible sections
+  const [pagesSectionOpen, setPagesSectionOpen] = useState(true);
+  
   if (exactMatchCount + partialMatchCount + pageMatchCount === 0) {
     return <NoResultsView isProcessing={isProcessing} />;
   }
@@ -98,11 +103,37 @@ const ResultsTabbedView: React.FC<ResultsTabbedViewProps> = ({
       
       <TabsContent value="pages" className="pt-2">
         {pageMatchCount > 0 ? (
-          <PagesMatchTable 
-            pages={filteredData.allPages} 
-            sortBy={filterOptions.sortBy} 
-            initialItemsToShow={DEFAULT_ITEMS_TO_SHOW} 
-          />
+          <>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-medium text-lg">Web Pages with Matching Images</h3>
+              <CollapsibleTrigger
+                className="flex items-center text-sm text-brand-blue hover:text-brand-dark transition-colors"
+                onClick={() => setPagesSectionOpen(!pagesSectionOpen)}
+              >
+                {pagesSectionOpen ? (
+                  <>
+                    <span className="mr-1">Hide pages</span>
+                    <ChevronUp className="h-4 w-4" />
+                  </>
+                ) : (
+                  <>
+                    <span className="mr-1">Show pages</span>
+                    <ChevronDown className="h-4 w-4" />
+                  </>
+                )}
+              </CollapsibleTrigger>
+            </div>
+            
+            <Collapsible open={pagesSectionOpen} onOpenChange={setPagesSectionOpen}>
+              <CollapsibleContent>
+                <PagesMatchTable 
+                  pages={filteredData.allPages} 
+                  sortBy={filterOptions.sortBy} 
+                  initialItemsToShow={DEFAULT_ITEMS_TO_SHOW} 
+                />
+              </CollapsibleContent>
+            </Collapsible>
+          </>
         ) : (
           <NoResultsView 
             isProcessing={false} 

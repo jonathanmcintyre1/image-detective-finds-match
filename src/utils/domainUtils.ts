@@ -1,4 +1,3 @@
-
 /**
  * Domain utilities for normalizing and categorizing domains
  */
@@ -17,11 +16,14 @@ const SOCIAL_MEDIA = [
   'quora', 'vimeo', 'whatsapp', 'telegram', 'discord', 'vk'
 ];
 
-// Common e-commerce platforms
+// Common e-commerce platforms - Updated with more patterns
 const ECOMMERCE = [
   'shopify', 'magento', 'bigcommerce', 'woocommerce', 'prestashop',
   'opencart', 'squarespace', 'wix', 'weebly', '3dcart', 'volusion',
-  'storenvy', 'ecwid', 'bigcartel', 'solidus', 'spree'
+  'storenvy', 'ecwid', 'bigcartel', 'solidus', 'spree', 'boutique',
+  'shop', 'store', 'market', 'apparel', 'clothing', 'fashion', 
+  'wear', 'jewelry', 'accessory', 'accessories', 'baby', 'kids',
+  'child', 'children', 'toys'
 ];
 
 // Known CDNs
@@ -144,6 +146,13 @@ export const getSourcePlatform = (url: string): string | null => {
 export const categorizeWebsite = (hostname: string): 'marketplace' | 'social' | 'ecommerce' | 'other' => {
   const domain = getDomain(hostname).toLowerCase();
   
+  // Common patterns for ecommerce sites
+  const ecommercePatterns = [
+    'boutique', 'shop', 'store', 'market', 'apparel', 'clothing',
+    'fashion', 'wear', 'jewelry', 'accessory', 'accessories',
+    'baby', 'kids', 'child', 'children', 'toys'
+  ];
+  
   if (MARKETPLACES.some(m => domain.includes(m))) {
     return 'marketplace';
   }
@@ -152,7 +161,8 @@ export const categorizeWebsite = (hostname: string): 'marketplace' | 'social' | 
     return 'social';
   }
   
-  if (ECOMMERCE.some(e => domain.includes(e))) {
+  if (ECOMMERCE.some(e => domain.includes(e)) || 
+      ecommercePatterns.some(pattern => domain.includes(pattern))) {
     return 'ecommerce';
   }
   
