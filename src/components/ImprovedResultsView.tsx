@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 interface WebEntity {
@@ -35,6 +36,7 @@ interface ImprovedResultsViewProps {
 }
 
 const ImprovedResultsView: React.FC<ImprovedResultsViewProps> = ({ results }) => {
+  // Simple implementation to avoid any rendering issues
   return (
     <div>
       <p className="text-muted-foreground text-center p-4">
