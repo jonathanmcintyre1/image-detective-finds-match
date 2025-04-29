@@ -38,7 +38,7 @@ const ResultsTabbedView: React.FC<ResultsTabbedViewProps> = ({
   isProcessing,
   onDomainSelect
 }) => {
-  // State for collapsible sections
+  // State for collapsible sections - default to open (true)
   const [pagesSectionOpen, setPagesSectionOpen] = useState(true);
   
   if (exactMatchCount + partialMatchCount + pageMatchCount === 0) {

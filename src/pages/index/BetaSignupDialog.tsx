@@ -14,7 +14,6 @@ const BetaSignupDialog: React.FC<BetaSignupDialogProps> = ({
   onOpenChange,
   onSuccess
 }) => {
-  // Only render the dialog when showBetaSignup is true
   if (!showBetaSignup) {
     return null;
   }
