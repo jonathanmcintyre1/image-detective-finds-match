@@ -6,6 +6,7 @@ import { analyzeImage } from '@/services/googleVisionService';
 import { trackImageSearch } from '@/services/searchTrackingService';
 import { BetaSignupProvider } from '@/hooks/useBetaSignupPrompt';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useExitIntent } from '@/hooks/useExitIntent';
 
 // Page components
 import PageHeader from './index/PageHeader';
@@ -24,10 +25,26 @@ const Index = () => {
   const [results, setResults] = useState<any | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [imageError, setImageError] = useState(false);
-  const [showBetaSignup, setShowBetaSignup] = useState(false);
   const [hasPerformedSearch, setHasPerformedSearch] = useState(false);
   const [showApiKeyReminder, setShowApiKeyReminder] = useState(false);
   const isMobile = useIsMobile();
+  
+  // Exit intent hook
+  const { shouldShowModal, resetModal, hasUserSeen } = useExitIntent({
+    threshold: 20,
+    maxDisplays: 1,
+    timeoutDelayTime: 60000, // 1 minute
+    disableOnMobile: true
+  });
+  
+  const [showBetaSignup, setShowBetaSignup] = useState(false);
+  
+  // Update beta signup state from exit intent
+  useEffect(() => {
+    if (shouldShowModal) {
+      setShowBetaSignup(true);
+    }
+  }, [shouldShowModal]);
 
   useEffect(() => {
     const envApiKey = import.meta.env.VITE_GOOGLE_VISION_API_KEY;
@@ -51,15 +68,17 @@ const Index = () => {
   const handleBetaDialogClose = useCallback(() => {
     setShowBetaSignup(false);
     localStorage.setItem('seen_beta_signup', 'true');
-  }, []);
+    resetModal();
+  }, [resetModal]);
 
   const handleBetaSignupSuccess = useCallback(() => {
     setShowBetaSignup(false);
     localStorage.setItem('seen_beta_signup', 'true');
+    resetModal();
     toast.success("Thanks for signing up for the beta!", {
       description: "You'll be notified when CopyProtect launches."
     });
-  }, []);
+  }, [resetModal]);
 
   useEffect(() => {
     if (!selectedImage) {
@@ -102,8 +121,7 @@ const Index = () => {
       
       await trackImageSearch(image, totalResults);
       
-      const hasSeenBetaSignup = localStorage.getItem('seen_beta_signup');
-      if (!hasSeenBetaSignup) {
+      if (!hasUserSeen) {
         const timer = setTimeout(() => {
           setShowBetaSignup(true);
         }, 2000);
@@ -116,7 +134,7 @@ const Index = () => {
     } finally {
       setIsProcessing(false);
     }
-  }, [apiKey]);
+  }, [apiKey, hasUserSeen]);
 
   const handleApiKeySet = useCallback((key: string) => {
     setApiKey(key);

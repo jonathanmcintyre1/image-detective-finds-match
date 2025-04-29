@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import BetaSignupForm from '@/components/BetaSignupForm';
 
@@ -14,6 +14,13 @@ const BetaSignupDialog: React.FC<BetaSignupDialogProps> = ({
   onOpenChange,
   onSuccess
 }) => {
+  // Log when dialog appears for debugging
+  useEffect(() => {
+    if (showBetaSignup) {
+      console.log("Beta signup dialog opened");
+    }
+  }, [showBetaSignup]);
+  
   return (
     <Dialog open={showBetaSignup} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md max-w-[calc(100%-2rem)] p-4 md:p-6">

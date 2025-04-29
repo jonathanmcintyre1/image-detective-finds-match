@@ -1,16 +1,11 @@
 
 import React from 'react';
-import { WebEntity, WebImage, WebPage, MatchResult } from '@/types/results';
 
-interface ImprovedResultsViewProps {
-  results: MatchResult;
-}
-
-const ImprovedResultsView: React.FC<ImprovedResultsViewProps> = () => {
+const ImprovedResultsView: React.FC = () => {
   return (
     <div className="text-muted-foreground text-center p-4">
-      The improved results view is now integrated into the main display. 
-      Please use the "Dashboard" view option in the filter controls.
+      The improved results view is now integrated into the tabbed view. 
+      Please use the tabs to navigate between different types of matches.
     </div>
   );
 };

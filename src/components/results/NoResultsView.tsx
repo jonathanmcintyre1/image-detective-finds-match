@@ -1,22 +1,28 @@
 
 import React from 'react';
-import { AlertCircle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { SearchX } from 'lucide-react';
 
 interface NoResultsViewProps {
   isProcessing: boolean;
+  customMessage?: string;
 }
 
-const NoResultsView: React.FC<NoResultsViewProps> = ({ isProcessing }) => {
+const NoResultsView: React.FC<NoResultsViewProps> = ({ isProcessing, customMessage }) => {
   if (isProcessing) return null;
   
   return (
-    <div className="text-center py-12 bg-white shadow-sm border rounded-lg">
-      <AlertCircle className="h-16 w-16 text-brand-blue mx-auto mb-4" />
-      <h2 className="text-xl font-medium mb-2">No matches found</h2>
-      <p className="text-muted-foreground">Your image appears to be unique or we couldn't find any matches with your current filter settings</p>
-    </div>
+    <Card className="border shadow-sm">
+      <CardContent className="flex flex-col items-center justify-center py-12">
+        <SearchX className="h-12 w-12 text-muted-foreground mb-4" />
+        <h3 className="text-lg font-medium text-center">
+          {customMessage || "No matches found"}
+        </h3>
+        <p className="text-muted-foreground text-center mt-2 max-w-md">
+          Try adjusting your filters or try a different image.
+        </p>
+      </CardContent>
+    </Card>
   );
 };
 
