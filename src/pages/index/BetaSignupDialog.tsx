@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import BetaSignupForm from '@/components/BetaSignupForm';
 
@@ -14,12 +14,10 @@ const BetaSignupDialog: React.FC<BetaSignupDialogProps> = ({
   onOpenChange,
   onSuccess
 }) => {
-  // Log when dialog appears for debugging
-  useEffect(() => {
-    if (showBetaSignup) {
-      console.log("Beta signup dialog opened");
-    }
-  }, [showBetaSignup]);
+  // Only render the dialog when showBetaSignup is true
+  if (!showBetaSignup) {
+    return null;
+  }
   
   return (
     <Dialog open={showBetaSignup} onOpenChange={onOpenChange}>
