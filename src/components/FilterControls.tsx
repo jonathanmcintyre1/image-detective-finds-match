@@ -1,254 +1,250 @@
 
 import React from 'react';
-import { Button } from '@/components/ui/button';
 import { 
-  SortAsc, 
-  SortDesc, 
-  Calendar, 
-  Globe, 
-  BarChart2, 
-  Sliders, 
-  Filter, 
-  X
-} from 'lucide-react';
-import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/components/ui/select"
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { 
+  SlidersHorizontal, 
+  Check, 
+  X, 
+  Grid, 
+  LayoutGrid,
+  ArrowUpDown,
+  Clock,
+  Globe
+} from 'lucide-react';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
-export type FilterOptions = {
+// Type definitions
+export interface FilterOptions {
   sortBy: 'confidence' | 'date' | 'domain' | 'count';
-  sortOrder: 'asc' | 'desc';
-  confidence: number;
-  showSpam: boolean;
+  matchType: 'all' | 'exact' | 'partial';
+  pageTypes: string[];
+  displayMode: 'grid' | 'list' | 'improved';
   minConfidence: number;
-  displayMode: 'list' | 'grid' | 'improved';
-  groupBy: 'none' | 'domain' | 'type';
-  activeFilters: string[];
+  showSpam: boolean;
 }
 
 interface FilterControlsProps {
   options: FilterOptions;
-  onOptionsChange: (options: Partial<FilterOptions>) => void;
-  totalResults: number;
-  exactCount: number;
-  partialCount: number;
-  pageCount: number;
-  spamCount?: number;
-  onFilterClear?: () => void;
+  onOptionsChange: (newOptions: FilterOptions) => void;
+  onClear: () => void;
+  reviewedItems?: string[];
+  savedItems?: string[];
+  clearReviewed?: () => void;
+  clearSaved?: () => void;
 }
+
+// Helper for displaying count badges
+const CountBadge = ({ count }: { count: number }) => {
+  if (count === 0) return null;
+  return (
+    <Badge variant="outline" className="ml-2 bg-gray-100">
+      {count}
+    </Badge>
+  );
+};
 
 export const FilterControls: React.FC<FilterControlsProps> = ({
   options,
   onOptionsChange,
-  totalResults,
-  exactCount,
-  partialCount,
-  pageCount,
-  spamCount = 0,
-  onFilterClear
+  onClear,
+  reviewedItems = [],
+  savedItems = [],
+  clearReviewed,
+  clearSaved
 }) => {
-  const isMobile = useIsMobile();
-  
   const handleSortChange = (value: string) => {
-    onOptionsChange({ sortBy: value as FilterOptions['sortBy'] });
+    onOptionsChange({
+      ...options,
+      sortBy: value as 'confidence' | 'date' | 'domain' | 'count'
+    });
   };
   
-  const handleSortOrderToggle = () => {
-    onOptionsChange({ sortOrder: options.sortOrder === 'asc' ? 'desc' : 'asc' });
-  };
-  
-  const handleGroupByChange = (value: string) => {
-    onOptionsChange({ groupBy: value as FilterOptions['groupBy'] });
+  const handleMatchTypeChange = (value: string) => {
+    onOptionsChange({
+      ...options,
+      matchType: value as 'all' | 'exact' | 'partial'
+    });
   };
   
   const handleDisplayModeChange = (value: string) => {
-    onOptionsChange({ displayMode: value as FilterOptions['displayMode'] });
+    onOptionsChange({
+      ...options, 
+      displayMode: value as 'grid' | 'list' | 'improved'
+    });
   };
   
-  const handleConfidenceChange = (value: string) => {
-    onOptionsChange({ minConfidence: parseInt(value, 10) });
+  const toggleSpamFilter = () => {
+    onOptionsChange({
+      ...options,
+      showSpam: !options.showSpam
+    });
   };
   
-  const handleSpamToggle = () => {
-    onOptionsChange({ showSpam: !options.showSpam });
-  };
-  
-  const activeFiltersCount = options.activeFilters?.length || 0;
-
   return (
-    <div className="w-full bg-white rounded-lg shadow border p-3 mb-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center space-x-2">
-          <div className="font-medium text-sm text-gray-700">Results: </div>
-          <Badge variant="secondary" className="bg-gray-100">
-            {totalResults}
-          </Badge>
-          
-          {exactCount > 0 && (
-            <Badge className="bg-brand-red text-white">
-              {exactCount} Exact
-            </Badge>
-          )}
-          
-          {partialCount > 0 && (
-            <Badge className="bg-amber-500 text-white">
-              {partialCount} Partial
-            </Badge>
-          )}
-          
-          {pageCount > 0 && (
-            <Badge className="bg-brand-blue text-white">
-              {pageCount} Pages
-            </Badge>
-          )}
-          
-          {activeFiltersCount > 0 && (
-            <Badge 
-              variant="outline" 
-              className="flex items-center gap-1 cursor-pointer hover:bg-gray-100"
-              onClick={onFilterClear}
-            >
-              {activeFiltersCount} Filter{activeFiltersCount !== 1 ? 's' : ''}
-              <X className="h-3 w-3" />
-            </Badge>
-          )}
-        </div>
-        
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-500 whitespace-nowrap">Sort:</span>
-            <Select value={options.sortBy} onValueChange={handleSortChange}>
-              <SelectTrigger className="h-8 w-[130px]">
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectItem value="confidence">Confidence</SelectItem>
-                  <SelectItem value="date">Date Found</SelectItem>
-                  <SelectItem value="domain">Domain</SelectItem>
-                  <SelectItem value="count"># of Matches</SelectItem>
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-            
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="h-8 w-8 p-0" 
-              onClick={handleSortOrderToggle}
-              title={options.sortOrder === 'asc' ? 'Sort Ascending' : 'Sort Descending'}
-            >
-              {options.sortOrder === 'asc' ? (
-                <SortAsc className="h-4 w-4" />
-              ) : (
-                <SortDesc className="h-4 w-4" />
-              )}
+    <div className="flex flex-wrap items-center gap-2 justify-between">
+      <div className="flex flex-wrap items-center gap-2">
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8 gap-1">
+              <SlidersHorizontal className="h-4 w-4" />
+              <span className="hidden sm:inline">Filters</span>
             </Button>
-          </div>
-          
-          {!isMobile && <Separator orientation="vertical" className="h-6" />}
-          
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-500">Group:</span>
-            <Select value={options.groupBy} onValueChange={handleGroupByChange}>
-              <SelectTrigger className="h-8 w-[120px]">
-                <SelectValue placeholder="Group by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectItem value="none">No Grouping</SelectItem>
-                  <SelectItem value="domain">By Domain</SelectItem>
-                  <SelectItem value="type">By Match Type</SelectItem>
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </div>
-          
-          {!isMobile && <Separator orientation="vertical" className="h-6" />}
-          
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-500">View:</span>
-            <Select value={options.displayMode} onValueChange={handleDisplayModeChange}>
-              <SelectTrigger className="h-8 w-[100px]">
-                <SelectValue placeholder="View as" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectItem value="list">List</SelectItem>
-                  <SelectItem value="grid">Grid</SelectItem>
-                  <SelectItem value="improved">Dashboard</SelectItem>
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8">
-                <Filter className="h-3.5 w-3.5 mr-1" />
-                Filters
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56">
-              <DropdownMenuLabel>Filter Options</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuGroup>
-                <DropdownMenuItem>
-                  <div className="flex flex-col w-full">
-                    <span className="text-sm font-medium mb-1">Min. Confidence</span>
-                    <Select value={options.minConfidence.toString()} onValueChange={handleConfidenceChange}>
-                      <SelectTrigger className="h-8 w-full">
-                        <SelectValue placeholder="Minimum confidence" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="50">50% or higher</SelectItem>
-                        <SelectItem value="70">70% or higher</SelectItem>
-                        <SelectItem value="80">80% or higher</SelectItem>
-                        <SelectItem value="90">90% or higher</SelectItem>
-                        <SelectItem value="95">95% or higher</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={handleSpamToggle}
-                  className="flex items-center justify-between"
+          </PopoverTrigger>
+          <PopoverContent className="w-72">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <h4 className="font-medium text-sm">Match Type</h4>
+                <Select 
+                  value={options.matchType} 
+                  onValueChange={handleMatchTypeChange}
                 >
-                  <span>Show potential spam</span>
-                  <div className={`w-4 h-4 border rounded ${options.showSpam ? 'bg-brand-blue border-brand-blue' : 'border-gray-400'} flex items-center justify-center`}>
-                    {options.showSpam && <span className="text-white text-xs">✓</span>}
-                  </div>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                {onFilterClear && (
-                  <DropdownMenuItem onClick={onFilterClear} className="text-brand-red">
-                    <X className="mr-2 h-4 w-4" />
-                    <span>Clear all filters</span>
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+                  <SelectTrigger className="h-8">
+                    <SelectValue placeholder="Match Type" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-[#333333]"> {/* Updated background color */}
+                    <SelectItem value="all">All Matches</SelectItem>
+                    <SelectItem value="exact">Exact Matches Only</SelectItem>
+                    <SelectItem value="partial">Similar Matches Only</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <h4 className="font-medium text-sm">Display Options</h4>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="show-spam" className="text-sm">
+                    Show potential spam
+                  </Label>
+                  <Switch 
+                    id="show-spam" 
+                    checked={options.showSpam}
+                    onCheckedChange={toggleSpamFilter}
+                  />
+                </div>
+              </div>
+
+              {(reviewedItems.length > 0 || savedItems.length > 0) && (
+                <div className="space-y-2 pt-2 border-t">
+                  <h4 className="font-medium text-sm">Tracked Items</h4>
+                  
+                  {reviewedItems.length > 0 && clearReviewed && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm flex items-center">
+                        Reviewed items
+                        <CountBadge count={reviewedItems.length} />
+                      </span>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="h-7 text-xs"
+                        onClick={clearReviewed}
+                      >
+                        Clear
+                      </Button>
+                    </div>
+                  )}
+                  
+                  {savedItems.length > 0 && clearSaved && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm flex items-center">
+                        Saved items
+                        <CountBadge count={savedItems.length} />
+                      </span>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="h-7 text-xs"
+                        onClick={clearSaved}
+                      >
+                        Clear
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full" 
+                onClick={onClear}
+              >
+                Reset All Filters
+              </Button>
+            </div>
+          </PopoverContent>
+        </Popover>
+        
+        <Select value={options.sortBy} onValueChange={handleSortChange}>
+          <SelectTrigger className="w-[160px] h-8">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="bg-[#333333]"> {/* Updated background color */}
+            <SelectItem value="confidence">
+              <div className="flex items-center">
+                <ArrowUpDown className="mr-2 h-4 w-4" />
+                <span>By Confidence</span>
+              </div>
+            </SelectItem>
+            <SelectItem value="date">
+              <div className="flex items-center">
+                <Clock className="mr-2 h-4 w-4" />
+                <span>By Date</span>
+              </div>
+            </SelectItem>
+            <SelectItem value="domain">
+              <div className="flex items-center">
+                <Globe className="mr-2 h-4 w-4" />
+                <span>By Domain</span>
+              </div>
+            </SelectItem>
+            <SelectItem value="count">
+              <div className="flex items-center">
+                <Badge className="mr-2 h-4 w-4 flex items-center justify-center">
+                  <Check className="h-3 w-3" />
+                </Badge>
+                <span>By Count</span>
+              </div>
+            </SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      
+      {/* View mode toggle - grid vs list */}
+      <div className="flex items-center border rounded-md">
+        <Button
+          variant={options.displayMode === 'grid' ? 'secondary' : 'ghost'}
+          size="sm"
+          className="h-8 px-2 rounded-l-md rounded-r-none"
+          onClick={() => handleDisplayModeChange('grid')}
+        >
+          <Grid className="h-4 w-4" />
+        </Button>
+        <Button
+          variant={options.displayMode !== 'grid' ? 'secondary' : 'ghost'}
+          size="sm"
+          className="h-8 px-2 rounded-l-none rounded-r-md"
+          onClick={() => handleDisplayModeChange('improved')}
+        >
+          <LayoutGrid className="h-4 w-4" />
+        </Button>
       </div>
     </div>
   );
 };
+
+export default FilterControls;

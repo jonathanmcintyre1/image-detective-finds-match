@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import Header from '@/components/Header';
 import { toast } from 'sonner';
@@ -153,7 +152,7 @@ const Index = () => {
       <div className="min-h-screen flex flex-col bg-gray-50 font-sans">
         <Header />
         
-        <main className={`flex-1 ${isMobile ? 'px-3 py-4 max-w-full' : 'md:max-w-[80%] lg:max-w-[80%] mx-auto py-8 px-4'} space-y-4 md:space-y-8`}>
+        <main className="flex-1 container mx-auto px-4 py-4 md:py-8 space-y-4 md:space-y-8">
           <PageHeader apiKey={apiKey} setApiKey={handleApiKeySet} />
           <ApiKeyReminder showApiKeyReminder={showApiKeyReminder} apiKey={apiKey} />
           <HowItWorksCard />

@@ -1,5 +1,4 @@
-
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { 
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
 } from '@/components/ui/table';
@@ -164,18 +163,41 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({
   }, [filteredPages, sortBy]);
 
   const [visiblePages, setVisiblePages] = useState<WebPage[]>([]);
-  const [loadMoreVisible, setLoadMoreVisible] = useState(false);
+  const [hasMorePages, setHasMorePages] = useState(true);
   const [groupedState, setGroupedState] = useState<Record<string, boolean>>({});
   const [selectedImage, setSelectedImage] = useState<WebImage | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const loaderRef = useRef<HTMLDivElement>(null);
+  const ITEMS_PER_BATCH = initialItemsToShow;
 
-  // Update visible pages when sortedPages or initialItemsToShow change
+  // Sort page types in preferred order: category, product, others
+  const getPageTypeOrder = (pageType?: string): number => {
+    switch(pageType) {
+      case 'category': return 1;
+      case 'product': return 2;
+      default: return 3;
+    }
+  };
+
+  // Sort pages by type within each group
+  const sortPagesByType = (pages: WebPage[]): WebPage[] => {
+    return [...pages].sort((a, b) => {
+      return getPageTypeOrder(a.pageType) - getPageTypeOrder(b.pageType);
+    });
+  };
+
+  // Initialize visible pages
   useEffect(() => {
-    setVisiblePages(sortedPages.slice(0, initialItemsToShow));
-    setLoadMoreVisible(sortedPages.length > initialItemsToShow);
+    if (sortedPages.length > 0) {
+      setVisiblePages(sortedPages.slice(0, initialItemsToShow));
+      setHasMorePages(sortedPages.length > initialItemsToShow);
+    } else {
+      setVisiblePages([]);
+      setHasMorePages(false);
+    }
   }, [sortedPages, initialItemsToShow]);
 
-  // Initialize all groups as expanded by default
+  // Initialize group states
   useEffect(() => {
     const initialGroupState: Record<string, boolean> = {};
     visiblePages.forEach(page => {
@@ -212,8 +234,51 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({
       }
     });
     
+    // Sort pages within each group
+    sites.forEach(group => {
+      group.pages = sortPagesByType(group.pages);
+    });
+    
     return Array.from(sites.values());
   }, [visiblePages, groupedState]);
+
+  const loadMorePages = useCallback(() => {
+    if (!hasMorePages) return;
+    
+    const currentLength = visiblePages.length;
+    const nextBatch = sortedPages.slice(currentLength, currentLength + ITEMS_PER_BATCH);
+    
+    if (nextBatch.length === 0) {
+      setHasMorePages(false);
+      return;
+    }
+    
+    setVisiblePages(prevPages => [...prevPages, ...nextBatch]);
+    setHasMorePages(currentLength + nextBatch.length < sortedPages.length);
+  }, [visiblePages, sortedPages, hasMorePages, ITEMS_PER_BATCH]);
+
+  // Intersection observer for infinite scrolling
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry.isIntersecting && hasMorePages) {
+          loadMorePages();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (loaderRef.current) {
+      observer.observe(loaderRef.current);
+    }
+
+    return () => {
+      if (loaderRef.current) {
+        observer.unobserve(loaderRef.current);
+      }
+    };
+  }, [loadMorePages, hasMorePages]);
 
   const getPlatformBadgeColor = (platform?: string): string => {
     if (!platform) return "bg-gray-500 text-white";
@@ -234,15 +299,6 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({
       case 'category': return "text-green-600";
       case 'search': return "text-purple-600";
       default: return "text-gray-600";
-    }
-  };
-
-  const loadMore = () => {
-    const nextBatch = sortedPages.slice(visiblePages.length, visiblePages.length + initialItemsToShow);
-    setVisiblePages(prev => [...prev, ...nextBatch]);
-    
-    if (visiblePages.length + initialItemsToShow >= sortedPages.length) {
-      setLoadMoreVisible(false);
     }
   };
 
@@ -385,7 +441,7 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({
                             </div>
                           </TableCell>
                           <TableCell>
-                            <div className="font-medium line-clamp-1" title={page.pageTitle || getWebsiteName(page.url, page.platform)}>
+                            <div className="font-medium line-clamp-1 text-left" title={page.pageTitle || getWebsiteName(page.url, page.platform)}>
                               {page.pageTitle || getWebsiteName(page.url, page.platform)}
                             </div>
                             <div className="flex items-center text-xs text-muted-foreground">
@@ -472,15 +528,10 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({
         </Card>
       )}
 
-      {loadMoreVisible && (
-        <div className="flex justify-center mt-6">
-          <Button 
-            onClick={loadMore} 
-            variant="outline"
-            className="text-brand-blue border-brand-blue"
-          >
-            Load More Pages
-          </Button>
+      {/* Infinite scroll loading indicator */}
+      {hasMorePages && (
+        <div ref={loaderRef} className="flex justify-center py-4">
+          <div className="w-8 h-8 border-4 border-t-brand-blue border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin"></div>
         </div>
       )}
       
