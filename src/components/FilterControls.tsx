@@ -30,21 +30,29 @@ import {
 // Type definitions
 export interface FilterOptions {
   sortBy: 'confidence' | 'date' | 'domain' | 'count';
-  matchType: 'all' | 'exact' | 'partial';
-  pageTypes: string[];
+  sortOrder: 'asc' | 'desc';
+  matchType?: 'all' | 'exact' | 'partial';
+  pageTypes?: string[];
   displayMode: 'grid' | 'list' | 'improved';
   minConfidence: number;
   showSpam: boolean;
+  groupBy?: 'domain';
+  activeFilters?: string[];
 }
 
 interface FilterControlsProps {
   options: FilterOptions;
-  onOptionsChange: (newOptions: FilterOptions) => void;
+  onOptionsChange: (newOptions: Partial<FilterOptions>) => void;
   onClear: () => void;
   reviewedItems?: string[];
   savedItems?: string[];
   clearReviewed?: () => void;
   clearSaved?: () => void;
+  totalResults?: number;
+  exactCount?: number;
+  partialCount?: number;
+  pageCount?: number;
+  spamCount?: number;
 }
 
 // Helper for displaying count badges
@@ -104,7 +112,7 @@ export const FilterControls: React.FC<FilterControlsProps> = ({
               <span className="hidden sm:inline">Filters</span>
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-72">
+          <PopoverContent className="w-72 bg-gray-800 text-white border-gray-700">
             <div className="space-y-4">
               <div className="space-y-2">
                 <h4 className="font-medium text-sm">Match Type</h4>
@@ -115,7 +123,7 @@ export const FilterControls: React.FC<FilterControlsProps> = ({
                   <SelectTrigger className="h-8">
                     <SelectValue placeholder="Match Type" />
                   </SelectTrigger>
-                  <SelectContent className="bg-[#333333]"> {/* Updated background color */}
+                  <SelectContent className="bg-gray-800 text-white border-gray-700">
                     <SelectItem value="all">All Matches</SelectItem>
                     <SelectItem value="exact">Exact Matches Only</SelectItem>
                     <SelectItem value="partial">Similar Matches Only</SelectItem>
@@ -138,7 +146,7 @@ export const FilterControls: React.FC<FilterControlsProps> = ({
               </div>
 
               {(reviewedItems.length > 0 || savedItems.length > 0) && (
-                <div className="space-y-2 pt-2 border-t">
+                <div className="space-y-2 pt-2 border-t border-gray-700">
                   <h4 className="font-medium text-sm">Tracked Items</h4>
                   
                   {reviewedItems.length > 0 && clearReviewed && (
@@ -193,7 +201,7 @@ export const FilterControls: React.FC<FilterControlsProps> = ({
           <SelectTrigger className="w-[160px] h-8">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent className="bg-[#333333]"> {/* Updated background color */}
+          <SelectContent className="bg-gray-800 text-white border-gray-700">
             <SelectItem value="confidence">
               <div className="flex items-center">
                 <ArrowUpDown className="mr-2 h-4 w-4" />

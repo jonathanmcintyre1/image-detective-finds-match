@@ -175,7 +175,8 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({
     switch(pageType) {
       case 'category': return 1;
       case 'product': return 2;
-      default: return 3;
+      case 'search': return 3;
+      default: return 4;
     }
   };
 
@@ -234,7 +235,7 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({
       }
     });
     
-    // Sort pages within each group
+    // Sort pages within each group by page type
     sites.forEach(group => {
       group.pages = sortPagesByType(group.pages);
     });
@@ -379,8 +380,8 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-14"></TableHead>
-                      <TableHead>Page</TableHead>
-                      <TableHead>URL</TableHead>
+                      <TableHead className="text-left">Page</TableHead>
+                      <TableHead className="text-left">URL</TableHead>
                       <TableHead className="w-24">Type</TableHead>
                       {!compact && <TableHead>Found</TableHead>}
                       <TableHead className="w-20 text-right">Actions</TableHead>

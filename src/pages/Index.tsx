@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import Header from '@/components/Header';
 import { toast } from 'sonner';
@@ -28,11 +29,11 @@ const Index = () => {
   const [showApiKeyReminder, setShowApiKeyReminder] = useState(false);
   const isMobile = useIsMobile();
   
-  // Exit intent hook
+  // Exit intent hook with increased delay time (90 seconds instead of 60)
   const { shouldShowModal, resetModal, hasUserSeen } = useExitIntent({
     threshold: 20,
     maxDisplays: 1,
-    timeoutDelayTime: 60000, // 1 minute
+    timeoutDelayTime: 90000, // Increased to 90 seconds (30 seconds more)
     disableOnMobile: true
   });
   
@@ -152,7 +153,7 @@ const Index = () => {
       <div className="min-h-screen flex flex-col bg-gray-50 font-sans">
         <Header />
         
-        <main className="flex-1 container mx-auto px-4 py-4 md:py-8 space-y-4 md:space-y-8">
+        <main className="flex-1 w-full mx-auto px-4 py-4 md:py-8 space-y-4 md:space-y-8">
           <PageHeader apiKey={apiKey} setApiKey={handleApiKeySet} />
           <ApiKeyReminder showApiKeyReminder={showApiKeyReminder} apiKey={apiKey} />
           <HowItWorksCard />

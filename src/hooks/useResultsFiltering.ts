@@ -35,7 +35,7 @@ export const useResultsFiltering = (
     sortOrder: 'desc',
     confidence: 0.7,
     showSpam: false,
-    minConfidence: 70,
+    minConfidence: 65, // Lowering the threshold by 5%
     displayMode: 'list',
     groupBy: 'domain',
     activeFilters: []
@@ -110,7 +110,7 @@ export const useResultsFiltering = (
       .filter(img => img.score >= minConfidence);
       
     const filteredPartialMatches = processedResults.visuallySimilarImages
-      .filter(img => img.score >= 0.7 && img.score < 0.9)
+      .filter(img => img.score >= 0.65 && img.score < 0.9) // Lower the threshold to 65% from 70%
       .filter(img => img.score >= minConfidence);
       
     const filteredPages = processedResults.pagesWithMatchingImages
@@ -273,7 +273,7 @@ export const useResultsFiltering = (
       sortOrder: 'desc',
       confidence: 0.7,
       showSpam: false,
-      minConfidence: 70,
+      minConfidence: 65, // Update this to 65% as well
       displayMode: 'list',
       groupBy: 'domain',
       activeFilters: []
