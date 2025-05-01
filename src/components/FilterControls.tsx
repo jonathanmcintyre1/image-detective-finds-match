@@ -43,7 +43,7 @@ export interface FilterOptions {
 interface FilterControlsProps {
   options: FilterOptions;
   onOptionsChange: (newOptions: Partial<FilterOptions>) => void;
-  onClear: () => void;
+  onFilterClear: () => void;  // Changed from onClear to onFilterClear to match usage
   reviewedItems?: string[];
   savedItems?: string[];
   clearReviewed?: () => void;
@@ -68,7 +68,7 @@ const CountBadge = ({ count }: { count: number }) => {
 export const FilterControls: React.FC<FilterControlsProps> = ({
   options,
   onOptionsChange,
-  onClear,
+  onFilterClear,  // Changed from onClear to onFilterClear to match the interface
   reviewedItems = [],
   savedItems = [],
   clearReviewed,
@@ -189,7 +189,7 @@ export const FilterControls: React.FC<FilterControlsProps> = ({
                 variant="outline" 
                 size="sm" 
                 className="w-full" 
-                onClick={onClear}
+                onClick={onFilterClear}  // Changed from onClear to onFilterClear
               >
                 Reset All Filters
               </Button>

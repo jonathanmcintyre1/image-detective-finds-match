@@ -33,7 +33,7 @@ export const useResultsFiltering = (
   const [filterOptions, setFilterOptions] = useState<FilterOptions>({
     sortBy: 'confidence',
     sortOrder: 'desc',
-    confidence: 0.7,
+    // Removed confidence field as it doesn't exist in FilterOptions
     showSpam: false,
     minConfidence: 65, // Lowering the threshold by 5%
     displayMode: 'list',
@@ -271,7 +271,7 @@ export const useResultsFiltering = (
     setFilterOptions({
       sortBy: 'confidence',
       sortOrder: 'desc',
-      confidence: 0.7,
+      // Removed confidence field as it doesn't exist in FilterOptions
       showSpam: false,
       minConfidence: 65, // Update this to 65% as well
       displayMode: 'list',
