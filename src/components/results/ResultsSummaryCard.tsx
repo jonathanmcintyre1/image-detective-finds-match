@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Download, ExternalLink, ClipboardList, CheckCircle, Star } from 'lucide-react';
+import { Download, ClipboardList } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from "@/components/ui/sheet";
 import { Badge } from '@/components/ui/badge';
 import { FilterControls, FilterOptions } from '../FilterControls';
@@ -31,11 +31,6 @@ const ResultsSummaryCard: React.FC<ResultsSummaryCardProps> = ({
   spamPagesCount,
   filterOptions,
   onFilterOptionsChange,
-  onFilterClear,
-  reviewedItems,
-  savedItems,
-  clearReviewed,
-  clearSaved,
   handleExportCsv
 }) => {
   return (
@@ -72,43 +67,6 @@ const ResultsSummaryCard: React.FC<ResultsSummaryCardProps> = ({
                       <Badge variant="secondary" className="ml-2">Coming soon</Badge>
                     </Button>
                   </div>
-                  <div className="border-t pt-4 mt-4">
-                    <h4 className="font-medium mb-2">Status tracking</h4>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <CheckCircle className="h-4 w-4 text-green-500" />
-                          <span>Reviewed items</span>
-                        </div>
-                        <Badge variant="outline">{reviewedItems.length}</Badge>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Star className="h-4 w-4 text-amber-500" />
-                          <span>Saved items</span>
-                        </div>
-                        <Badge variant="outline">{savedItems.length}</Badge>
-                      </div>
-                    </div>
-                    <div className="flex gap-2 mt-4">
-                      <Button 
-                        variant="destructive" 
-                        size="sm" 
-                        disabled={reviewedItems.length === 0} 
-                        onClick={clearReviewed}
-                      >
-                        Clear reviewed
-                      </Button>
-                      <Button 
-                        variant="destructive" 
-                        size="sm" 
-                        disabled={savedItems.length === 0}
-                        onClick={clearSaved}
-                      >
-                        Clear saved
-                      </Button>
-                    </div>
-                  </div>
                 </div>
               </SheetContent>
             </Sheet>
@@ -125,7 +83,7 @@ const ResultsSummaryCard: React.FC<ResultsSummaryCardProps> = ({
           partialCount={partialMatchCount}
           pageCount={pageMatchCount}
           spamCount={spamPagesCount}
-          onFilterClear={onFilterClear}
+          onFilterClear={() => {}} // Keeping this prop for compatibility but not using it
         />
       </CardContent>
     </Card>

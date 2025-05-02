@@ -46,11 +46,8 @@ const ResultsTabbedView: React.FC<ResultsTabbedViewProps> = ({
   }
 
   return (
-    <Tabs defaultValue="overview" className="w-full">
+    <Tabs defaultValue="exact" className="w-full">
       <TabsList className="w-full mb-6">
-        <TabsTrigger value="overview" className="flex-1">
-          Overview
-        </TabsTrigger>
         <TabsTrigger value="exact" className="flex-1">
           Exact Matches <Badge className="ml-2 bg-brand-red">{exactMatchCount}</Badge>
         </TabsTrigger>
@@ -60,15 +57,10 @@ const ResultsTabbedView: React.FC<ResultsTabbedViewProps> = ({
         <TabsTrigger value="pages" className="flex-1">
           Web Pages <Badge className="ml-2 bg-brand-blue">{pageMatchCount}</Badge>
         </TabsTrigger>
+        <TabsTrigger value="analytics" className="flex-1">
+          Analytics
+        </TabsTrigger>
       </TabsList>
-      
-      <TabsContent value="overview" className="pt-2">
-        <ResultsDashboard 
-          data={dashboardData}
-          onDomainSelect={onDomainSelect}
-          hideFilters={true}
-        />
-      </TabsContent>
       
       <TabsContent value="exact" className="pt-2">
         {exactMatchCount > 0 ? (
@@ -139,6 +131,14 @@ const ResultsTabbedView: React.FC<ResultsTabbedViewProps> = ({
             customMessage="No web pages with matching images found" 
           />
         )}
+      </TabsContent>
+      
+      <TabsContent value="analytics" className="pt-2">
+        <ResultsDashboard 
+          data={dashboardData}
+          onDomainSelect={onDomainSelect}
+          hideFilters={true}
+        />
       </TabsContent>
     </Tabs>
   );
