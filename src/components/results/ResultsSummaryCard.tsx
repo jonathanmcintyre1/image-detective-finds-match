@@ -125,7 +125,7 @@ const ResultsSummaryCard: React.FC<ResultsSummaryCardProps> = ({
           partialCount={partialMatchCount}
           pageCount={pageMatchCount}
           spamCount={spamPagesCount}
-          onFilterClear={onFilterClear}  <!-- This parameter name now matches the FilterControlsProps interface -->
+          onFilterClear={onFilterClear} {/* This parameter name matches the FilterControlsProps interface */}
         />
       </CardContent>
     </Card>
