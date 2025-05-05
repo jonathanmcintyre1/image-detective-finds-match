@@ -9,7 +9,7 @@ import { WebImage, WebPage, DashboardData } from '@/types/results';
 import { FilterOptions } from '../FilterControls';
 import NoResultsView from './NoResultsView';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronUp, Expand, Compress } from 'lucide-react';
+import { ChevronDown, ChevronUp, Expand, MinusSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface ResultsTabbedViewProps {
@@ -75,7 +75,7 @@ const ResultsTabbedView: React.FC<ResultsTabbedViewProps> = ({
           {tabsCompressed ? (
             <Expand className="h-4 w-4" />
           ) : (
-            <Compress className="h-4 w-4" />
+            <MinusSquare className="h-4 w-4" />
           )}
         </Button>
       </div>

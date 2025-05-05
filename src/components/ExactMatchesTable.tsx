@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { 
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
@@ -15,7 +14,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { toast } from 'sonner';
 import ImageModal from './ImageModal';
 import { format } from 'date-fns';
-import { getHostname, getWebsiteName, isCdnUrl, getSourceWebsite, getCdnInfo } from '@/utils/domainUtils';
+import { getHostname, getWebsiteName, isCdnUrl, getCdnInfo } from '@/utils/domainUtils';
 
 interface WebImage {
   url: string;
