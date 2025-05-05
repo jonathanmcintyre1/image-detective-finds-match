@@ -43,47 +43,6 @@ interface ExactMatchesTableProps {
   initialItemsToShow?: number;
 }
 
-// Function to get actual source website from image URL when possible
-const getSourceWebsite = (url: string, relatedPages?: WebPage[]): string | null => {
-  try {
-    // First, check if there are related pages for this image
-    if (relatedPages && relatedPages.length) {
-      const relatedPage = relatedPages.find(page => 
-        page.matchingImages?.some(img => 
-          img.url === url || img.imageUrl === url
-        )
-      );
-      
-      if (relatedPage) {
-        return relatedPage.platform || getWebsiteName(relatedPage.url);
-      }
-    }
-    
-    // Check for common patterns in image URLs that indicate the source website
-    const hostname = getHostname(url);
-    
-    if (hostname.includes('media-amazon.com')) {
-      return 'Amazon';
-    } else if (hostname.includes('staticflickr.com')) {
-      return 'Flickr';
-    } else if (hostname.includes('cdninstagram.com') || hostname.includes('fbcdn.net')) {
-      return 'Instagram';
-    } else if (hostname.includes('pinimg.com')) {
-      return 'Pinterest';
-    } else if (hostname.includes('twimg.com')) {
-      return 'Twitter';
-    } else if (hostname.includes('wikimedia.org')) {
-      return 'Wikimedia';
-    } else if (hostname.includes('ytimg.com')) {
-      return 'YouTube';
-    }
-    
-    return null;
-  } catch {
-    return null;
-  }
-};
-
 // Get page type icon
 const getPageTypeIcon = (pageType?: string) => {
   switch(pageType) {
@@ -109,6 +68,7 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
   const [loadMoreVisible, setLoadMoreVisible] = useState(matches.length > initialItemsToShow);
   const [selectedImage, setSelectedImage] = useState<WebImage | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [expandedDomains, setExpandedDomains] = useState<Record<string, boolean>>({});
 
   // Sort matches based on sortBy prop
   const sortedMatches = useMemo(() => {
@@ -143,17 +103,51 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
     }
   }, [matches, sortBy]);
 
+  // Group matches by domain for display
+  const groupedMatches = useMemo(() => {
+    // Create a map to group matches by domain
+    const domainMap = new Map<string, WebImage[]>();
+    
+    sortedMatches.forEach(match => {
+      const domain = getHostname(match.url);
+      
+      if (!domainMap.has(domain)) {
+        domainMap.set(domain, [match]);
+      } else {
+        domainMap.get(domain)?.push(match);
+      }
+    });
+    
+    // Convert the map to an array for rendering
+    return Array.from(domainMap.entries()).map(([domain, images]) => ({
+      domain,
+      images,
+      count: images.length,
+      platform: images[0]?.platform || getWebsiteName(images[0]?.url)
+    }));
+  }, [sortedMatches]);
+
   // Update visible matches when sorting changes
   useMemo(() => {
-    setVisibleMatches(sortedMatches.slice(0, initialItemsToShow));
-    setLoadMoreVisible(sortedMatches.length > initialItemsToShow);
-  }, [sortedMatches, initialItemsToShow]);
+    // Initialize all domains as expanded
+    const initialExpandState: Record<string, boolean> = {};
+    groupedMatches.forEach(group => {
+      initialExpandState[group.domain] = true;
+    });
+    setExpandedDomains(initialExpandState);
+    
+    setLoadMoreVisible(groupedMatches.length > initialItemsToShow);
+  }, [groupedMatches]);
+
+  const visibleGroups = useMemo(() => {
+    return groupedMatches.slice(0, visibleMatches.length);
+  }, [groupedMatches, visibleMatches.length]);
 
   const loadMore = () => {
-    const nextBatch = sortedMatches.slice(visibleMatches.length, visibleMatches.length + initialItemsToShow);
-    setVisibleMatches(prev => [...prev, ...nextBatch]);
+    const newVisibleCount = Math.min(visibleMatches.length + initialItemsToShow, sortedMatches.length);
+    setVisibleMatches(sortedMatches.slice(0, newVisibleCount));
     
-    if (visibleMatches.length + initialItemsToShow >= sortedMatches.length) {
+    if (newVisibleCount >= sortedMatches.length) {
       setLoadMoreVisible(false);
     }
   };
@@ -168,6 +162,13 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
     setModalOpen(true);
   };
 
+  const toggleDomainExpand = (domain: string) => {
+    setExpandedDomains(prev => ({
+      ...prev,
+      [domain]: !prev[domain]
+    }));
+  };
+
   const findRelatedPages = (imageUrl: string): WebPage[] => {
     return relatedPages.filter(page => 
       page.matchingImages?.some(img => 
@@ -178,168 +179,202 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
 
   return (
     <div className="space-y-4">
-      {visibleMatches.length > 0 ? (
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-16">Image</TableHead>
-                <TableHead>Website</TableHead>
-                <TableHead className="hidden md:table-cell">URL</TableHead>
-                {!compact && <TableHead className="hidden md:table-cell">Found</TableHead>}
-                <TableHead className="w-24 text-right">Score</TableHead>
-                <TableHead className="w-20 text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {visibleMatches.map((match, index) => {
-                const relatedPagesList = findRelatedPages(match.url);
-                const isImageFromCdn = isCdnUrl(match.url);
-                const realSourceWebsite = getSourceWebsite(match.url, relatedPages);
-                const cdnInfo = isImageFromCdn ? getCdnInfo(match.url) : null;
-                const actualWebsite = realSourceWebsite || match.platform || getWebsiteName(match.url);
-                
-                return (
-                  <React.Fragment key={index}>
-                    <TableRow className="group hover:bg-gray-50">
-                      <TableCell className="p-2">
-                        <div 
-                          className="w-14 h-14 bg-gray-100 rounded overflow-hidden cursor-pointer hover:ring-2 hover:ring-brand-blue hover:ring-opacity-50 transition-all"
-                          onClick={() => handleImageClick(match)}
-                        >
-                          {match.imageUrl && (
-                            <AspectRatio ratio={1 / 1} className="bg-muted">
-                              <img 
-                                src={match.imageUrl} 
-                                alt="Matched image" 
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  (e.currentTarget as HTMLImageElement).onerror = null;
-                                  (e.currentTarget as HTMLImageElement).src = '/placeholder.svg';
-                                }}
-                              />
-                            </AspectRatio>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-medium flex items-center">
-                          {actualWebsite}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {isImageFromCdn ? (
-                            <span className="flex items-center">
-                              <Server className="h-3 w-3 mr-1 text-gray-400" />
-                              <span className="font-mono">Image hosted on {cdnInfo}</span>
-                            </span>
-                          ) : (
-                            getHostname(match.url)
-                          )}
-                        </div>
-                        <div className="md:hidden text-xs mt-1 text-brand-blue underline">
-                          <a href={match.url} target="_blank" rel="noopener noreferrer" className="flex items-center">
-                            View URL
-                            <ExternalLink className="ml-1 h-3 w-3 inline flex-shrink-0" />
-                          </a>
-                        </div>
-                        {relatedPagesList.length > 0 && (
-                          <div className="text-xs mt-1 text-brand-blue">
-                            {relatedPagesList.length} page{relatedPagesList.length !== 1 ? 's' : ''} with this image
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell">
-                        <div className="max-w-xs truncate text-sm text-brand-blue hover:underline">
-                          <a href={match.url} target="_blank" rel="noopener noreferrer" className="flex items-center">
-                            {getHostname(match.url)}
-                            <ExternalLink className="ml-1 h-3 w-3 inline flex-shrink-0" />
-                          </a>
-                        </div>
-                      </TableCell>
-                      {!compact && (
-                        <TableCell className="hidden md:table-cell">
-                          <div className="flex items-center text-sm text-muted-foreground">
-                            <Calendar className="h-3 w-3 mr-1" />
-                            {match.dateFound 
-                              ? format(match.dateFound, 'MMM d, yyyy')
-                              : format(new Date(), 'MMM d, yyyy')}
-                          </div>
-                        </TableCell>
-                      )}
-                      <TableCell className="text-right">
-                        <Badge className={`${match.score >= 0.9 ? 'bg-brand-red' : 'bg-amber-500'} text-white`}>
-                          {Math.round(match.score * 100)}%
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end space-x-1">
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-8 w-8 p-0" 
-                            title="Copy URL"
-                            onClick={() => handleCopyUrl(match.url)}
-                          >
-                            <Copy className="h-4 w-4 text-gray-600" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-8 w-8 p-0" 
-                            title="Visit URL"
-                            asChild
-                          >
-                            <a href={match.url} target="_blank" rel="noopener noreferrer">
-                              <ExternalLink className="h-4 w-4 text-gray-600" />
-                            </a>
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                    
-                    {relatedPagesList.length > 0 && (
-                      <TableRow className="bg-gray-50/50 border-t border-dashed">
-                        <TableCell colSpan={compact ? 5 : 6}>
-                          <div className="pl-6 py-2">
-                            <p className="text-xs font-medium text-muted-foreground mb-1">Pages with Image:</p>
-                            <div className="space-y-1">
-                              {relatedPagesList.map((page, pageIdx) => (
-                                <div key={pageIdx} className="flex items-center justify-between text-sm flex-wrap gap-1">
-                                  <a 
-                                    href={page.url} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    className="text-brand-blue hover:underline flex items-center"
-                                  >
-                                    <span className="truncate max-w-xs">{page.pageTitle || getWebsiteName(page.url)}</span>
+      {groupedMatches.length > 0 ? (
+        <>
+          {visibleGroups.map((group, groupIndex) => (
+            <Collapsible 
+              key={`${group.domain}-${groupIndex}`}
+              open={expandedDomains[group.domain] ?? true}
+              onOpenChange={() => toggleDomainExpand(group.domain)}
+              className="border rounded-lg overflow-hidden mb-4 shadow-sm"
+            >
+              <CollapsibleTrigger asChild>
+                <div className="flex items-center justify-between bg-gray-50 px-4 py-3 cursor-pointer hover:bg-gray-100">
+                  <div className="flex items-center space-x-3">
+                    <Badge className="bg-gray-200 text-gray-800">{group.count}</Badge>
+                    <h3 className="text-base font-medium">{group.platform}</h3>
+                    <div className="flex items-center">
+                      <span className="text-sm text-muted-foreground">({group.domain})</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center text-muted-foreground">
+                    <span className="text-sm mr-2">
+                      {expandedDomains[group.domain] ? 'Hide images' : 'Show images'}
+                    </span>
+                    {expandedDomains[group.domain] ? (
+                      <ChevronUp className="h-4 w-4" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4" />
+                    )}
+                  </div>
+                </div>
+              </CollapsibleTrigger>
+              
+              <CollapsibleContent>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-16">Image</TableHead>
+                        <TableHead>Website</TableHead>
+                        <TableHead className="hidden md:table-cell">URL</TableHead>
+                        {!compact && <TableHead className="hidden md:table-cell">Found</TableHead>}
+                        <TableHead className="w-24 text-right">Score</TableHead>
+                        <TableHead className="w-20 text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {group.images.map((match, index) => {
+                        const relatedPagesList = findRelatedPages(match.url);
+                        const isImageFromCdn = isCdnUrl(match.url);
+                        const cdnInfo = isImageFromCdn ? getCdnInfo(match.url) : null;
+                        const actualWebsite = match.platform || getWebsiteName(match.url);
+                        
+                        return (
+                          <React.Fragment key={`${group.domain}-image-${index}`}>
+                            <TableRow className="group hover:bg-gray-50">
+                              <TableCell className="p-2">
+                                <div 
+                                  className="w-14 h-14 bg-gray-100 rounded overflow-hidden cursor-pointer hover:ring-2 hover:ring-brand-blue hover:ring-opacity-50 transition-all"
+                                  onClick={() => handleImageClick(match)}
+                                >
+                                  {match.imageUrl && (
+                                    <AspectRatio ratio={1 / 1} className="bg-muted">
+                                      <img 
+                                        src={match.imageUrl} 
+                                        alt="Matched image" 
+                                        className="w-full h-full object-cover"
+                                        onError={(e) => {
+                                          (e.currentTarget as HTMLImageElement).onerror = null;
+                                          (e.currentTarget as HTMLImageElement).src = '/placeholder.svg';
+                                        }}
+                                      />
+                                    </AspectRatio>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="font-medium flex items-center">
+                                  {actualWebsite}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  {isImageFromCdn ? (
+                                    <span className="flex items-center">
+                                      <Server className="h-3 w-3 mr-1 text-gray-400" />
+                                      <span className="font-mono">Image hosted on {cdnInfo}</span>
+                                    </span>
+                                  ) : (
+                                    getHostname(match.url)
+                                  )}
+                                </div>
+                                <div className="md:hidden text-xs mt-1 text-brand-blue underline">
+                                  <a href={match.url} target="_blank" rel="noopener noreferrer" className="flex items-center">
+                                    View URL
                                     <ExternalLink className="ml-1 h-3 w-3 inline flex-shrink-0" />
                                   </a>
-                                  <div className="flex items-center space-x-2">
-                                    <Badge variant="outline" className="text-xs flex items-center gap-1">
-                                      {getPageTypeIcon(page.pageType)}
-                                      <span>{page.pageType === 'product' ? 'Product' : 
-                                            page.pageType === 'category' ? 'Category' : 
-                                            page.pageType === 'search' ? 'Search' : 'Page'}</span>
-                                    </Badge>
-                                    {!compact && page.dateFound && (
-                                      <span className="text-xs text-muted-foreground hidden md:inline">
-                                        {format(page.dateFound, 'MMM d, yyyy')}
-                                      </span>
-                                    )}
-                                  </div>
                                 </div>
-                              ))}
-                            </div>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </React.Fragment>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
+                                {relatedPagesList.length > 0 && (
+                                  <div className="text-xs mt-1 text-brand-blue">
+                                    {relatedPagesList.length} page{relatedPagesList.length !== 1 ? 's' : ''} with this image
+                                  </div>
+                                )}
+                              </TableCell>
+                              <TableCell className="hidden md:table-cell">
+                                <div className="max-w-xs truncate text-sm text-brand-blue hover:underline">
+                                  <a href={match.url} target="_blank" rel="noopener noreferrer" className="flex items-center">
+                                    {getHostname(match.url)}
+                                    <ExternalLink className="ml-1 h-3 w-3 inline flex-shrink-0" />
+                                  </a>
+                                </div>
+                              </TableCell>
+                              {!compact && (
+                                <TableCell className="hidden md:table-cell">
+                                  <div className="flex items-center text-sm text-muted-foreground">
+                                    <Calendar className="h-3 w-3 mr-1" />
+                                    {match.dateFound 
+                                      ? format(match.dateFound, 'MMM d, yyyy')
+                                      : format(new Date(), 'MMM d, yyyy')}
+                                  </div>
+                                </TableCell>
+                              )}
+                              <TableCell className="text-right">
+                                <Badge className={`${match.score >= 0.9 ? 'bg-brand-red' : 'bg-amber-500'} text-white`}>
+                                  {Math.round(match.score * 100)}%
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex items-center justify-end space-x-1">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="h-8 w-8 p-0" 
+                                    title="Copy URL"
+                                    onClick={() => handleCopyUrl(match.url)}
+                                  >
+                                    <Copy className="h-4 w-4 text-gray-600" />
+                                  </Button>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="h-8 w-8 p-0" 
+                                    title="Visit URL"
+                                    asChild
+                                  >
+                                    <a href={match.url} target="_blank" rel="noopener noreferrer">
+                                      <ExternalLink className="h-4 w-4 text-gray-600" />
+                                    </a>
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                            
+                            {relatedPagesList.length > 0 && (
+                              <TableRow className="bg-gray-50/50 border-t border-dashed">
+                                <TableCell colSpan={compact ? 5 : 6}>
+                                  <div className="pl-6 py-2">
+                                    <p className="text-xs font-medium text-muted-foreground mb-1">Pages with Image:</p>
+                                    <div className="space-y-1">
+                                      {relatedPagesList.map((page, pageIdx) => (
+                                        <div key={pageIdx} className="flex items-center justify-between text-sm flex-wrap gap-1">
+                                          <a 
+                                            href={page.url} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer"
+                                            className="text-brand-blue hover:underline flex items-center"
+                                          >
+                                            <span className="truncate max-w-xs">{page.pageTitle || getWebsiteName(page.url)}</span>
+                                            <ExternalLink className="ml-1 h-3 w-3 inline flex-shrink-0" />
+                                          </a>
+                                          <div className="flex items-center space-x-2">
+                                            <Badge variant="outline" className="text-xs flex items-center gap-1">
+                                              {getPageTypeIcon(page.pageType)}
+                                              <span>{page.pageType === 'product' ? 'Product' : 
+                                                    page.pageType === 'category' ? 'Category' : 
+                                                    page.pageType === 'search' ? 'Search' : 'Page'}</span>
+                                            </Badge>
+                                            {!compact && page.dateFound && (
+                                              <span className="text-xs text-muted-foreground hidden md:inline">
+                                                {format(page.dateFound, 'MMM d, yyyy')}
+                                              </span>
+                                            )}
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            )}
+                          </React.Fragment>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          ))}
+        </>
       ) : (
         <Card className="p-6 text-center">
           <FileText className="mx-auto h-10 w-10 text-brand-blue mb-4" />
