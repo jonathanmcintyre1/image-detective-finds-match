@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { 
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
@@ -15,6 +16,7 @@ import { toast } from 'sonner';
 import ImageModal from './ImageModal';
 import { format } from 'date-fns';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { getHostname, getWebsiteName, isCdnUrl, getCdnInfo } from '@/utils/domainUtils';
 
 interface WebImage {
   url: string;
@@ -46,57 +48,6 @@ type GroupedPage = {
   platform: string;
   pages: WebPage[];
   expanded: boolean;
-};
-
-const getHostname = (url: string): string => {
-  try {
-    return new URL(url).hostname.replace('www.', '');
-  } catch {
-    return url;
-  }
-};
-
-const isCdnUrl = (url: string): boolean => {
-  const cdnPatterns = [
-    'cloudfront.net', 'cdn.shopify', 'cloudinary', 'imgix', 
-    'fastly', 'akamaized', 'cdn.', 'ibb.co', 'imgur.com',
-    'postimg.cc', 'amazonaws.com', 's3.', 'media-amazon.com',
-    'staticflickr.com', 'cdninstagram.com', 'fbcdn.net',
-    'pinimg.com', 'twimg.com', 'assets.', 'static.'
-  ];
-  
-  const urlLower = url.toLowerCase();
-  return cdnPatterns.some(pattern => urlLower.includes(pattern));
-};
-
-const getCdnInfo = (url: string): string | null => {
-  const hostname = getHostname(url);
-  
-  if (hostname.includes('cloudfront.net')) return 'Amazon CloudFront';
-  if (hostname.includes('amazonaws.com') || hostname.includes('s3.')) return 'Amazon S3';
-  if (hostname.includes('cdn.shopify')) return 'Shopify CDN';
-  if (hostname.includes('cloudinary')) return 'Cloudinary CDN';
-  if (hostname.includes('imgix')) return 'Imgix CDN';
-  if (hostname.includes('media-amazon')) return 'Amazon Media';
-  if (hostname.includes('akamaized')) return 'Akamai CDN';
-  if (hostname.includes('staticflickr')) return 'Flickr CDN';
-  if (hostname.includes('twimg')) return 'Twitter CDN';
-  if (hostname.includes('fbcdn')) return 'Facebook CDN';
-  if (hostname.includes('cdninstagram')) return 'Instagram CDN';
-  if (hostname.includes('pinimg')) return 'Pinterest CDN';
-  
-  return null;
-};
-
-const getWebsiteName = (url: string, platform?: string): string => {
-  if (platform) return platform;
-  
-  const hostname = getHostname(url);
-  const domainParts = hostname.split('.');
-  if (domainParts.length > 1) {
-    return domainParts[0].charAt(0).toUpperCase() + domainParts[0].slice(1);
-  }
-  return hostname;
 };
 
 const isLikelySpam = (url: string, score: number): boolean => {
@@ -208,39 +159,33 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({
     setGroupedState(initialGroupState);
   }, [visiblePages]);
 
+  // Group pages by their actual hostname
   const groupedPages = useMemo(() => {
-    const sites = new Map<string, GroupedPage>();
+    // Create a map to store each page by its site (hostname)
+    const pagesMap = new Map<string, WebPage[]>();
     
+    // Each page gets grouped individually by hostname
     visiblePages.forEach(page => {
       const hostname = getHostname(page.url);
-      const platform = page.platform || getWebsiteName(page.url);
       
-      if (!sites.has(hostname)) {
-        sites.set(hostname, {
-          site: hostname,
-          platform: platform,
-          pages: [page],
-          expanded: groupedState[hostname] ?? true
-        });
+      if (!pagesMap.has(hostname)) {
+        pagesMap.set(hostname, [page]);
       } else {
-        sites.get(hostname)?.pages.push(page);
+        pagesMap.get(hostname)?.push(page);
       }
     });
     
-    // Set all groups to open by default if not already set
-    visiblePages.forEach(page => {
-      const hostname = getHostname(page.url);
-      if (groupedState[hostname] === undefined) {
-        groupedState[hostname] = true;
-      }
+    // Convert the map to an array of grouped pages
+    return Array.from(pagesMap.entries()).map(([site, pagesList]) => {
+      const platform = pagesList[0].platform || getWebsiteName(pagesList[0].url);
+      
+      return {
+        site: site,
+        platform: platform,
+        pages: sortPagesByType(pagesList),
+        expanded: groupedState[site] ?? true
+      };
     });
-    
-    // Sort pages within each group by page type
-    sites.forEach(group => {
-      group.pages = sortPagesByType(group.pages);
-    });
-    
-    return Array.from(sites.values());
   }, [visiblePages, groupedState]);
 
   const loadMorePages = useCallback(() => {

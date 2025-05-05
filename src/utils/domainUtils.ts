@@ -1,3 +1,4 @@
+
 /**
  * Domain utilities for normalizing and categorizing domains
  */
@@ -41,7 +42,11 @@ const CDNS = [
  */
 export const getHostname = (url: string): string => {
   try {
-    return new URL(url).hostname.replace('www.', '');
+    // Extract the full hostname
+    const hostname = new URL(url).hostname;
+    
+    // Remove www. prefix if present
+    return hostname.replace(/^www\./, '');
   } catch {
     // Return original if not a valid URL
     return url;
@@ -60,6 +65,16 @@ export const getDomain = (hostname: string): string => {
     if (parts.length > 2 && parts[parts.length - 2] === 'co') {
       return parts[parts.length - 3];
     }
+    
+    // For cases like store.example.com, we want example
+    if (parts.length > 2 && !['com', 'org', 'net', 'edu', 'gov', 'co'].includes(parts[parts.length - 2])) {
+      // Check if first part is a common subdomain like 'www', 'store', 'shop', etc.
+      const commonSubdomains = ['www', 'store', 'shop', 'blog', 'cdn', 'app', 'mail'];
+      if (commonSubdomains.includes(parts[0])) {
+        return parts[1]; // Return the second part
+      }
+    }
+    
     return parts[parts.length - 2];
   }
   return hostname;
@@ -75,10 +90,9 @@ export const getWebsiteName = (url: string, platform?: string): string => {
   if (platform) return platform;
   
   const hostname = getHostname(url);
-  const domain = getDomain(hostname);
   
-  // Capitalize the first letter
-  return domain.charAt(0).toUpperCase() + domain.slice(1);
+  // For actual attribution, return the full hostname without www
+  return hostname;
 };
 
 /**
@@ -196,24 +210,28 @@ export const getCdnInfo = (url: string): string => {
 /**
  * Group an array of items by domain
  * @param items Items with a URL property
+ * @param useFullHostname Whether to use the full hostname for grouping (true) or just the domain (false)
  * @returns Grouped items by domain
  */
 export function groupByDomain<T extends { url: string }>(
-  items: T[]
+  items: T[],
+  useFullHostname: boolean = true
 ): { domain: string; items: T[]; platform?: string }[] {
   const domains = new Map<string, { items: T[]; platform?: string }>();
   
   items.forEach(item => {
+    // Use full hostname instead of just domain part for more accurate grouping
     const hostname = getHostname(item.url);
+    const groupKey = useFullHostname ? hostname : getDomain(hostname);
     const sourcePlatform = getSourcePlatform(item.url);
     
-    if (!domains.has(hostname)) {
-      domains.set(hostname, { 
+    if (!domains.has(groupKey)) {
+      domains.set(groupKey, { 
         items: [item],
         platform: sourcePlatform || undefined
       });
     } else {
-      domains.get(hostname)?.items.push(item);
+      domains.get(groupKey)?.items.push(item);
     }
   });
   

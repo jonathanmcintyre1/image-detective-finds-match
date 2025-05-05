@@ -9,7 +9,8 @@ import { WebImage, WebPage, DashboardData } from '@/types/results';
 import { FilterOptions } from '../FilterControls';
 import NoResultsView from './NoResultsView';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, Expand, Compress } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface ResultsTabbedViewProps {
   filterOptions: FilterOptions;
@@ -38,8 +39,9 @@ const ResultsTabbedView: React.FC<ResultsTabbedViewProps> = ({
   isProcessing,
   onDomainSelect
 }) => {
-  // State for collapsible sections
+  // State for collapsible sections - default to expanded (open)
   const [pagesSectionOpen, setPagesSectionOpen] = useState(true);
+  const [tabsCompressed, setTabsCompressed] = useState(false);
   
   if (exactMatchCount + partialMatchCount + pageMatchCount === 0) {
     return <NoResultsView isProcessing={isProcessing} />;
@@ -47,20 +49,36 @@ const ResultsTabbedView: React.FC<ResultsTabbedViewProps> = ({
 
   return (
     <Tabs defaultValue="exact" className="w-full">
-      <TabsList className="w-full mb-6">
-        <TabsTrigger value="exact" className="flex-1">
-          Exact Matches <Badge className="ml-2 bg-brand-red">{exactMatchCount}</Badge>
-        </TabsTrigger>
-        <TabsTrigger value="partial" className="flex-1">
-          Similar Matches <Badge className="ml-2 bg-amber-500">{partialMatchCount}</Badge>
-        </TabsTrigger>
-        <TabsTrigger value="pages" className="flex-1">
-          Web Pages <Badge className="ml-2 bg-brand-blue">{pageMatchCount}</Badge>
-        </TabsTrigger>
-        <TabsTrigger value="analytics" className="flex-1">
-          Analytics
-        </TabsTrigger>
-      </TabsList>
+      <div className="flex items-center justify-between mb-4">
+        <TabsList className={`${tabsCompressed ? 'w-auto' : 'w-full'} mb-2`}>
+          <TabsTrigger value="exact" className={`${tabsCompressed ? '' : 'flex-1'}`}>
+            Exact Matches <Badge className="ml-2 bg-brand-red">{exactMatchCount}</Badge>
+          </TabsTrigger>
+          <TabsTrigger value="partial" className={`${tabsCompressed ? '' : 'flex-1'}`}>
+            Similar Matches <Badge className="ml-2 bg-amber-500">{partialMatchCount}</Badge>
+          </TabsTrigger>
+          <TabsTrigger value="pages" className={`${tabsCompressed ? '' : 'flex-1'}`}>
+            Web Pages <Badge className="ml-2 bg-brand-blue">{pageMatchCount}</Badge>
+          </TabsTrigger>
+          <TabsTrigger value="analytics" className={`${tabsCompressed ? '' : 'flex-1'}`}>
+            Analytics
+          </TabsTrigger>
+        </TabsList>
+        
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={() => setTabsCompressed(!tabsCompressed)}
+          className="ml-2"
+          title={tabsCompressed ? "Expand tabs" : "Compress tabs"}
+        >
+          {tabsCompressed ? (
+            <Expand className="h-4 w-4" />
+          ) : (
+            <Compress className="h-4 w-4" />
+          )}
+        </Button>
+      </div>
       
       <TabsContent value="exact" className="pt-2">
         {exactMatchCount > 0 ? (

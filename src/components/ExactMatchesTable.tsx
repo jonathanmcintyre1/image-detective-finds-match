@@ -5,7 +5,7 @@ import {
 } from '@/components/ui/table';
 import { 
   ExternalLink, Copy, ChevronDown, ChevronUp,
-  Clock, FileText, Calendar, ShoppingBag, Globe, Tag, Server
+  Clock, FileText, Calendar, ShoppingBag, Globe, Tag, Server, Hash
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,6 +15,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { toast } from 'sonner';
 import ImageModal from './ImageModal';
 import { format } from 'date-fns';
+import { getHostname, getWebsiteName, isCdnUrl, getSourceWebsite, getCdnInfo } from '@/utils/domainUtils';
 
 interface WebImage {
   url: string;
@@ -49,29 +50,6 @@ type GroupedMatch = {
   expanded: boolean;
   cdnInfo?: string;
   sourceWebsite?: string;
-};
-
-// Function to get hostname from URL
-const getHostname = (url: string): string => {
-  try {
-    return new URL(url).hostname.replace('www.', '');
-  } catch {
-    return url;
-  }
-};
-
-// Function to determine if a URL is from a CDN
-const isCdnUrl = (url: string): boolean => {
-  const cdnPatterns = [
-    'cloudfront.net', 'cdn.shopify', 'cloudinary', 'imgix', 
-    'fastly', 'akamaized', 'cdn.', 'ibb.co', 'imgur.com',
-    'postimg.cc', 'amazonaws.com', 's3.', 'media-amazon.com',
-    'staticflickr.com', 'cdninstagram.com', 'fbcdn.net',
-    'pinimg.com', 'twimg.com', 'assets.', 'static.'
-  ];
-  
-  const urlLower = url.toLowerCase();
-  return cdnPatterns.some(pattern => urlLower.includes(pattern));
 };
 
 // Function to get actual source website from image URL when possible
@@ -111,38 +89,6 @@ const getSourceWebsite = (url: string, relatedPages?: WebPage[]): string | null 
   } catch {
     return null;
   }
-};
-
-// Function to extract CDN info
-const getCdnInfo = (url: string): string => {
-  const hostname = getHostname(url);
-  
-  if (hostname.includes('cloudfront.net')) return 'Amazon CloudFront';
-  if (hostname.includes('amazonaws.com') || hostname.includes('s3.')) return 'Amazon S3';
-  if (hostname.includes('cdn.shopify')) return 'Shopify CDN';
-  if (hostname.includes('cloudinary')) return 'Cloudinary CDN';
-  if (hostname.includes('imgix')) return 'Imgix CDN';
-  if (hostname.includes('media-amazon')) return 'Amazon Media';
-  if (hostname.includes('akamaized')) return 'Akamai CDN';
-  if (hostname.includes('staticflickr')) return 'Flickr CDN';
-  if (hostname.includes('twimg')) return 'Twitter CDN';
-  if (hostname.includes('fbcdn')) return 'Facebook CDN';
-  if (hostname.includes('cdninstagram')) return 'Instagram CDN';
-  if (hostname.includes('pinimg')) return 'Pinterest CDN';
-  
-  return hostname;
-};
-
-// Function to get website name from hostname
-const getWebsiteName = (url: string, platform?: string): string => {
-  if (platform) return platform;
-  
-  const hostname = getHostname(url);
-  const domainParts = hostname.split('.');
-  if (domainParts.length > 1) {
-    return domainParts[0].charAt(0).toUpperCase() + domainParts[0].slice(1);
-  }
-  return hostname;
 };
 
 // Get page type icon
@@ -211,34 +157,31 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
     setLoadMoreVisible(sortedMatches.length > initialItemsToShow);
   }, [sortedMatches, initialItemsToShow]);
 
-  // Group visible matches by site
+  // Group visible matches by site - each result is now its own entry
   const groupedMatches = useMemo(() => {
-    const sites = new Map<string, GroupedMatch>();
-    
-    visibleMatches.forEach(match => {
+    return visibleMatches.map(match => {
       const hostname = getHostname(match.url);
       const isCdn = isCdnUrl(match.url);
       const sourceWebsite = getSourceWebsite(match.url, relatedPages);
-      let platform = match.platform || sourceWebsite || (isCdn ? "CDN Content" : getWebsiteName(match.url));
+      let platform = match.platform || sourceWebsite || getWebsiteName(match.url);
       
-      // If this is a CDN URL and we've found the actual source website
+      // If this is a CDN URL, try to identify the actual site
       const cdnInfo = isCdn ? getCdnInfo(match.url) : undefined;
       
-      if (!sites.has(hostname)) {
-        sites.set(hostname, {
-          site: hostname,
-          platform: platform,
-          matches: [match],
-          expanded: groupedState[hostname] ?? true, // Default to expanded
-          cdnInfo: cdnInfo,
-          sourceWebsite: sourceWebsite
-        });
-      } else {
-        sites.get(hostname)?.matches.push(match);
+      // Set default expanded state if not already set
+      if (groupedState[hostname] === undefined) {
+        groupedState[hostname] = true;
       }
+      
+      return {
+        site: hostname,
+        platform,
+        matches: [match],
+        expanded: groupedState[hostname] ?? true,
+        cdnInfo,
+        sourceWebsite
+      };
     });
-    
-    return Array.from(sites.values());
   }, [visibleMatches, groupedState, relatedPages]);
 
   const loadMore = () => {
@@ -278,9 +221,9 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
   return (
     <div className="space-y-4">
       {groupedMatches.length > 0 ? (
-        groupedMatches.map((group) => (
+        groupedMatches.map((group, groupIndex) => (
           <Collapsible 
-            key={group.site} 
+            key={`${group.site}-${groupIndex}`} 
             open={groupedState[group.site]} 
             onOpenChange={() => toggleExpand(group.site)}
             className="border rounded-lg overflow-hidden mb-4 shadow-sm"
