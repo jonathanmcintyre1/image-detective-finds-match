@@ -3,3 +3,6 @@ project_id = "plsidbybfxgzobsxknsf"
 
 [functions.average_search_results]
 verify_jwt = false
+
+[functions.analyze-image]
+verify_jwt = false

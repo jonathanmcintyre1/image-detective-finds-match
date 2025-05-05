@@ -30,7 +30,7 @@ export interface FilterOptions {
 interface FilterControlsProps {
   options: FilterOptions;
   onOptionsChange: (newOptions: Partial<FilterOptions>) => void;
-  onFilterClear: () => void;
+  onFilterClear?: () => void;
   totalResults?: number;
   exactCount?: number;
   partialCount?: number;

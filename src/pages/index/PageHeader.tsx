@@ -1,13 +1,7 @@
 
 import React from 'react';
-import ApiKeyInput from '@/components/ApiKeyInput';
 
-interface PageHeaderProps {
-  apiKey: string;
-  setApiKey: (key: string) => void;
-}
-
-const PageHeader: React.FC<PageHeaderProps> = ({ apiKey, setApiKey }) => {
+const PageHeader: React.FC = () => {
   return (
     <div className="text-center max-w-2xl mx-auto space-y-2 md:space-y-4">
       <div className="flex items-center justify-center mb-2">
@@ -25,9 +19,6 @@ const PageHeader: React.FC<PageHeaderProps> = ({ apiKey, setApiKey }) => {
       <p className="text-base md:text-lg text-muted-foreground px-2">
         Discover unauthorized copies of your images across the web in seconds
       </p>
-      <div className="flex justify-center mt-2 md:mt-4">
-        <ApiKeyInput apiKey={apiKey} setApiKey={setApiKey} />
-      </div>
     </div>
   );
 };

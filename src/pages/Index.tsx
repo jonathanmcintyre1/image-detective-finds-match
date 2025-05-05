@@ -11,7 +11,6 @@ import { useExitIntent } from '@/hooks/useExitIntent';
 // Page components
 import PageHeader from './index/PageHeader';
 import PageFooter from './index/PageFooter';
-import ApiKeyReminder from './index/ApiKeyReminder';
 import HowItWorksCard from './index/HowItWorksCard';
 import UploadCard from './index/UploadCard';
 import BetaSignupCard from './index/BetaSignupCard';
@@ -19,14 +18,12 @@ import ResultsArea from './index/ResultsArea';
 import BetaSignupDialog from './index/BetaSignupDialog';
 
 const Index = () => {
-  const [apiKey, setApiKey] = useState('');
   const [selectedImage, setSelectedImage] = useState<File | string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [results, setResults] = useState<any | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [hasPerformedSearch, setHasPerformedSearch] = useState(false);
-  const [showApiKeyReminder, setShowApiKeyReminder] = useState(false);
   const isMobile = useIsMobile();
   
   // Exit intent hook with increased delay time (90 seconds instead of 60)
@@ -45,25 +42,6 @@ const Index = () => {
       setShowBetaSignup(true);
     }
   }, [shouldShowModal]);
-
-  useEffect(() => {
-    const envApiKey = import.meta.env.VITE_GOOGLE_VISION_API_KEY;
-    
-    if (envApiKey) {
-      setApiKey(envApiKey);
-      console.log("Using API key from environment variables");
-    } else {
-      const savedApiKey = localStorage.getItem('gcv_api_key');
-      if (savedApiKey) {
-        setApiKey(savedApiKey);
-        console.log("Using API key from local storage");
-      } else {
-        console.log("No API key found");
-        const timer = setTimeout(() => setShowApiKeyReminder(true), 2000);
-        return () => clearTimeout(timer);
-      }
-    }
-  }, []);
 
   const handleBetaDialogClose = useCallback(() => {
     setShowBetaSignup(false);
@@ -102,16 +80,10 @@ const Index = () => {
     setSelectedImage(image);
     setResults(null);
     
-    if (!apiKey) {
-      toast.error('Please set your Google Cloud Vision API key first');
-      setShowApiKeyReminder(true);
-      return;
-    }
-    
     try {
-      console.log("Starting image analysis with API key:", apiKey.substring(0, 5) + "...");
+      console.log("Starting image analysis");
       setIsProcessing(true);
-      const result = await analyzeImage(apiKey, image);
+      const result = await analyzeImage(image);
       setResults(result);
       setHasPerformedSearch(true);
       
@@ -130,16 +102,11 @@ const Index = () => {
       
     } catch (error) {
       console.error('Error analyzing image:', error);
-      toast.error('Failed to analyze image. Please check your API key and try again.');
+      toast.error('Failed to analyze image. Please try again later.');
     } finally {
       setIsProcessing(false);
     }
-  }, [apiKey, hasUserSeen]);
-
-  const handleApiKeySet = useCallback((key: string) => {
-    setApiKey(key);
-    setShowApiKeyReminder(false);
-  }, []);
+  }, [hasUserSeen]);
 
   const handleImageError = useCallback(() => {
     setImageError(true);
@@ -154,8 +121,7 @@ const Index = () => {
         <Header />
         
         <main className="flex-1 w-full mx-auto px-4 py-4 md:py-8 space-y-4 md:space-y-8">
-          <PageHeader apiKey={apiKey} setApiKey={handleApiKeySet} />
-          <ApiKeyReminder showApiKeyReminder={showApiKeyReminder} apiKey={apiKey} />
+          <PageHeader />
           <HowItWorksCard />
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
