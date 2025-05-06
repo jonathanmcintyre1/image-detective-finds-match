@@ -68,6 +68,7 @@ export default {
 					red: '#FF4141',
 					dark: '#2D2D2D',
 					light: '#F1F1F1',
+					purple: '#8B5CF6',
 				}
 			},
 			fontFamily: {
@@ -77,6 +78,9 @@ export default {
 				lg: 'var(--radius)',
 				md: 'calc(var(--radius) - 2px)',
 				sm: 'calc(var(--radius) - 4px)'
+			},
+			maxWidth: {
+				'90': '90%',
 			},
 			keyframes: {
 				'accordion-down': {
@@ -122,6 +126,7 @@ export default {
 				'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
 				'hero-gradient': 'linear-gradient(to right, #0073E6, #4DA8FF)',
 				'red-gradient': 'linear-gradient(to right, #FF4141, #FF7070)',
+				'purple-gradient': 'linear-gradient(to right, #8B5CF6, #A78BFA)',
 			}
 		}
 	},

@@ -26,11 +26,11 @@ const Index = () => {
   const [hasPerformedSearch, setHasPerformedSearch] = useState(false);
   const isMobile = useIsMobile();
   
-  // Exit intent hook with increased delay time (90 seconds instead of 60)
+  // Exit intent hook with increased delay time (120 seconds)
   const { shouldShowModal, resetModal, hasUserSeen } = useExitIntent({
     threshold: 20,
     maxDisplays: 1,
-    timeoutDelayTime: 90000, // Increased to 90 seconds (30 seconds more)
+    timeoutDelayTime: 120000, // Increased to 120 seconds (30 seconds more)
     disableOnMobile: true
   });
   
@@ -93,10 +93,11 @@ const Index = () => {
       
       await trackImageSearch(image, totalResults);
       
-      if (!hasUserSeen) {
+      // Show beta signup only if user hasn't seen it yet and after 30 more seconds
+      if (!hasUserSeen && !localStorage.getItem('seen_beta_signup')) {
         const timer = setTimeout(() => {
           setShowBetaSignup(true);
-        }, 2000);
+        }, 30000); // 30 seconds delay
         return () => clearTimeout(timer);
       }
       
@@ -120,7 +121,7 @@ const Index = () => {
       <div className="min-h-screen flex flex-col bg-gray-50 font-sans">
         <Header />
         
-        <main className="flex-1 w-full mx-auto px-4 py-4 md:py-8 space-y-4 md:space-y-8">
+        <main className="flex-1 w-11/12 max-w-90 mx-auto px-4 py-4 md:py-8 space-y-4 md:space-y-8">
           <PageHeader />
           <HowItWorksCard />
           

@@ -54,8 +54,11 @@ const ResultsTabbedView: React.FC<ResultsTabbedViewProps> = ({
           <TabsTrigger value="exact" className={`${tabsCompressed ? '' : 'flex-1'}`}>
             Exact Matches <Badge className="ml-2 bg-brand-red">{exactMatchCount}</Badge>
           </TabsTrigger>
-          <TabsTrigger value="partial" className={`${tabsCompressed ? '' : 'flex-1'}`}>
+          <TabsTrigger value="similar" className={`${tabsCompressed ? '' : 'flex-1'}`}>
             Similar Matches <Badge className="ml-2 bg-amber-500">{partialMatchCount}</Badge>
+          </TabsTrigger>
+          <TabsTrigger value="partial" className={`${tabsCompressed ? '' : 'flex-1'}`}>
+            Partial Matches <Badge className="ml-2 bg-purple-500">{partialMatchCount}</Badge>
           </TabsTrigger>
           <TabsTrigger value="pages" className={`${tabsCompressed ? '' : 'flex-1'}`}>
             Web Pages <Badge className="ml-2 bg-brand-blue">{pageMatchCount}</Badge>
@@ -96,10 +99,10 @@ const ResultsTabbedView: React.FC<ResultsTabbedViewProps> = ({
         )}
       </TabsContent>
       
-      <TabsContent value="partial" className="pt-2">
+      <TabsContent value="similar" className="pt-2">
         {partialMatchCount > 0 ? (
           <ExactMatchesTable 
-            matches={filteredData.partialMatches}
+            matches={filteredData.partialMatches.filter(img => img.score >= 0.75)}
             relatedPages={filteredData.allPages}
             sortBy={filterOptions.sortBy}
             initialItemsToShow={DEFAULT_ITEMS_TO_SHOW}
@@ -108,6 +111,22 @@ const ResultsTabbedView: React.FC<ResultsTabbedViewProps> = ({
           <NoResultsView 
             isProcessing={false} 
             customMessage="No similar matches found" 
+          />
+        )}
+      </TabsContent>
+
+      <TabsContent value="partial" className="pt-2">
+        {partialMatchCount > 0 ? (
+          <ExactMatchesTable 
+            matches={filteredData.partialMatches.filter(img => img.score < 0.75)}
+            relatedPages={filteredData.allPages}
+            sortBy={filterOptions.sortBy}
+            initialItemsToShow={DEFAULT_ITEMS_TO_SHOW}
+          />
+        ) : (
+          <NoResultsView 
+            isProcessing={false} 
+            customMessage="No partial matches found" 
           />
         )}
       </TabsContent>

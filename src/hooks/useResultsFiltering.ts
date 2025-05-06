@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from 'react';
 import { FilterOptions } from '@/components/FilterControls';
 import { MatchResult, FilteredData, DashboardData, WebImage, WebPage } from '@/types/results';
@@ -33,9 +32,8 @@ export const useResultsFiltering = (
   const [filterOptions, setFilterOptions] = useState<FilterOptions>({
     sortBy: 'confidence',
     sortOrder: 'desc',
-    // Removed confidence field as it doesn't exist in FilterOptions
     showSpam: false,
-    minConfidence: 65, // Lowering the threshold by 5%
+    minConfidence: 65,
     displayMode: 'list',
     groupBy: 'domain',
     activeFilters: []
@@ -105,12 +103,16 @@ export const useResultsFiltering = (
     
     const minConfidence = filterOptions.minConfidence / 100;
     
+    // Update thresholds for our new categorization:
+    // Exact matches: >= 0.9
+    // Similar matches: >= 0.75 and < 0.9
+    // Partial matches: >= 0.65 and < 0.75
     const filteredExactMatches = processedResults.visuallySimilarImages
       .filter(img => img.score >= 0.9)
       .filter(img => img.score >= minConfidence);
       
     const filteredPartialMatches = processedResults.visuallySimilarImages
-      .filter(img => img.score >= 0.65 && img.score < 0.9) // Lower the threshold to 65% from 70%
+      .filter(img => img.score >= 0.65 && img.score < 0.9) 
       .filter(img => img.score >= minConfidence);
       
     const filteredPages = processedResults.pagesWithMatchingImages
@@ -271,9 +273,8 @@ export const useResultsFiltering = (
     setFilterOptions({
       sortBy: 'confidence',
       sortOrder: 'desc',
-      // Removed confidence field as it doesn't exist in FilterOptions
       showSpam: false,
-      minConfidence: 65, // Update this to 65% as well
+      minConfidence: 65,
       displayMode: 'list',
       groupBy: 'domain',
       activeFilters: []
