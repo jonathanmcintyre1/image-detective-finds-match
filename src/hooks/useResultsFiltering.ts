@@ -103,20 +103,20 @@ export const useResultsFiltering = (
     
     const minConfidence = filterOptions.minConfidence / 100;
     
-    // Update match categories:
+    // Update match categories with new thresholds:
     // Exact matches: >= 0.9 (90%)
-    // Partial matches: >= 0.75 and < 0.9 (75-90%)
-    // Similar matches: >= 0.65 and < 0.75 (65-75%)
+    // Partial matches: >= 0.7 and < 0.9 (70-90%) - Updated from 0.75 to 0.7
+    // Similar matches: >= 0.65 and < 0.7 (65-70%) - Updated upper bound from 0.75 to 0.7
     const filteredExactMatches = processedResults.visuallySimilarImages
       .filter(img => img.score >= 0.9)
       .filter(img => img.score >= minConfidence);
       
     const filteredPartialMatches = processedResults.visuallySimilarImages
-      .filter(img => img.score >= 0.75 && img.score < 0.9) 
+      .filter(img => img.score >= 0.7 && img.score < 0.9) 
       .filter(img => img.score >= minConfidence);
       
     const filteredSimilarMatches = processedResults.visuallySimilarImages
-      .filter(img => img.score >= 0.65 && img.score < 0.75) 
+      .filter(img => img.score >= 0.65 && img.score < 0.7) 
       .filter(img => img.score >= minConfidence);
     
     console.log("Filtered matches counts:", {
