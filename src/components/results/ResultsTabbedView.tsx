@@ -84,6 +84,7 @@ const ResultsTabbedView: React.FC<ResultsTabbedViewProps> = ({
         {exactMatchCount > 0 ? (
           <ExactMatchesTable 
             matches={filteredData.exactMatches}
+            relatedPages={filteredData.allPages}
             sortBy={filterOptions.sortBy}
             initialItemsToShow={DEFAULT_ITEMS_TO_SHOW}
           />
@@ -99,6 +100,7 @@ const ResultsTabbedView: React.FC<ResultsTabbedViewProps> = ({
         {partialMatchCount > 0 ? (
           <ExactMatchesTable 
             matches={filteredData.partialMatches}
+            relatedPages={filteredData.allPages}
             sortBy={filterOptions.sortBy}
             initialItemsToShow={DEFAULT_ITEMS_TO_SHOW}
           />
@@ -112,35 +114,11 @@ const ResultsTabbedView: React.FC<ResultsTabbedViewProps> = ({
       
       <TabsContent value="pages" className="pt-2">
         {pageMatchCount > 0 ? (
-          <>
-            <h3 className="font-medium text-lg text-left mb-4">Web Pages with Matching Images</h3>
-            <Collapsible open={pagesSectionOpen} onOpenChange={setPagesSectionOpen} className="w-full">
-              <div className="flex justify-end mb-2">
-                <CollapsibleTrigger
-                  className="flex items-center text-sm text-brand-blue hover:text-brand-dark transition-colors"
-                >
-                  {pagesSectionOpen ? (
-                    <>
-                      <span className="mr-1">Hide pages</span>
-                      <ChevronUp className="h-4 w-4" />
-                    </>
-                  ) : (
-                    <>
-                      <span className="mr-1">Show pages</span>
-                      <ChevronDown className="h-4 w-4" />
-                    </>
-                  )}
-                </CollapsibleTrigger>
-              </div>
-              <CollapsibleContent>
-                <PagesMatchTable 
-                  pages={filteredData.allPages} 
-                  sortBy={filterOptions.sortBy} 
-                  initialItemsToShow={DEFAULT_ITEMS_TO_SHOW} 
-                />
-              </CollapsibleContent>
-            </Collapsible>
-          </>
+          <PagesMatchTable 
+            pages={filteredData.allPages} 
+            sortBy={filterOptions.sortBy} 
+            initialItemsToShow={DEFAULT_ITEMS_TO_SHOW} 
+          />
         ) : (
           <NoResultsView 
             isProcessing={false} 

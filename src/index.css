@@ -168,6 +168,24 @@
   @apply overflow-y-auto max-h-[80vh] p-2;
 }
 
+/* Results table styles - new */
+.results-table th {
+  @apply text-left whitespace-nowrap;
+}
+
+.results-table td {
+  @apply text-left align-top;
+}
+
+.results-table-fixed {
+  table-layout: fixed;
+}
+
+.results-table-fixed th,
+.results-table-fixed td {
+  @apply overflow-hidden text-ellipsis;
+}
+
 /* Domain color map classes */
 .domain-amazon { @apply bg-[#FF9900] text-white; }
 .domain-ebay { @apply bg-[#E53238] text-white; }

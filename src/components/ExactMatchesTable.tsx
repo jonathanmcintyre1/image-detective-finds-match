@@ -5,7 +5,7 @@ import {
 } from '@/components/ui/table';
 import { 
   ExternalLink, Copy, ChevronDown, ChevronUp,
-  Clock, Calendar, Server
+  Clock, Calendar, Server, FileText
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -23,6 +23,8 @@ interface WebImage {
   imageUrl?: string;
   platform?: string;
   dateFound?: Date;
+  pageUrl?: string;
+  pageTitle?: string;
 }
 
 interface WebPage {
@@ -155,6 +157,15 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
     }));
   };
 
+  // Find associated page for an image URL
+  const findPageForImage = (imageUrl: string): WebPage | undefined => {
+    return relatedPages.find(page => 
+      page.matchingImages?.some(img => 
+        img.url === imageUrl || img.imageUrl === imageUrl
+      )
+    );
+  };
+
   return (
     <div className="space-y-4">
       {groupedMatches.length > 0 ? (
@@ -193,11 +204,12 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-16">Image</TableHead>
-                        <TableHead>Website</TableHead>
-                        <TableHead className="hidden md:table-cell">URL</TableHead>
-                        {!compact && <TableHead className="hidden md:table-cell">Found</TableHead>}
-                        <TableHead className="w-24 text-right">Score</TableHead>
+                        <TableHead className="w-16 text-left">Image</TableHead>
+                        <TableHead className="w-1/5 text-left">Website</TableHead>
+                        <TableHead className="w-1/5 text-left">URL</TableHead>
+                        <TableHead className="w-1/5 text-left">Found On</TableHead>
+                        {!compact && <TableHead className="w-1/5 text-left">Date</TableHead>}
+                        <TableHead className="w-24 text-center">Score</TableHead>
                         <TableHead className="w-20 text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -206,6 +218,7 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
                         const isImageFromCdn = isCdnUrl(match.url);
                         const cdnInfo = isImageFromCdn ? getCdnInfo(match.url) : null;
                         const actualWebsite = match.platform || getWebsiteName(match.url);
+                        const associatedPage = match.pageUrl ? { url: match.pageUrl, pageTitle: match.pageTitle } : findPageForImage(match.url);
                         
                         return (
                           <TableRow key={`${group.domain}-image-${index}`} className="group hover:bg-gray-50">
@@ -229,7 +242,7 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
                                 )}
                               </div>
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="text-left">
                               <div className="font-medium flex items-center">
                                 {actualWebsite}
                               </div>
@@ -243,14 +256,8 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
                                   getHostname(match.url)
                                 )}
                               </div>
-                              <div className="md:hidden text-xs mt-1 text-brand-blue underline">
-                                <a href={match.url} target="_blank" rel="noopener noreferrer" className="flex items-center">
-                                  View URL
-                                  <ExternalLink className="ml-1 h-3 w-3 inline flex-shrink-0" />
-                                </a>
-                              </div>
                             </TableCell>
-                            <TableCell className="hidden md:table-cell">
+                            <TableCell className="text-left">
                               <div className="max-w-xs truncate text-sm text-brand-blue hover:underline">
                                 <a href={match.url} target="_blank" rel="noopener noreferrer" className="flex items-center">
                                   {getHostname(match.url)}
@@ -258,8 +265,25 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
                                 </a>
                               </div>
                             </TableCell>
+                            <TableCell className="text-left">
+                              {associatedPage ? (
+                                <div>
+                                  <div className="flex items-center text-sm text-brand-blue hover:underline">
+                                    <FileText className="h-3 w-3 mr-1 text-gray-400" />
+                                    <a href={associatedPage.url} target="_blank" rel="noopener noreferrer" className="truncate max-w-[200px]">
+                                      {associatedPage.pageTitle || "Web Page"}
+                                    </a>
+                                  </div>
+                                  <div className="text-xs text-muted-foreground truncate max-w-[200px]">
+                                    {getHostname(associatedPage.url)}
+                                  </div>
+                                </div>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">Direct image URL</span>
+                              )}
+                            </TableCell>
                             {!compact && (
-                              <TableCell className="hidden md:table-cell">
+                              <TableCell className="text-left">
                                 <div className="flex items-center text-sm text-muted-foreground">
                                   <Calendar className="h-3 w-3 mr-1" />
                                   {match.dateFound 
@@ -268,7 +292,7 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
                                 </div>
                               </TableCell>
                             )}
-                            <TableCell className="text-right">
+                            <TableCell className="text-center">
                               <Badge className={`${match.score >= 0.9 ? 'bg-brand-red' : 'bg-amber-500'} text-white`}>
                                 {Math.round(match.score * 100)}%
                               </Badge>
