@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import BetaSignupForm from '@/components/BetaSignupForm';
 
@@ -7,13 +7,22 @@ interface BetaSignupDialogProps {
   showBetaSignup: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
+  delayInSeconds?: number;
 }
 
 const BetaSignupDialog: React.FC<BetaSignupDialogProps> = ({ 
   showBetaSignup,
   onOpenChange,
-  onSuccess
+  onSuccess,
+  delayInSeconds = 60 // Default to 60 seconds (1 minute)
 }) => {
+  useEffect(() => {
+    if (showBetaSignup) {
+      // Track when the dialog was shown for analytics
+      console.log(`Beta signup dialog shown with ${delayInSeconds}s delay`);
+    }
+  }, [showBetaSignup, delayInSeconds]);
+  
   // Only render the dialog when showBetaSignup is true
   if (!showBetaSignup) {
     return null;

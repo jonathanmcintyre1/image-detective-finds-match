@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import Header from '@/components/Header';
 import { toast } from 'sonner';
@@ -93,11 +92,11 @@ const Index = () => {
       
       await trackImageSearch(image, totalResults);
       
-      // Show beta signup only if user hasn't seen it yet and after 30 more seconds
+      // Show beta signup only if user hasn't seen it yet and after 60 seconds delay
       if (!hasUserSeen && !localStorage.getItem('seen_beta_signup')) {
         const timer = setTimeout(() => {
           setShowBetaSignup(true);
-        }, 30000); // 30 seconds delay
+        }, 60000); // Changed from 30000 to 60000 (60 seconds delay)
         return () => clearTimeout(timer);
       }
       
@@ -152,6 +151,7 @@ const Index = () => {
           showBetaSignup={showBetaSignup}
           onOpenChange={setShowBetaSignup}
           onSuccess={handleBetaSignupSuccess}
+          delayInSeconds={60}
         />
       </div>
     </BetaSignupProvider>

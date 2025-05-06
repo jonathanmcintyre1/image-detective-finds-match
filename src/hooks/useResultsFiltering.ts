@@ -1,3 +1,4 @@
+
 import { useState, useMemo } from 'react';
 import { FilterOptions } from '@/components/FilterControls';
 import { MatchResult, FilteredData, DashboardData, WebImage, WebPage } from '@/types/results';
@@ -44,12 +45,38 @@ export const useResultsFiltering = (
   const processedResults = useMemo(() => {
     if (!results) return null;
     
+    // First, build a map of relationships between images and pages
+    const imageToPageMap = new Map<string, { pageUrl: string, pageTitle: string }>();
+    
+    // Populate the map from pages with matching images
+    results.pagesWithMatchingImages.forEach(page => {
+      if (page.matchingImages) {
+        page.matchingImages.forEach(img => {
+          // Use normalized URLs as keys to handle URL variations
+          const normalizedUrl = normalizeUrl(img.url);
+          imageToPageMap.set(normalizedUrl, {
+            pageUrl: page.url,
+            pageTitle: page.pageTitle || getHostname(page.url)
+          });
+        });
+      }
+    });
+    
     const processedData = {
       ...results,
-      visuallySimilarImages: results.visuallySimilarImages.map(img => ({
-        ...img,
-        dateFound: img.dateFound || new Date(today.getTime() - Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000)
-      })),
+      visuallySimilarImages: results.visuallySimilarImages.map(img => {
+        // Check if this image has an associated page
+        const normalizedImgUrl = normalizeUrl(img.url);
+        const pageInfo = imageToPageMap.get(normalizedImgUrl);
+        
+        return {
+          ...img,
+          dateFound: img.dateFound || new Date(today.getTime() - Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000),
+          // Add page information if available
+          pageUrl: pageInfo?.pageUrl,
+          pageTitle: pageInfo?.pageTitle
+        };
+      }),
       pagesWithMatchingImages: results.pagesWithMatchingImages.map(page => ({
         ...page,
         dateFound: page.dateFound || new Date(today.getTime() - Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000),
