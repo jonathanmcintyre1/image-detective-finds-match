@@ -19,6 +19,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
     totalMatches: data?.totalMatches || 0,
     exactMatches: data?.exactMatches || [],
     partialMatches: data?.partialMatches || [],
+    similarMatches: data?.similarMatches || [], // Added missing similarMatches property
     domainsCount: data?.domainsCount || 0,
     marketplacesCount: data?.marketplacesCount || 0,
     socialMediaCount: data?.socialMediaCount || 0,

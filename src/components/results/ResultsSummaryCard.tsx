@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,6 +10,7 @@ interface ResultsSummaryCardProps {
   totalMatchCount: number;
   exactMatchCount: number;
   partialMatchCount: number;
+  similarMatchCount: number;
   pageMatchCount: number;
   spamPagesCount: number;
   filterOptions: FilterOptions;
@@ -27,6 +27,7 @@ const ResultsSummaryCard: React.FC<ResultsSummaryCardProps> = ({
   totalMatchCount,
   exactMatchCount,
   partialMatchCount,
+  similarMatchCount,
   pageMatchCount,
   spamPagesCount,
   filterOptions,
