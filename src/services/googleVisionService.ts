@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 interface WebEntity {
@@ -130,6 +129,39 @@ const cdnPatterns = [
   'staticflickr.com'
 ];
 
+// Patterns for image size parameters to identify duplicates
+const sizingParamPatterns = [
+  /[?&](width|w|height|h|size|dimension|resize|scale)=\d+/i,
+  /[?&]v=\d+&(width|w|height|h|size)=\d+/i,
+  /[_-](small|medium|large|thumbnail|thumb|preview|[1-9]\d{1,4}x[1-9]\d{1,4})\./i,
+  /[?&](format|quality|optimize|compress|dpr|fit)=/i,
+  /[_-]\d{1,4}x\d{1,4}\./i,
+];
+
+// Function to strip image sizing parameters from URL
+export const stripImageSizingParams = (url: string): string => {
+  let cleanUrl = url;
+  
+  // Remove query string params related to image sizing
+  for (const pattern of sizingParamPatterns) {
+    cleanUrl = cleanUrl.replace(pattern, '');
+  }
+  
+  // Remove any trailing ? or & if all parameters were removed
+  cleanUrl = cleanUrl.replace(/[?&]$/, '');
+  
+  return cleanUrl;
+};
+
+// Function to normalize URLs for comparison
+export const normalizeUrl = (url: string): string => {
+  // Remove protocol
+  let normalized = url.replace(/^https?:\/\//, '');
+  
+  // Strip image sizing parameters
+  return stripImageSizingParams(normalized);
+};
+
 export const identifyPlatform = (url: string): string => {
   // Extract domain from URL
   let domain = '';
@@ -212,9 +244,25 @@ const determinePageType = (url: string, title: string): 'product' | 'category' |
   return 'unknown';
 };
 
+// Function to remove duplicate images based on normalized URLs
+const removeDuplicateImages = (images: WebImage[]): WebImage[] => {
+  const uniqueUrls = new Map<string, WebImage>();
+  
+  for (const image of images) {
+    const normalizedUrl = normalizeUrl(image.url);
+    
+    // Only keep the highest scoring version of each image
+    if (!uniqueUrls.has(normalizedUrl) || uniqueUrls.get(normalizedUrl)!.score < image.score) {
+      uniqueUrls.set(normalizedUrl, image);
+    }
+  }
+  
+  return Array.from(uniqueUrls.values());
+};
+
 // Process full matching images
 const processFullMatches = (images: any[]): WebImage[] => {
-  return (images || []).map((image: any) => {
+  return removeDuplicateImages((images || []).map((image: any) => {
     const platform = identifyPlatform(image.url);
     return {
       url: image.url || '',
@@ -222,12 +270,12 @@ const processFullMatches = (images: any[]): WebImage[] => {
       imageUrl: image.url || '',
       platform
     };
-  });
+  }));
 };
 
 // Process partial matching images
 const processPartialMatches = (images: any[]): WebImage[] => {
-  return (images || []).map((image: any) => {
+  return removeDuplicateImages((images || []).map((image: any) => {
     const platform = identifyPlatform(image.url);
     return {
       url: image.url || '',
@@ -235,12 +283,12 @@ const processPartialMatches = (images: any[]): WebImage[] => {
       imageUrl: image.url || '',
       platform
     };
-  });
+  }));
 };
 
 // Process visually similar images
 const processSimilarImages = (images: any[]): WebImage[] => {
-  return (images || [])
+  return removeDuplicateImages((images || [])
     .map((image: any) => {
       const platform = identifyPlatform(image.url);
       return {
@@ -251,7 +299,7 @@ const processSimilarImages = (images: any[]): WebImage[] => {
       };
     })
     // Filter out images below the minimum threshold
-    .filter((img: WebImage) => img.score >= MIN_MATCH_THRESHOLD);
+    .filter((img: WebImage) => img.score >= MIN_MATCH_THRESHOLD));
 };
 
 // Process pages with matching images
