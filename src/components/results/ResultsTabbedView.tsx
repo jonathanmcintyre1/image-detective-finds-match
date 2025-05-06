@@ -16,10 +16,12 @@ interface ResultsTabbedViewProps {
   filterOptions: FilterOptions;
   exactMatchCount: number;
   partialMatchCount: number;
+  similarMatchCount: number;
   pageMatchCount: number;
   filteredData: {
     exactMatches: WebImage[];
     partialMatches: WebImage[];
+    similarMatches: WebImage[];
     allPages: WebPage[];
   };
   dashboardData: DashboardData;
@@ -33,6 +35,7 @@ const ResultsTabbedView: React.FC<ResultsTabbedViewProps> = ({
   filterOptions,
   exactMatchCount,
   partialMatchCount,
+  similarMatchCount,
   pageMatchCount,
   filteredData,
   dashboardData,
@@ -43,7 +46,7 @@ const ResultsTabbedView: React.FC<ResultsTabbedViewProps> = ({
   const [pagesSectionOpen, setPagesSectionOpen] = useState(true);
   const [tabsCompressed, setTabsCompressed] = useState(false);
   
-  if (exactMatchCount + partialMatchCount + pageMatchCount === 0) {
+  if (exactMatchCount + partialMatchCount + similarMatchCount + pageMatchCount === 0) {
     return <NoResultsView isProcessing={isProcessing} />;
   }
 
@@ -54,11 +57,11 @@ const ResultsTabbedView: React.FC<ResultsTabbedViewProps> = ({
           <TabsTrigger value="exact" className={`${tabsCompressed ? '' : 'flex-1'}`}>
             Exact Matches <Badge className="ml-2 bg-brand-red">{exactMatchCount}</Badge>
           </TabsTrigger>
-          <TabsTrigger value="similar" className={`${tabsCompressed ? '' : 'flex-1'}`}>
-            Similar Matches <Badge className="ml-2 bg-amber-500">{partialMatchCount}</Badge>
-          </TabsTrigger>
           <TabsTrigger value="partial" className={`${tabsCompressed ? '' : 'flex-1'}`}>
             Partial Matches <Badge className="ml-2 bg-purple-500">{partialMatchCount}</Badge>
+          </TabsTrigger>
+          <TabsTrigger value="similar" className={`${tabsCompressed ? '' : 'flex-1'}`}>
+            Similar Matches <Badge className="ml-2 bg-amber-500">{similarMatchCount}</Badge>
           </TabsTrigger>
           <TabsTrigger value="pages" className={`${tabsCompressed ? '' : 'flex-1'}`}>
             Web Pages <Badge className="ml-2 bg-brand-blue">{pageMatchCount}</Badge>
@@ -99,26 +102,10 @@ const ResultsTabbedView: React.FC<ResultsTabbedViewProps> = ({
         )}
       </TabsContent>
       
-      <TabsContent value="similar" className="pt-2">
-        {partialMatchCount > 0 ? (
-          <ExactMatchesTable 
-            matches={filteredData.partialMatches.filter(img => img.score >= 0.75)}
-            relatedPages={filteredData.allPages}
-            sortBy={filterOptions.sortBy}
-            initialItemsToShow={DEFAULT_ITEMS_TO_SHOW}
-          />
-        ) : (
-          <NoResultsView 
-            isProcessing={false} 
-            customMessage="No similar matches found" 
-          />
-        )}
-      </TabsContent>
-
       <TabsContent value="partial" className="pt-2">
         {partialMatchCount > 0 ? (
           <ExactMatchesTable 
-            matches={filteredData.partialMatches.filter(img => img.score < 0.75)}
+            matches={filteredData.partialMatches}
             relatedPages={filteredData.allPages}
             sortBy={filterOptions.sortBy}
             initialItemsToShow={DEFAULT_ITEMS_TO_SHOW}
@@ -127,6 +114,22 @@ const ResultsTabbedView: React.FC<ResultsTabbedViewProps> = ({
           <NoResultsView 
             isProcessing={false} 
             customMessage="No partial matches found" 
+          />
+        )}
+      </TabsContent>
+
+      <TabsContent value="similar" className="pt-2">
+        {similarMatchCount > 0 ? (
+          <ExactMatchesTable 
+            matches={filteredData.similarMatches}
+            relatedPages={filteredData.allPages}
+            sortBy={filterOptions.sortBy}
+            initialItemsToShow={DEFAULT_ITEMS_TO_SHOW}
+          />
+        ) : (
+          <NoResultsView 
+            isProcessing={false} 
+            customMessage="No similar matches found" 
           />
         )}
       </TabsContent>

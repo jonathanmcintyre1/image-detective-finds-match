@@ -1,3 +1,4 @@
+
 import { useState, useMemo } from 'react';
 import { FilterOptions } from '@/components/FilterControls';
 import { MatchResult, FilteredData, DashboardData, WebImage, WebPage } from '@/types/results';
@@ -103,16 +104,20 @@ export const useResultsFiltering = (
     
     const minConfidence = filterOptions.minConfidence / 100;
     
-    // Update thresholds for our new categorization:
-    // Exact matches: >= 0.9
-    // Similar matches: >= 0.75 and < 0.9
-    // Partial matches: >= 0.65 and < 0.75
+    // Update match categories:
+    // Exact matches: >= 0.9 (90%)
+    // Partial matches: >= 0.75 and < 0.9 (75-90%)
+    // Similar matches: >= 0.65 and < 0.75 (65-75%)
     const filteredExactMatches = processedResults.visuallySimilarImages
       .filter(img => img.score >= 0.9)
       .filter(img => img.score >= minConfidence);
       
     const filteredPartialMatches = processedResults.visuallySimilarImages
-      .filter(img => img.score >= 0.65 && img.score < 0.9) 
+      .filter(img => img.score >= 0.75 && img.score < 0.9) 
+      .filter(img => img.score >= minConfidence);
+      
+    const filteredSimilarMatches = processedResults.visuallySimilarImages
+      .filter(img => img.score >= 0.65 && img.score < 0.75) 
       .filter(img => img.score >= minConfidence);
       
     const filteredPages = processedResults.pagesWithMatchingImages
@@ -131,6 +136,7 @@ export const useResultsFiltering = (
     return {
       exactMatches: sortData(filteredExactMatches, filterOptions),
       partialMatches: sortData(filteredPartialMatches, filterOptions),
+      similarMatches: sortData(filteredSimilarMatches, filterOptions),
       productPages: sortData(filteredProductPages, filterOptions),
       categoryPages: sortData(filteredCategoryPages, filterOptions),
       searchPages: sortData(filteredSearchPages, filterOptions),
@@ -145,16 +151,18 @@ export const useResultsFiltering = (
     
     const exactMatchCount = filteredData.exactMatches.length;
     const partialMatchCount = filteredData.partialMatches.length;
-    const totalMatchCount = exactMatchCount + partialMatchCount + 
+    const similarMatchCount = filteredData.similarMatches.length;
+    const totalMatchCount = exactMatchCount + partialMatchCount + similarMatchCount + 
       filteredData.productPages.length + filteredData.categoryPages.length +
       filteredData.searchPages.length + filteredData.otherPages.length;
     
     // Count unique domains
     const exactDomains = new Set(filteredData.exactMatches.map(m => getHostname(m.url)));
     const partialDomains = new Set(filteredData.partialMatches.map(m => getHostname(m.url)));
+    const similarDomains = new Set(filteredData.similarMatches.map(m => getHostname(m.url)));
     const pageDomains = new Set(filteredData.allPages.map(p => getHostname(p.url)));
     
-    const allDomains = new Set([...exactDomains, ...partialDomains, ...pageDomains]);
+    const allDomains = new Set([...exactDomains, ...partialDomains, ...similarDomains, ...pageDomains]);
     
     // Count platform types
     let marketplacesCount = 0;
@@ -181,6 +189,7 @@ export const useResultsFiltering = (
     
     processMatchesDomainStats(filteredData.exactMatches);
     processMatchesDomainStats(filteredData.partialMatches);
+    processMatchesDomainStats(filteredData.similarMatches);
     processMatchesDomainStats(filteredData.allPages);
     
     // Count website types
@@ -204,6 +213,7 @@ export const useResultsFiltering = (
     const confidenceScores = [
       ...filteredData.exactMatches.map(m => m.score),
       ...filteredData.partialMatches.map(m => m.score),
+      ...filteredData.similarMatches.map(m => m.score),
       ...filteredData.allPages.map(p => p.score)
     ];
     
@@ -215,6 +225,7 @@ export const useResultsFiltering = (
       totalMatches: totalMatchCount,
       exactMatches: filteredData.exactMatches,
       partialMatches: filteredData.partialMatches,
+      similarMatches: filteredData.similarMatches,
       domainsCount: allDomains.size,
       marketplacesCount,
       socialMediaCount,
@@ -229,6 +240,7 @@ export const useResultsFiltering = (
     if (!filteredData) return {
       exactMatchCount: 0,
       partialMatchCount: 0,
+      similarMatchCount: 0,
       productPageCount: 0,
       categoryPageCount: 0,
       searchPageCount: 0,
@@ -240,18 +252,20 @@ export const useResultsFiltering = (
     
     const exactMatchCount = filteredData.exactMatches.length;
     const partialMatchCount = filteredData.partialMatches.length;
+    const similarMatchCount = filteredData.similarMatches.length;
     const productPageCount = filteredData.productPages.length;
     const categoryPageCount = filteredData.categoryPages.length;
     const searchPageCount = filteredData.searchPages.length;
     const otherPageCount = filteredData.otherPages.length;
     const pageMatchCount = productPageCount + categoryPageCount + searchPageCount + otherPageCount;
-    const totalMatchCount = exactMatchCount + partialMatchCount + pageMatchCount;
+    const totalMatchCount = exactMatchCount + partialMatchCount + similarMatchCount + pageMatchCount;
     
     const spamPagesCount = processedResults?.pagesWithMatchingImages.filter(p => p.isSpam).length || 0;
     
     return {
       exactMatchCount,
       partialMatchCount,
+      similarMatchCount,
       productPageCount,
       categoryPageCount,
       searchPageCount,

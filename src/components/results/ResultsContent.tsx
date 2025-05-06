@@ -12,6 +12,7 @@ interface ResultsContentProps {
   totalMatchCount: number;
   exactMatchCount: number;
   partialMatchCount: number;
+  similarMatchCount: number;
   productPageCount: number;
   categoryPageCount: number;
   searchPageCount: number;
@@ -20,6 +21,7 @@ interface ResultsContentProps {
   filteredData: {
     exactMatches: WebImage[];
     partialMatches: WebImage[];
+    similarMatches: WebImage[];
     productPages: WebPage[];
     categoryPages: WebPage[];
     searchPages: WebPage[];
@@ -30,6 +32,7 @@ interface ResultsContentProps {
     totalMatches: number;
     exactMatches: WebImage[];
     partialMatches: WebImage[];
+    similarMatches: WebImage[];
     domainsCount: number;
     marketplacesCount: number;
     socialMediaCount: number;
@@ -50,6 +53,7 @@ const ResultsContent: React.FC<ResultsContentProps> = ({
   totalMatchCount,
   exactMatchCount,
   partialMatchCount,
+  similarMatchCount,
   productPageCount,
   categoryPageCount,
   searchPageCount,
@@ -77,10 +81,12 @@ const ResultsContent: React.FC<ResultsContentProps> = ({
         filterOptions={filterOptions}
         exactMatchCount={exactMatchCount}
         partialMatchCount={partialMatchCount}
+        similarMatchCount={similarMatchCount}
         pageMatchCount={pageMatchCount}
         filteredData={{
           exactMatches: filteredData.exactMatches,
           partialMatches: filteredData.partialMatches,
+          similarMatches: filteredData.similarMatches,
           allPages: filteredData.allPages
         }}
         dashboardData={dashboardData}

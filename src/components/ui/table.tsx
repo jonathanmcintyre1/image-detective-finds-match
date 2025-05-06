@@ -43,10 +43,7 @@ const TableFooter = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <tfoot
     ref={ref}
-    className={cn(
-      "border-t bg-muted/50 font-medium [&>tr]:last:border-b-0",
-      className
-    )}
+    className={cn("border-t bg-muted/50 font-medium [&>tr]:last:border-b-0", className)}
     {...props}
   />
 ))
@@ -69,14 +66,15 @@ TableRow.displayName = "TableRow"
 
 const TableHead = React.forwardRef<
   HTMLTableCellElement,
-  React.ThHTMLAttributes<HTMLTableCellElement>
->(({ className, ...props }, ref) => (
+  React.HTMLAttributes<HTMLTableCellElement> & { width?: string | number }
+>(({ className, width, ...props }, ref) => (
   <th
     ref={ref}
     className={cn(
       "h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0",
       className
     )}
+    style={width ? { width: typeof width === 'number' ? `${width}px` : width } : undefined}
     {...props}
   />
 ))
@@ -84,11 +82,12 @@ TableHead.displayName = "TableHead"
 
 const TableCell = React.forwardRef<
   HTMLTableCellElement,
-  React.TdHTMLAttributes<HTMLTableCellElement>
->(({ className, ...props }, ref) => (
+  React.HTMLAttributes<HTMLTableCellElement> & { width?: string | number }
+>(({ className, width, ...props }, ref) => (
   <td
     ref={ref}
     className={cn("p-4 align-middle [&:has([role=checkbox])]:pr-0", className)}
+    style={width ? { width: typeof width === 'number' ? `${width}px` : width } : undefined}
     {...props}
   />
 ))

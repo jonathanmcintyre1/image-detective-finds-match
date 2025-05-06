@@ -11,7 +11,7 @@ interface ExitIntentOptions {
 export const useExitIntent = ({
   threshold = 20,
   maxDisplays = 1,
-  timeoutDelayTime = 120000, // Updated to 120 seconds by default
+  timeoutDelayTime = 150000, // Increased to 150 seconds (2.5 minutes)
   disableOnMobile = false
 }: ExitIntentOptions = {}) => {
   const [shouldShowModal, setShouldShowModal] = useState(false);
@@ -43,6 +43,7 @@ export const useExitIntent = ({
       ) {
         setShouldShowModal(true);
         setDisplays(prev => prev + 1);
+        localStorage.setItem('seen_beta_signup', 'true');
       }
     };
 
@@ -53,6 +54,7 @@ export const useExitIntent = ({
         if (!localStorage.getItem('seen_beta_signup')) {
           setShouldShowModal(true);
           setDisplays(prev => prev + 1);
+          localStorage.setItem('seen_beta_signup', 'true');
         }
       }, timeoutDelayTime);
     }
@@ -69,7 +71,6 @@ export const useExitIntent = ({
 
   const resetModal = useCallback(() => {
     setShouldShowModal(false);
-    setHasUserSeen(true);
   }, []);
 
   return { shouldShowModal, resetModal, hasUserSeen };

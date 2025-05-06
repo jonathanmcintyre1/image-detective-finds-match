@@ -11,6 +11,8 @@ export interface WebImage {
   imageUrl?: string;
   platform?: string;
   dateFound?: Date;
+  pageUrl?: string;
+  pageTitle?: string;
 }
 
 export interface WebPage {
@@ -33,6 +35,7 @@ export interface MatchResult {
 export interface FilteredData {
   exactMatches: WebImage[];
   partialMatches: WebImage[];
+  similarMatches: WebImage[];
   productPages: WebPage[];
   categoryPages: WebPage[];
   searchPages: WebPage[];
@@ -44,6 +47,7 @@ export interface DashboardData {
   totalMatches: number;
   exactMatches: WebImage[];
   partialMatches: WebImage[];
+  similarMatches: WebImage[];
   domainsCount: number;
   marketplacesCount: number;
   socialMediaCount: number;

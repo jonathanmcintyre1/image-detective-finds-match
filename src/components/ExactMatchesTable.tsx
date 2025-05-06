@@ -180,7 +180,6 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
               <CollapsibleTrigger asChild>
                 <div className="flex items-center justify-between bg-gray-50 px-4 py-3 cursor-pointer hover:bg-gray-100">
                   <div className="flex items-center space-x-3">
-                    <Badge className="bg-gray-200 text-gray-800">{group.count}</Badge>
                     <h3 className="text-base font-medium">{group.platform}</h3>
                     <div className="flex items-center">
                       <span className="text-sm text-muted-foreground">({group.domain})</span>
@@ -204,13 +203,13 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-16 text-left">Image</TableHead>
-                        <TableHead className="w-1/5 text-left">Website</TableHead>
-                        <TableHead className="w-1/5 text-left">URL</TableHead>
-                        <TableHead className="w-1/5 text-left">Found On</TableHead>
-                        {!compact && <TableHead className="w-1/5 text-left">Date</TableHead>}
-                        <TableHead className="w-24 text-center">Score</TableHead>
-                        <TableHead className="w-20 text-right">Actions</TableHead>
+                        <TableHead width="70" className="text-left">Image</TableHead>
+                        <TableHead width="20%" className="text-left">Website</TableHead>
+                        <TableHead width="20%" className="text-left">URL</TableHead>
+                        <TableHead width="25%" className="text-left">Found On</TableHead>
+                        {!compact && <TableHead width="15%" className="text-left">Date</TableHead>}
+                        <TableHead width="10%" className="text-center">Score</TableHead>
+                        <TableHead width="10%" className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -222,7 +221,7 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
                         
                         return (
                           <TableRow key={`${group.domain}-image-${index}`} className="group hover:bg-gray-50">
-                            <TableCell className="p-2">
+                            <TableCell className="p-2 align-middle" width="70">
                               <div 
                                 className="w-14 h-14 bg-gray-100 rounded overflow-hidden cursor-pointer hover:ring-2 hover:ring-brand-blue hover:ring-opacity-50 transition-all"
                                 onClick={() => handleImageClick(match)}
@@ -242,7 +241,7 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
                                 )}
                               </div>
                             </TableCell>
-                            <TableCell className="text-left">
+                            <TableCell className="text-left align-middle" width="20%">
                               <div className="font-medium flex items-center">
                                 {actualWebsite}
                               </div>
@@ -257,15 +256,15 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
                                 )}
                               </div>
                             </TableCell>
-                            <TableCell className="text-left">
+                            <TableCell className="text-left align-middle" width="20%">
                               <div className="max-w-xs truncate text-sm text-brand-blue hover:underline">
                                 <a href={match.url} target="_blank" rel="noopener noreferrer" className="flex items-center">
-                                  {getHostname(match.url)}
+                                  <span className="truncate">{match.url}</span>
                                   <ExternalLink className="ml-1 h-3 w-3 inline flex-shrink-0" />
                                 </a>
                               </div>
                             </TableCell>
-                            <TableCell className="text-left">
+                            <TableCell className="text-left align-middle" width="25%">
                               {associatedPage ? (
                                 <div>
                                   <div className="flex items-center text-sm text-brand-blue hover:underline">
@@ -275,7 +274,7 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
                                     </a>
                                   </div>
                                   <div className="text-xs text-muted-foreground truncate max-w-[200px]">
-                                    {getHostname(associatedPage.url)}
+                                    {associatedPage.url}
                                   </div>
                                 </div>
                               ) : (
@@ -283,7 +282,7 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
                               )}
                             </TableCell>
                             {!compact && (
-                              <TableCell className="text-left">
+                              <TableCell className="text-left align-middle" width="15%">
                                 <div className="flex items-center text-sm text-muted-foreground">
                                   <Calendar className="h-3 w-3 mr-1" />
                                   {match.dateFound 
@@ -292,12 +291,12 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
                                 </div>
                               </TableCell>
                             )}
-                            <TableCell className="text-center">
-                              <Badge className={`${match.score >= 0.9 ? 'bg-brand-red' : 'bg-amber-500'} text-white`}>
+                            <TableCell className="text-center align-middle" width="10%">
+                              <Badge className={`${match.score >= 0.9 ? 'bg-brand-red' : match.score >= 0.75 ? 'bg-purple-500' : 'bg-amber-500'} text-white`}>
                                 {Math.round(match.score * 100)}%
                               </Badge>
                             </TableCell>
-                            <TableCell className="text-right">
+                            <TableCell className="text-right align-middle" width="10%">
                               <div className="flex items-center justify-end space-x-1">
                                 <Button 
                                   variant="ghost" 

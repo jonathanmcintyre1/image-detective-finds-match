@@ -47,6 +47,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
   const {
     exactMatchCount,
     partialMatchCount,
+    similarMatchCount,
     productPageCount,
     categoryPageCount,
     searchPageCount,
@@ -77,11 +78,12 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 max-w-90 mx-auto">
       <ResultsSummaryCard
         totalMatchCount={totalMatchCount}
         exactMatchCount={exactMatchCount}
         partialMatchCount={partialMatchCount}
+        similarMatchCount={similarMatchCount}
         pageMatchCount={pageMatchCount}
         spamPagesCount={spamPagesCount}
         filterOptions={filterOptions}
@@ -106,6 +108,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
               totalMatchCount={totalMatchCount}
               exactMatchCount={exactMatchCount}
               partialMatchCount={partialMatchCount}
+              similarMatchCount={similarMatchCount}
               productPageCount={productPageCount}
               categoryPageCount={categoryPageCount}
               searchPageCount={searchPageCount}
