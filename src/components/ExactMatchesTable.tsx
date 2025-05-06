@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
@@ -156,35 +157,13 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
     }));
   };
 
-  // Find associated page for an image URL - improved to better find matches
-  const findPageForImage = (imageUrl: string, imageScore: number): WebPage | undefined => {
-    // First, try to find a page where the image URL matches directly
-    const directMatch = relatedPages.find(page => 
+  // Find associated page for an image URL
+  const findPageForImage = (imageUrl: string): WebPage | undefined => {
+    return relatedPages.find(page => 
       page.matchingImages?.some(img => 
         img.url === imageUrl || img.imageUrl === imageUrl
       )
     );
-    
-    if (directMatch) return directMatch;
-    
-    // For partial matches that might not have a direct URL match, try matching by hostname
-    const imageHostname = getHostname(imageUrl);
-    const domainMatches = relatedPages.filter(page => {
-      // If the page is from the same domain as the image
-      return getHostname(page.url) === imageHostname;
-    });
-    
-    if (domainMatches.length === 0) return undefined;
-    
-    // If there are multiple pages from the same domain, try to find the best match
-    // First, prefer product pages over other types if score is high
-    if (imageScore >= 0.8) {
-      const productPage = domainMatches.find(page => page.pageType === 'product');
-      if (productPage) return productPage;
-    }
-    
-    // Then, sort by score and return the highest scoring page
-    return domainMatches.sort((a, b) => b.score - a.score)[0];
   };
 
   return (
@@ -238,11 +217,7 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
                         const isImageFromCdn = isCdnUrl(match.url);
                         const cdnInfo = isImageFromCdn ? getCdnInfo(match.url) : null;
                         const actualWebsite = match.platform || getWebsiteName(match.url);
-                        
-                        // Use our improved page finding logic, passing the match score as well
-                        const associatedPage = match.pageUrl 
-                          ? { url: match.pageUrl, pageTitle: match.pageTitle } 
-                          : findPageForImage(match.url, match.score);
+                        const associatedPage = match.pageUrl ? { url: match.pageUrl, pageTitle: match.pageTitle } : findPageForImage(match.url);
                         
                         return (
                           <TableRow key={`${group.domain}-image-${index}`} className="group hover:bg-gray-50">
@@ -266,7 +241,6 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
                                 )}
                               </div>
                             </TableCell>
-                            
                             <TableCell className="text-left align-middle" width="20%">
                               <div className="font-medium flex items-center">
                                 {actualWebsite}
@@ -282,7 +256,6 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
                                 )}
                               </div>
                             </TableCell>
-                            
                             <TableCell className="text-left align-middle" width="20%">
                               <div className="max-w-xs truncate text-sm text-brand-blue hover:underline">
                                 <a href={match.url} target="_blank" rel="noopener noreferrer" className="flex items-center">
@@ -291,7 +264,6 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
                                 </a>
                               </div>
                             </TableCell>
-                            
                             <TableCell className="text-left align-middle" width="25%">
                               {associatedPage ? (
                                 <div>
@@ -309,7 +281,6 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
                                 <span className="text-xs text-muted-foreground">Direct image URL</span>
                               )}
                             </TableCell>
-                            
                             {!compact && (
                               <TableCell className="text-left align-middle" width="15%">
                                 <div className="flex items-center text-sm text-muted-foreground">
@@ -320,13 +291,11 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
                                 </div>
                               </TableCell>
                             )}
-                            
                             <TableCell className="text-center align-middle" width="10%">
                               <Badge className={`${match.score >= 0.9 ? 'bg-brand-red' : match.score >= 0.75 ? 'bg-purple-500' : 'bg-amber-500'} text-white`}>
                                 {Math.round(match.score * 100)}%
                               </Badge>
                             </TableCell>
-                            
                             <TableCell className="text-right align-middle" width="10%">
                               <div className="flex items-center justify-end space-x-1">
                                 <Button 

@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { FilterOptions } from '@/components/FilterControls';
 import { MatchResult, FilteredData, DashboardData, WebImage, WebPage } from '@/types/results';
 import { getHostname, categorizeWebsite } from '@/utils/domainUtils';
+import { normalizeUrl } from '@/services/googleVisionService';
 
 const isLikelySpam = (url: string, pageTitle: string): boolean => {
   const spamPatterns = [
