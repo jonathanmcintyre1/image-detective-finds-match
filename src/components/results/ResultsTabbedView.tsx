@@ -84,7 +84,6 @@ const ResultsTabbedView: React.FC<ResultsTabbedViewProps> = ({
         {exactMatchCount > 0 ? (
           <ExactMatchesTable 
             matches={filteredData.exactMatches}
-            relatedPages={filteredData.allPages} 
             sortBy={filterOptions.sortBy}
             initialItemsToShow={DEFAULT_ITEMS_TO_SHOW}
           />
@@ -100,7 +99,6 @@ const ResultsTabbedView: React.FC<ResultsTabbedViewProps> = ({
         {partialMatchCount > 0 ? (
           <ExactMatchesTable 
             matches={filteredData.partialMatches}
-            relatedPages={filteredData.allPages} 
             sortBy={filterOptions.sortBy}
             initialItemsToShow={DEFAULT_ITEMS_TO_SHOW}
           />

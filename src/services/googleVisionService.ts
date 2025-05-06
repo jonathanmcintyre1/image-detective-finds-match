@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 interface WebEntity {
@@ -20,6 +21,7 @@ interface WebPage {
   platform?: string; 
   pageType?: 'product' | 'category' | 'search' | 'unknown';
   matchingImages?: WebImage[];
+  isValidated?: boolean;
 }
 
 interface MatchResult {
@@ -127,8 +129,19 @@ const cdnPatterns = [
   'staticflickr.com'
 ];
 
-const identifyPlatform = (url: string): string => {
-  const urlLower = url.toLowerCase();
+export const identifyPlatform = (url: string): string => {
+  // Extract domain from URL
+  let domain = '';
+  try {
+    const urlObj = new URL(url);
+    domain = urlObj.hostname;
+  } catch (e) {
+    // If URL parsing fails, try to extract domain using regex
+    const match = url.match(/https?:\/\/([^\/]+)/);
+    domain = match ? match[1] : url;
+  }
+  
+  const urlLower = domain.toLowerCase();
   
   // Check for platforms
   for (const [key, value] of Object.entries(platformMapping)) {
@@ -242,7 +255,7 @@ const processSimilarImages = (images: any[]): WebImage[] => {
 
 // Process pages with matching images
 const processPages = (pages: any[]): WebPage[] => {
-  return (pages || [])
+  const processedPages: WebPage[] = (pages || [])
     .map((page: any) => {
       const platform = identifyPlatform(page.url);
       const pageTitle = page.pageTitle || '';
@@ -262,16 +275,19 @@ const processPages = (pages: any[]): WebPage[] => {
         pageTitle: pageTitle,
         platform,
         pageType,
-        matchingImages: pageMatchingImages.length > 0 ? pageMatchingImages : undefined
+        matchingImages: pageMatchingImages.length > 0 ? pageMatchingImages : undefined,
+        isValidated: false // Default to not validated
       };
-    })
-    .filter((page: WebPage) => {
-      // Check if URL is from a CDN
-      const isCDN = cdnPatterns.some(pattern => page.url.toLowerCase().includes(pattern));
-      
-      // Only include pages with a score above the minimum threshold and not from CDNs
-      return !isCDN && page.score >= MIN_MATCH_THRESHOLD;
     });
+  
+  // Filter out CDN pages and pages below threshold
+  return processedPages.filter((page: WebPage) => {
+    // Check if URL is from a CDN
+    const isCDN = cdnPatterns.some(pattern => page.url.toLowerCase().includes(pattern));
+    
+    // Only include pages with a score above the minimum threshold and not from CDNs
+    return !isCDN && page.score >= MIN_MATCH_THRESHOLD;
+  });
 };
 
 const processResponse = (data: any): MatchResult => {

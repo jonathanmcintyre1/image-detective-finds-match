@@ -1,11 +1,11 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
 } from '@/components/ui/table';
 import { 
   ExternalLink, Copy, ChevronDown, ChevronUp,
-  Clock, FileText, Calendar, ShoppingBag, Globe, Tag, Server, Hash
+  Clock, Calendar, Server
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -42,20 +42,6 @@ interface ExactMatchesTableProps {
   compact?: boolean;
   initialItemsToShow?: number;
 }
-
-// Get page type icon
-const getPageTypeIcon = (pageType?: string) => {
-  switch(pageType) {
-    case 'product':
-      return <ShoppingBag className="h-4 w-4" />;
-    case 'category':
-      return <Tag className="h-4 w-4" />;
-    case 'search':
-      return <Globe className="h-4 w-4" />;
-    default:
-      return <FileText className="h-4 w-4" />;
-  }
-};
 
 export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({ 
   matches, 
@@ -103,7 +89,7 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
     }
   }, [matches, sortBy]);
 
-  // Group matches by domain for display
+  // Group matches strictly by domain for display
   const groupedMatches = useMemo(() => {
     // Create a map to group matches by domain
     const domainMap = new Map<string, WebImage[]>();
@@ -123,12 +109,12 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
       domain,
       images,
       count: images.length,
-      platform: images[0]?.platform || getWebsiteName(images[0]?.url)
+      platform: images[0]?.platform || getWebsiteName(domain)
     }));
   }, [sortedMatches]);
 
   // Update visible matches when sorting changes
-  useMemo(() => {
+  useEffect(() => {
     // Initialize all domains as expanded
     const initialExpandState: Record<string, boolean> = {};
     groupedMatches.forEach(group => {
@@ -137,7 +123,7 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
     setExpandedDomains(initialExpandState);
     
     setLoadMoreVisible(groupedMatches.length > initialItemsToShow);
-  }, [groupedMatches]);
+  }, [groupedMatches, initialItemsToShow]);
 
   const visibleGroups = useMemo(() => {
     return groupedMatches.slice(0, visibleMatches.length);
@@ -167,14 +153,6 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
       ...prev,
       [domain]: !prev[domain]
     }));
-  };
-
-  const findRelatedPages = (imageUrl: string): WebPage[] => {
-    return relatedPages.filter(page => 
-      page.matchingImages?.some(img => 
-        img.url === imageUrl || img.imageUrl === imageUrl
-      )
-    );
   };
 
   return (
@@ -225,147 +203,101 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
                     </TableHeader>
                     <TableBody>
                       {group.images.map((match, index) => {
-                        const relatedPagesList = findRelatedPages(match.url);
                         const isImageFromCdn = isCdnUrl(match.url);
                         const cdnInfo = isImageFromCdn ? getCdnInfo(match.url) : null;
                         const actualWebsite = match.platform || getWebsiteName(match.url);
                         
                         return (
-                          <React.Fragment key={`${group.domain}-image-${index}`}>
-                            <TableRow className="group hover:bg-gray-50">
-                              <TableCell className="p-2">
-                                <div 
-                                  className="w-14 h-14 bg-gray-100 rounded overflow-hidden cursor-pointer hover:ring-2 hover:ring-brand-blue hover:ring-opacity-50 transition-all"
-                                  onClick={() => handleImageClick(match)}
-                                >
-                                  {match.imageUrl && (
-                                    <AspectRatio ratio={1 / 1} className="bg-muted">
-                                      <img 
-                                        src={match.imageUrl} 
-                                        alt="Matched image" 
-                                        className="w-full h-full object-cover"
-                                        onError={(e) => {
-                                          (e.currentTarget as HTMLImageElement).onerror = null;
-                                          (e.currentTarget as HTMLImageElement).src = '/placeholder.svg';
-                                        }}
-                                      />
-                                    </AspectRatio>
-                                  )}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <div className="font-medium flex items-center">
-                                  {actualWebsite}
-                                </div>
-                                <div className="text-xs text-muted-foreground">
-                                  {isImageFromCdn ? (
-                                    <span className="flex items-center">
-                                      <Server className="h-3 w-3 mr-1 text-gray-400" />
-                                      <span className="font-mono">Image hosted on {cdnInfo}</span>
-                                    </span>
-                                  ) : (
-                                    getHostname(match.url)
-                                  )}
-                                </div>
-                                <div className="md:hidden text-xs mt-1 text-brand-blue underline">
-                                  <a href={match.url} target="_blank" rel="noopener noreferrer" className="flex items-center">
-                                    View URL
-                                    <ExternalLink className="ml-1 h-3 w-3 inline flex-shrink-0" />
-                                  </a>
-                                </div>
-                                {relatedPagesList.length > 0 && (
-                                  <div className="text-xs mt-1 text-brand-blue">
-                                    {relatedPagesList.length} page{relatedPagesList.length !== 1 ? 's' : ''} with this image
-                                  </div>
+                          <TableRow key={`${group.domain}-image-${index}`} className="group hover:bg-gray-50">
+                            <TableCell className="p-2">
+                              <div 
+                                className="w-14 h-14 bg-gray-100 rounded overflow-hidden cursor-pointer hover:ring-2 hover:ring-brand-blue hover:ring-opacity-50 transition-all"
+                                onClick={() => handleImageClick(match)}
+                              >
+                                {match.imageUrl && (
+                                  <AspectRatio ratio={1 / 1} className="bg-muted">
+                                    <img 
+                                      src={match.imageUrl} 
+                                      alt="Matched image" 
+                                      className="w-full h-full object-cover"
+                                      onError={(e) => {
+                                        (e.currentTarget as HTMLImageElement).onerror = null;
+                                        (e.currentTarget as HTMLImageElement).src = '/placeholder.svg';
+                                      }}
+                                    />
+                                  </AspectRatio>
                                 )}
-                              </TableCell>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="font-medium flex items-center">
+                                {actualWebsite}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {isImageFromCdn ? (
+                                  <span className="flex items-center">
+                                    <Server className="h-3 w-3 mr-1 text-gray-400" />
+                                    <span className="font-mono">Image hosted on {cdnInfo}</span>
+                                  </span>
+                                ) : (
+                                  getHostname(match.url)
+                                )}
+                              </div>
+                              <div className="md:hidden text-xs mt-1 text-brand-blue underline">
+                                <a href={match.url} target="_blank" rel="noopener noreferrer" className="flex items-center">
+                                  View URL
+                                  <ExternalLink className="ml-1 h-3 w-3 inline flex-shrink-0" />
+                                </a>
+                              </div>
+                            </TableCell>
+                            <TableCell className="hidden md:table-cell">
+                              <div className="max-w-xs truncate text-sm text-brand-blue hover:underline">
+                                <a href={match.url} target="_blank" rel="noopener noreferrer" className="flex items-center">
+                                  {getHostname(match.url)}
+                                  <ExternalLink className="ml-1 h-3 w-3 inline flex-shrink-0" />
+                                </a>
+                              </div>
+                            </TableCell>
+                            {!compact && (
                               <TableCell className="hidden md:table-cell">
-                                <div className="max-w-xs truncate text-sm text-brand-blue hover:underline">
-                                  <a href={match.url} target="_blank" rel="noopener noreferrer" className="flex items-center">
-                                    {getHostname(match.url)}
-                                    <ExternalLink className="ml-1 h-3 w-3 inline flex-shrink-0" />
-                                  </a>
+                                <div className="flex items-center text-sm text-muted-foreground">
+                                  <Calendar className="h-3 w-3 mr-1" />
+                                  {match.dateFound 
+                                    ? format(match.dateFound, 'MMM d, yyyy')
+                                    : format(new Date(), 'MMM d, yyyy')}
                                 </div>
                               </TableCell>
-                              {!compact && (
-                                <TableCell className="hidden md:table-cell">
-                                  <div className="flex items-center text-sm text-muted-foreground">
-                                    <Calendar className="h-3 w-3 mr-1" />
-                                    {match.dateFound 
-                                      ? format(match.dateFound, 'MMM d, yyyy')
-                                      : format(new Date(), 'MMM d, yyyy')}
-                                  </div>
-                                </TableCell>
-                              )}
-                              <TableCell className="text-right">
-                                <Badge className={`${match.score >= 0.9 ? 'bg-brand-red' : 'bg-amber-500'} text-white`}>
-                                  {Math.round(match.score * 100)}%
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <div className="flex items-center justify-end space-x-1">
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm" 
-                                    className="h-8 w-8 p-0" 
-                                    title="Copy URL"
-                                    onClick={() => handleCopyUrl(match.url)}
-                                  >
-                                    <Copy className="h-4 w-4 text-gray-600" />
-                                  </Button>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm" 
-                                    className="h-8 w-8 p-0" 
-                                    title="Visit URL"
-                                    asChild
-                                  >
-                                    <a href={match.url} target="_blank" rel="noopener noreferrer">
-                                      <ExternalLink className="h-4 w-4 text-gray-600" />
-                                    </a>
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                            
-                            {relatedPagesList.length > 0 && (
-                              <TableRow className="bg-gray-50/50 border-t border-dashed">
-                                <TableCell colSpan={compact ? 5 : 6}>
-                                  <div className="pl-6 py-2">
-                                    <p className="text-xs font-medium text-muted-foreground mb-1">Pages with Image:</p>
-                                    <div className="space-y-1">
-                                      {relatedPagesList.map((page, pageIdx) => (
-                                        <div key={pageIdx} className="flex items-center justify-between text-sm flex-wrap gap-1">
-                                          <a 
-                                            href={page.url} 
-                                            target="_blank" 
-                                            rel="noopener noreferrer"
-                                            className="text-brand-blue hover:underline flex items-center"
-                                          >
-                                            <span className="truncate max-w-xs">{page.pageTitle || getWebsiteName(page.url)}</span>
-                                            <ExternalLink className="ml-1 h-3 w-3 inline flex-shrink-0" />
-                                          </a>
-                                          <div className="flex items-center space-x-2">
-                                            <Badge variant="outline" className="text-xs flex items-center gap-1">
-                                              {getPageTypeIcon(page.pageType)}
-                                              <span>{page.pageType === 'product' ? 'Product' : 
-                                                    page.pageType === 'category' ? 'Category' : 
-                                                    page.pageType === 'search' ? 'Search' : 'Page'}</span>
-                                            </Badge>
-                                            {!compact && page.dateFound && (
-                                              <span className="text-xs text-muted-foreground hidden md:inline">
-                                                {format(page.dateFound, 'MMM d, yyyy')}
-                                              </span>
-                                            )}
-                                          </div>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                </TableCell>
-                              </TableRow>
                             )}
-                          </React.Fragment>
+                            <TableCell className="text-right">
+                              <Badge className={`${match.score >= 0.9 ? 'bg-brand-red' : 'bg-amber-500'} text-white`}>
+                                {Math.round(match.score * 100)}%
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end space-x-1">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-8 w-8 p-0" 
+                                  title="Copy URL"
+                                  onClick={() => handleCopyUrl(match.url)}
+                                >
+                                  <Copy className="h-4 w-4 text-gray-600" />
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-8 w-8 p-0" 
+                                  title="Visit URL"
+                                  asChild
+                                >
+                                  <a href={match.url} target="_blank" rel="noopener noreferrer">
+                                    <ExternalLink className="h-4 w-4 text-gray-600" />
+                                  </a>
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
                         );
                       })}
                     </TableBody>
@@ -377,7 +309,6 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
         </>
       ) : (
         <Card className="p-6 text-center">
-          <FileText className="mx-auto h-10 w-10 text-brand-blue mb-4" />
           <p className="text-muted-foreground">No image matches found</p>
         </Card>
       )}
