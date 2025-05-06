@@ -31,8 +31,9 @@ interface MatchResult {
 }
 
 // Define constants for match thresholds
-const MIN_MATCH_THRESHOLD = 0.7; // Minimum threshold for any match to be shown
+const MIN_MATCH_THRESHOLD = 0.65; // Lowered minimum threshold to show more similar matches
 const EXACT_MATCH_THRESHOLD = 0.9; // Threshold for exact matches
+const PARTIAL_MATCH_THRESHOLD = 0.75; // Threshold for partial matches
 const FULL_MATCH_SCORE = 0.98; // Score to assign to full matches
 const PARTIAL_MATCH_SCORE = 0.85; // Score to assign to partial matches
 
@@ -305,6 +306,12 @@ const processResponse = (data: any): MatchResult => {
     ...partialMatchingImages,
     ...visuallySimilarImages
   ];
+
+  // Log the count of each type for debugging
+  console.log("Full matches:", fullMatchingImages.length);
+  console.log("Partial matches:", partialMatchingImages.length);
+  console.log("Similar matches:", visuallySimilarImages.length);
+  console.log("Total similar images:", allSimilarImages.length);
 
   // Process pages with matching images
   const pagesWithMatchingImages = processPages(webDetection.pagesWithMatchingImages);

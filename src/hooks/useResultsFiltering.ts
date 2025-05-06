@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from 'react';
 import { FilterOptions } from '@/components/FilterControls';
 import { MatchResult, FilteredData, DashboardData, WebImage, WebPage } from '@/types/results';
@@ -119,6 +118,12 @@ export const useResultsFiltering = (
     const filteredSimilarMatches = processedResults.visuallySimilarImages
       .filter(img => img.score >= 0.65 && img.score < 0.75) 
       .filter(img => img.score >= minConfidence);
+    
+    console.log("Filtered matches counts:", {
+      exact: filteredExactMatches.length,
+      partial: filteredPartialMatches.length,
+      similar: filteredSimilarMatches.length
+    });
       
     const filteredPages = processedResults.pagesWithMatchingImages
       .filter(page => !page.isSpam || filterOptions.showSpam)

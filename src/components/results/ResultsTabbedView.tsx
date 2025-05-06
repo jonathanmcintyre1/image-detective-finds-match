@@ -50,6 +50,9 @@ const ResultsTabbedView: React.FC<ResultsTabbedViewProps> = ({
     return <NoResultsView isProcessing={isProcessing} />;
   }
 
+  // Check if we have similar matches data available for debugging
+  console.log("Similar matches available:", filteredData.similarMatches.length);
+
   return (
     <Tabs defaultValue="exact" className="w-full">
       <div className="flex items-center justify-between mb-4">
