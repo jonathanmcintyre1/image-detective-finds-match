@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { 
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
@@ -390,12 +389,9 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({
                             <div className="font-medium line-clamp-1 text-left" title={page.pageTitle || getWebsiteName(page.url, page.platform)}>
                               {page.pageTitle || getWebsiteName(page.url, page.platform)}
                             </div>
-                            <div className="flex items-center text-xs text-muted-foreground">
+                            <div className="text-xs text-muted-foreground">
                               {isFromCdn ? (
-                                <span className="flex items-center">
-                                  <Server className="h-3 w-3 mr-1 text-gray-400" />
-                                  <span>Image from {cdnInfo}</span>
-                                </span>
+                                <span>Image from {cdnInfo}</span>
                               ) : (
                                 page.platform !== 'unknown' ? page.platform : getHostname(page.url)
                               )}
@@ -426,8 +422,7 @@ export const PagesMatchTable: React.FC<PagesMatchTableProps> = ({
                           </TableCell>
                           {!compact && (
                             <TableCell>
-                              <div className="flex items-center text-sm text-muted-foreground">
-                                <Calendar className="h-3 w-3 mr-1" />
+                              <div className="text-sm text-muted-foreground">
                                 {page.dateFound 
                                   ? format(page.dateFound, 'MMM d, yyyy')
                                   : format(new Date(), 'MMM d, yyyy')}

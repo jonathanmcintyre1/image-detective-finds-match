@@ -1,11 +1,9 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
 } from '@/components/ui/table';
 import { 
-  ExternalLink, Copy, ChevronDown, ChevronUp,
-  Clock, Calendar, Server, FileText
+  ExternalLink, Copy, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -247,10 +245,7 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
                               </div>
                               <div className="text-xs text-muted-foreground">
                                 {isImageFromCdn ? (
-                                  <span className="flex items-center">
-                                    <Server className="h-3 w-3 mr-1 text-gray-400" />
-                                    <span className="font-mono">Image hosted on {cdnInfo}</span>
-                                  </span>
+                                  <span className="font-mono">Image hosted on {cdnInfo}</span>
                                 ) : (
                                   getHostname(match.url)
                                 )}
@@ -268,7 +263,6 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
                               {associatedPage ? (
                                 <div>
                                   <div className="flex items-center text-sm text-brand-blue hover:underline">
-                                    <FileText className="h-3 w-3 mr-1 text-gray-400" />
                                     <a href={associatedPage.url} target="_blank" rel="noopener noreferrer" className="truncate max-w-[200px]">
                                       {associatedPage.pageTitle || "Web Page"}
                                     </a>
@@ -283,8 +277,7 @@ export const ExactMatchesTable: React.FC<ExactMatchesTableProps> = ({
                             </TableCell>
                             {!compact && (
                               <TableCell className="text-left align-middle" width="15%">
-                                <div className="flex items-center text-sm text-muted-foreground">
-                                  <Calendar className="h-3 w-3 mr-1" />
+                                <div className="text-sm text-muted-foreground">
                                   {match.dateFound 
                                     ? format(match.dateFound, 'MMM d, yyyy')
                                     : format(new Date(), 'MMM d, yyyy')}
